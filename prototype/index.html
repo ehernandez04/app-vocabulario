@@ -1,0 +1,1020 @@
+<title>Vocabulario en Ruta</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Caveat:wght@500..700&family=DM+Sans:opsz,wght@9..40,400..700&display=swap">
+<style>
+/* Layout: una pantalla de teléfono 390×756 centrada; los post-it son objetos físicos
+   (siempre papel con tinta oscura) y solo el entorno de la app cambia con el tema. */
+:root{
+  --paper:#F3EFE6; --paper-2:#EAE4D7; --card:#FFFFFF;
+  --ink:#1C1B19; --ink-soft:#5E5A52; --ink-faint:#8A8579;
+  --rule:#E2DCCF; --edge:#1C1B19;
+  --y:#FFE066; --c:#FFB4A2; --b:#B8E1FF; --g:#C8F0A8;
+  --on-note:#1C1B19; --note-soft:#4A463F;
+  --ok:#1F6F43; --ok-bg:#E4F2E9; --no:#B4380B; --no-bg:#FBE8E0;
+  --bezel:#2A2924; --bezel-edge:#45433C;
+  --drop:0 12px 24px rgba(60,50,20,.20);
+  --lift:0 2px 0 var(--edge);
+  --shadow:0 2px 8px rgba(28,27,25,.10), 0 34px 64px -28px rgba(28,27,25,.42);
+  --display:'Bricolage Grotesque','Archivo',system-ui,sans-serif;
+  --ui:'DM Sans',system-ui,-apple-system,sans-serif;
+  --hand:'Caveat','Segoe Script',cursive;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#1A1916; --paper-2:#24231F; --card:#24231F;
+    --ink:#F3EFE6; --ink-soft:#CFC8B8; --ink-faint:#8A8579;
+    --rule:#36342E; --edge:#4F4C44;
+    --ok:#6FD39B; --ok-bg:#16301F; --no:#FF9A6E; --no-bg:#33201A;
+    --bezel:#000000; --bezel-edge:#2E2C27;
+    --drop:0 12px 28px rgba(0,0,0,.55);
+    --lift:0 2px 0 rgba(0,0,0,.6);
+    --shadow:0 2px 8px rgba(0,0,0,.5), 0 36px 70px -30px rgba(0,0,0,.9);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#1A1916; --paper-2:#24231F; --card:#24231F;
+  --ink:#F3EFE6; --ink-soft:#CFC8B8; --ink-faint:#8A8579;
+  --rule:#36342E; --edge:#4F4C44;
+  --ok:#6FD39B; --ok-bg:#16301F; --no:#FF9A6E; --no-bg:#33201A;
+  --bezel:#000000; --bezel-edge:#2E2C27;
+  --drop:0 12px 28px rgba(0,0,0,.55);
+  --lift:0 2px 0 rgba(0,0,0,.6);
+  --shadow:0 2px 8px rgba(0,0,0,.5), 0 36px 70px -30px rgba(0,0,0,.9);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--ui);line-height:1.45;-webkit-font-smoothing:antialiased}
+.shell{max-width:470px;margin:0 auto;padding-inline:16px;padding-block:22px 36px;
+  display:flex;flex-direction:column;gap:18px;align-items:center}
+:focus-visible{outline:2.5px solid var(--ink);outline-offset:2px;border-radius:8px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+button{font-family:inherit}
+
+/* ===== teléfono ===== */
+.phone{width:100%;max-width:392px;background:var(--bezel);border:1px solid var(--bezel-edge);
+  border-radius:48px;padding:9px;box-shadow:var(--shadow)}
+.screen{background:var(--paper);border-radius:40px;overflow:hidden;height:756px;
+  display:flex;flex-direction:column;position:relative}
+@media (max-width:440px){
+  .phone{padding:6px;border-radius:36px}
+  .screen{border-radius:31px;height:min(726px,82vh)}
+}
+.statusbar{position:relative;display:flex;align-items:center;justify-content:space-between;
+  padding:10px 22px 4px;font-size:.72rem;font-weight:700;font-variant-numeric:tabular-nums;flex:none}
+.island{position:absolute;left:50%;transform:translateX(-50%);top:7px;width:64px;height:18px;
+  border-radius:99px;background:var(--bezel)}
+.sysicons{display:flex;gap:4px;align-items:center}
+.sysicons svg{height:11px;width:auto;display:block}
+
+.views{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.view{padding:10px 20px 18px;display:flex;flex-direction:column;gap:18px;min-height:100%}
+.view[hidden]{display:none}
+
+/* ===== tipografía compartida ===== */
+.eyebrow{font-size:.67rem;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-soft)}
+.h1{font-family:var(--display);font-weight:800;font-size:1.82rem;letter-spacing:-.025em;
+  line-height:1.06;margin:0;font-variation-settings:"opsz" 40}
+.h2{font-family:var(--display);font-weight:800;font-size:1.15rem;letter-spacing:-.015em;margin:0}
+.muted{color:var(--ink-soft);font-size:.86rem}
+
+/* ===== post-it ===== */
+.note{background:var(--note,var(--y));color:var(--on-note);box-shadow:var(--drop);
+  padding:22px 24px;display:flex;flex-direction:column;position:relative;
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 15px),calc(100% - 15px) 100%,0 100%)}
+.note::after{content:"";position:absolute;right:0;bottom:0;width:15px;height:15px;
+  background:rgba(0,0,0,.16);clip-path:polygon(0 0,100% 100%,0 100%)}
+.note .n-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.note .n-tag{font-size:.65rem;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--note-soft)}
+.en{font-family:var(--display);font-weight:800;font-size:2.7rem;letter-spacing:-.035em;
+  line-height:1.02;margin:0;font-variation-settings:"opsz" 96;overflow-wrap:break-word}
+.ipa{font-size:.95rem;color:var(--note-soft);margin:2px 0 0;font-variant-numeric:tabular-nums}
+.es{font-family:var(--hand);font-weight:700;font-size:2.35rem;line-height:1;margin:0}
+.rip{border:0;border-top:2px dashed rgba(28,27,25,.26);margin:14px 0 12px}
+
+/* botón redondo de audio sobre el post-it */
+.spk{appearance:none;border:0;cursor:pointer;flex:none;border-radius:50%;
+  background:var(--on-note);color:var(--note,var(--y));display:grid;place-items:center;
+  width:52px;height:52px;transition:transform .12s cubic-bezier(.3,1.6,.5,1)}
+.spk:hover{transform:scale(1.08)}
+.spk:active{transform:scale(.92)}
+.spk svg{width:23px;height:23px}
+.spk.sm{width:40px;height:40px;background:transparent;color:var(--on-note);
+  border:1.5px solid var(--on-note)}
+.spk.sm svg{width:17px;height:17px}
+.spk.speaking{animation:ring .7s ease-out infinite}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(28,27,25,.35)}100%{box-shadow:0 0 0 14px rgba(28,27,25,0)}}
+
+.example{appearance:none;background:none;border:0;padding:0;cursor:pointer;text-align:left;
+  color:var(--on-note);font:italic 400 .97rem/1.4 var(--ui);display:flex;gap:7px;align-items:flex-start}
+.example svg{width:15px;height:15px;flex:none;margin-top:4px;opacity:.6}
+.example:hover{opacity:.72}
+.example .tr{display:block;font-style:normal;font-size:.85rem;color:var(--note-soft);margin-top:3px}
+
+/* ===== botones ===== */
+.btn{appearance:none;cursor:pointer;font:700 .97rem var(--ui);min-height:54px;padding:0 18px;
+  border-radius:16px;border:2px solid var(--edge);background:var(--card);color:var(--ink);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:transform .1s,box-shadow .1s;box-shadow:var(--lift)}
+.btn:active{transform:translateY(2px);box-shadow:none}
+.btn.solid{background:var(--ink);color:var(--paper);border-color:var(--ink);box-shadow:none}
+.btn.solid:active{transform:translateY(2px)}
+.btn.onnote{border-color:var(--on-note);background:rgba(255,255,255,.4);color:var(--on-note);box-shadow:0 2px 0 var(--on-note)}
+.btn.wide{width:100%}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.pill{appearance:none;cursor:pointer;min-height:40px;padding:0 14px;border-radius:20px;
+  border:1.5px solid var(--edge);background:transparent;color:var(--ink);font:500 .85rem var(--ui);
+  transition:background .15s,color .15s}
+.pill[aria-pressed="true"],.pill.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.pill.dash{border-style:dashed;color:var(--ink-soft)}
+
+/* ===== inicio ===== */
+.hello{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.streak{display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:20px;
+  background:var(--y);color:var(--on-note);font-weight:700;font-size:.84rem;flex:none;
+  box-shadow:0 2px 0 var(--on-note)}
+.streak .flame{display:inline-block;animation:flicker 2.6s ease-in-out infinite;font-size:1rem}
+@keyframes flicker{0%,100%{transform:rotate(-5deg) scale(1)}50%{transform:rotate(5deg) scale(1.14)}}
+
+.today{display:flex;align-items:center;gap:15px;padding:15px 16px;border-radius:20px;
+  background:var(--card);border:2px solid var(--edge);box-shadow:var(--lift)}
+.ring{position:relative;width:62px;height:62px;flex:none}
+.ring svg{transform:rotate(-90deg);display:block}
+.ring .val{position:absolute;inset:0;display:grid;place-items:center;
+  font:800 .95rem var(--display);font-variation-settings:"opsz" 14;font-variant-numeric:tabular-nums}
+.today .txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.today b{font-size:1rem}
+
+/* pila de post-it en inicio */
+.stack{position:relative;height:196px;cursor:pointer;border:0;background:none;padding:0;width:100%;display:block}
+.stack .lay{position:absolute;inset:0;border-radius:2px;transition:transform .35s cubic-bezier(.3,1.3,.5,1)}
+.stack .lay.b2{transform:rotate(5deg) translate(10px,8px) scale(.97)}
+.stack .lay.b1{transform:rotate(-3.5deg) translate(-6px,4px) scale(.985)}
+.stack .lay.top{transform:rotate(-1deg)}
+.stack:hover .lay.b2{transform:rotate(7.5deg) translate(15px,10px) scale(.97)}
+.stack:hover .lay.b1{transform:rotate(-5.5deg) translate(-11px,5px) scale(.985)}
+.stack:hover .lay.top{transform:rotate(-1deg) translate(0,-4px)}
+.stack .flat{width:100%;height:100%;box-shadow:var(--drop)}
+.stack .note{height:100%;justify-content:space-between;text-align:left}
+.hand{font-family:var(--hand);font-weight:700;font-size:1.45rem;color:var(--note-soft);
+  display:flex;align-items:center;gap:6px}
+
+.modes{display:flex;flex-direction:column;gap:10px}
+.mode{appearance:none;cursor:pointer;display:flex;align-items:center;gap:13px;padding:11px 13px;
+  border-radius:17px;border:2px solid var(--edge);background:var(--card);color:var(--ink);
+  text-align:left;box-shadow:var(--lift);transition:transform .12s,box-shadow .12s}
+.mode:hover{transform:translate(-1px,-2px);box-shadow:0 4px 0 var(--edge)}
+.mode:active{transform:translateY(2px);box-shadow:none}
+.mode.dark{background:var(--ink);border-color:var(--ink);color:var(--paper);box-shadow:none}
+.mode .ic{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;flex:none;color:#1C1B19}
+.mode .ic svg{width:22px;height:22px}
+.mode .lab{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.mode .lab b{font-size:1rem}
+.mode .lab span{font-size:.84rem;color:var(--ink-soft)}
+.mode.dark .lab span{color:#CFC8B8}
+.mode .arr{width:19px;height:19px;flex:none;opacity:.75}
+
+.boxes{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.bx{display:flex;flex-direction:column;align-items:center;gap:5px}
+.bx .col{width:100%;height:46px;background:var(--paper-2);border-radius:8px;
+  display:flex;align-items:flex-end;overflow:hidden}
+.bx .col i{display:block;width:100%;border-radius:8px 8px 0 0;transition:height .45s cubic-bezier(.3,1.2,.5,1)}
+.bx .n{font:700 .76rem var(--ui);font-variant-numeric:tabular-nums}
+.bx .l{font-size:.6rem;color:var(--ink-faint)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.voicebox{display:flex;flex-direction:column;gap:9px;padding:14px;border-radius:18px;
+  background:var(--card);border:2px solid var(--edge);box-shadow:var(--lift)}
+.vrow{display:flex;align-items:center;gap:10px;font:700 .84rem var(--ui)}
+.vrow>span{flex:none;width:58px}
+.sel{flex:1;min-width:0;appearance:none;font:500 .84rem var(--ui);color:var(--ink);
+  background:var(--paper-2);border:1.5px solid var(--rule);border-radius:11px;
+  padding:9px 30px 9px 11px;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+
+/* ===== tarjetas ===== */
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex:none}
+.count{padding:5px 12px;border-radius:14px;background:var(--paper-2);font:700 .8rem var(--ui);
+  font-variant-numeric:tabular-nums}
+.bar{height:7px;border-radius:4px;background:var(--paper-2);overflow:hidden;flex:none}
+.bar i{display:block;height:100%;background:var(--ink);border-radius:4px;
+  transition:width .45s cubic-bezier(.3,1.2,.5,1)}
+
+.deckarea{position:relative;flex:1;min-height:366px}
+.deckarea .peek{position:absolute;left:0;right:0;top:0;height:100%;box-shadow:var(--drop)}
+.deckarea .peek.p2{transform:rotate(4deg) translate(9px,7px) scale(.975)}
+.deckarea .peek.p1{transform:rotate(-2.5deg) translate(-7px,4px) scale(.99)}
+#live{position:absolute;inset:0;touch-action:pan-y;will-change:transform}
+#live .note{height:100%;justify-content:flex-start;gap:0}
+.fly-left{animation:flyL .34s ease-out forwards}
+.fly-right{animation:flyR .34s ease-out forwards}
+@keyframes flyL{to{transform:translate(-130%,30px) rotate(-22deg);opacity:0}}
+@keyframes flyR{to{transform:translate(130%,30px) rotate(22deg);opacity:0}}
+.dealt{animation:deal .32s cubic-bezier(.25,1.3,.5,1)}
+@keyframes deal{from{transform:translateY(22px) rotate(4deg) scale(.95);opacity:.2}}
+.reveal{animation:unfold .34s cubic-bezier(.25,1.25,.5,1)}
+@keyframes unfold{from{transform:perspective(600px) rotateX(-78deg);transform-origin:top;opacity:0}}
+.swipetag{position:absolute;top:26px;font:800 .85rem var(--display);letter-spacing:.05em;
+  text-transform:uppercase;padding:7px 13px;border-radius:9px;opacity:0;transition:opacity .12s;
+  border:2.5px solid currentColor;pointer-events:none}
+.swipetag.l{left:20px;color:var(--no);transform:rotate(-11deg)}
+.swipetag.r{right:20px;color:var(--ok);transform:rotate(11deg)}
+.hint{text-align:center;font-size:.8rem;color:var(--ink-faint);flex:none}
+
+/* ===== adivinar ===== */
+.toggle{appearance:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;min-height:50px;padding:0 15px;border-radius:15px;border:2px solid var(--edge);
+  background:var(--card);color:var(--ink);font:500 .9rem var(--ui);text-align:left;box-shadow:var(--lift)}
+.knob{width:48px;height:28px;border-radius:14px;background:var(--paper-2);display:flex;
+  align-items:center;padding:3px;flex:none;transition:background .2s}
+.knob i{width:22px;height:22px;border-radius:50%;background:var(--card);display:block;
+  box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform .22s cubic-bezier(.3,1.5,.5,1)}
+.toggle[aria-pressed="true"] .knob{background:var(--ink)}
+.toggle[aria-pressed="true"] .knob i{transform:translateX(20px)}
+
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{appearance:none;cursor:pointer;display:flex;align-items:center;gap:12px;min-height:56px;
+  padding:0 14px;border-radius:15px;border:2px solid var(--edge);background:var(--card);
+  color:var(--ink);font:500 1.02rem var(--ui);text-align:left;box-shadow:var(--lift);
+  transition:transform .12s,box-shadow .12s,background .18s,color .18s,border-color .18s}
+.opt:hover:not(:disabled){transform:translate(-1px,-2px);box-shadow:0 4px 0 var(--edge)}
+.opt:active:not(:disabled){transform:translateY(2px);box-shadow:none}
+.opt .key{width:30px;height:30px;border-radius:50%;border:1.5px solid currentColor;flex:none;
+  display:grid;place-items:center;font:700 .78rem var(--ui)}
+.opt .lb{flex:1;min-width:0}
+.opt .mk{width:20px;height:20px;flex:none}
+.opt:disabled{cursor:default;box-shadow:none}
+.opt.good{background:var(--ok);border-color:var(--ok);color:#FFF;animation:pop .34s cubic-bezier(.25,1.6,.5,1)}
+.opt.bad{border-color:var(--no);color:var(--no);animation:shake .34s}
+.opt.off{opacity:.42;border-color:var(--rule)}
+@keyframes pop{40%{transform:scale(1.045)}}
+@keyframes shake{20%{transform:translateX(-7px)}45%{transform:translateX(6px)}70%{transform:translateX(-3px)}}
+.fb{display:flex;flex-direction:column;gap:11px;animation:rise .3s cubic-bezier(.25,1.3,.5,1)}
+@keyframes rise{from{transform:translateY(14px);opacity:0}}
+.fb .ttl{font:800 1.3rem var(--display);text-align:center}
+.fb .ttl.good{color:var(--ok)}
+.fb .ttl.bad{color:var(--no)}
+.fb .sub{text-align:center;font-size:.9rem;color:var(--ink-soft)}
+
+/* ===== camino ===== */
+#v-camino{background:#1C1B19;color:#F3EFE6}
+#v-camino .eyebrow,#v-camino .muted{color:#CFC8B8}
+#v-camino .count{background:#34322E;color:#F3EFE6}
+#v-camino .pill{border-color:#6B6457;color:#F3EFE6}
+#v-camino .pill.on{background:#F3EFE6;color:#1C1B19;border-color:#F3EFE6}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.step{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;
+  border-radius:13px;background:#2A2926;color:#CFC8B8;transition:background .25s,color .25s,transform .25s}
+.step b{font:700 .8rem var(--ui)}
+.step span{font-size:.78rem;text-align:center;line-height:1.2}
+.step.on{background:var(--y);color:#1C1B19;transform:translateY(-3px)}
+.transport{display:flex;align-items:center;justify-content:center;gap:26px}
+.tbtn{appearance:none;cursor:pointer;width:56px;height:56px;border-radius:50%;
+  border:1.5px solid #6B6457;background:transparent;color:#F3EFE6;display:grid;place-items:center;
+  transition:transform .12s,border-color .15s}
+.tbtn:hover{border-color:#F3EFE6;transform:scale(1.06)}
+.tbtn:active{transform:scale(.93)}
+.tbtn svg{width:21px;height:21px}
+.bigwrap{position:relative;width:104px;height:104px;flex:none;display:grid;place-items:center}
+.halo{position:absolute;inset:0;border-radius:50%;border:2px solid var(--y);opacity:0}
+.playing .halo{animation:halo 1.9s ease-out infinite}
+@keyframes halo{0%{transform:scale(.86);opacity:.75}100%{transform:scale(1.4);opacity:0}}
+.big{appearance:none;cursor:pointer;width:96px;height:96px;border-radius:50%;border:0;
+  background:var(--y);color:#1C1B19;display:grid;place-items:center;position:relative;
+  box-shadow:0 8px 26px rgba(255,224,102,.28);transition:transform .12s}
+.big:active{transform:scale(.95)}
+.big svg{width:34px;height:34px}
+.tick{position:absolute;inset:0;display:grid;place-items:center;
+  font:800 2rem var(--display);font-variant-numeric:tabular-nums}
+
+/* ===== tabbar ===== */
+.tabbar{display:grid;grid-template-columns:repeat(4,1fr);border-top:1.5px solid var(--rule);
+  background:var(--card);padding:7px 6px 0;flex:none}
+.tab{appearance:none;background:none;border:0;cursor:pointer;color:var(--ink-faint);
+  display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 2px 3px;
+  font:500 .67rem var(--ui);transition:color .15s}
+.tab svg{width:21px;height:21px;stroke-width:1.8;transition:transform .2s cubic-bezier(.3,1.5,.5,1)}
+.tab[aria-selected="true"]{color:var(--ink);font-weight:700}
+.tab[aria-selected="true"] svg{transform:translateY(-2px) scale(1.1)}
+.tab:hover{color:var(--ink)}
+.homebar{display:flex;justify-content:center;padding:6px 0 8px;background:var(--card);flex:none}
+.homebar i{width:118px;height:4px;border-radius:99px;background:var(--rule)}
+
+.done-card{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:9px;text-align:center}
+.done-card .big-n{font:800 3.6rem var(--display);font-variation-settings:"opsz" 96;line-height:1}
+.toast{position:absolute;left:50%;transform:translateX(-50%) translateY(-70px);top:52px;
+  background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:99px;
+  font:700 .84rem var(--ui);z-index:20;opacity:0;transition:transform .32s cubic-bezier(.25,1.4,.5,1),opacity .25s;
+  pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.warn{margin:0 20px;padding:9px 12px;border-radius:11px;background:var(--no-bg);color:var(--no);
+  font-size:.78rem;border:1.5px solid var(--no)}
+
+/* ===== leyenda ===== */
+.legend{width:100%;max-width:392px;display:flex;flex-direction:column;gap:9px}
+.legend h2{font:800 .98rem var(--display);margin:0}
+.legend ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px}
+.legend li{font-size:.83rem;color:var(--ink-soft);padding-left:15px;position:relative}
+.legend li::before{content:"";position:absolute;left:0;top:.52em;width:6px;height:6px;
+  border-radius:2px;background:var(--y)}
+.legend li b{color:var(--ink);font-weight:700}
+</style>
+
+<div class="shell">
+  <div class="phone">
+    <div class="screen">
+      <div class="statusbar">
+        <span>7:42</span><span class="island"></span>
+        <span class="sysicons">
+          <svg viewBox="0 0 18 12" fill="currentColor" aria-hidden="true"><rect y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" width="3" height="12" rx="1"/></svg>
+          <svg viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M1.5 4.2a9 9 0 0 1 13 0"/><path d="M4 6.9a5.5 5.5 0 0 1 8 0"/><circle cx="8" cy="10" r=".9" fill="currentColor" stroke="none"/></svg>
+          <svg viewBox="0 0 26 12" fill="none" aria-hidden="true"><rect x=".7" y=".7" width="21" height="10.6" rx="3" stroke="currentColor" stroke-width="1.2" opacity=".5"/><rect x="2.4" y="2.4" width="14" height="7.2" rx="1.8" fill="currentColor"/><path d="M23.4 4.2v3.6a2.4 2.4 0 0 0 0-3.6z" fill="currentColor" opacity=".5"/></svg>
+        </span>
+      </div>
+
+      <div id="toast" class="toast"></div>
+      <div id="warn" class="warn" hidden></div>
+      <div class="views" id="views"></div>
+
+      <nav class="tabbar" role="tablist" aria-label="Secciones">
+        <button class="tab" role="tab" aria-selected="true" data-go="inicio">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg>Inicio</button>
+        <button class="tab" role="tab" aria-selected="false" data-go="tarjetas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="13" height="13" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v11"/></svg>Tarjetas</button>
+        <button class="tab" role="tab" aria-selected="false" data-go="adivinar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.7"/><path d="M12 17h.01"/></svg>Adivinar</button>
+        <button class="tab" role="tab" aria-selected="false" data-go="camino">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/></svg>Camino</button>
+      </nav>
+      <div class="homebar"><i></i></div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <h2>Qué cambió respecto al primer diseño</h2>
+    <ul>
+      <li><b>Un solo mazo de 20 palabras</b> para los tres modos, en vez de tres listas distintas.</li>
+      <li><b>Cinco cajas de repaso que sí guardan</b>: cada palabra tiene su caja y su próxima fecha en el teléfono, así la racha y el progreso son reales al volver.</li>
+      <li><b>Arrastra la tarjeta</b> a la izquierda para "otra vez" y a la derecha para "lo sabía" — o usa los botones.</li>
+      <li><b>Modo camino con cuenta atrás visible</b> y opción de oír el ejemplo, para que sepas de un vistazo en qué paso va.</li>
+      <li><b>Tema oscuro</b> en toda la app. Los post-it siguen siendo papel con tinta oscura, como en la vida real.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+/* ============ datos ============ */
+const NOTES = ['#FFE066', '#FFB4A2', '#B8E1FF', '#C8F0A8'];
+const DECK = [
+  {en:'the way',ipa:'/ðə weɪ/',es:'el camino',xe:'I listen to podcasts on the way to work.',xs:'Escucho pódcasts de camino al trabajo.'},
+  {en:'to achieve',ipa:'/əˈtʃiːv/',es:'lograr',xe:'We achieved our goal this month.',xs:'Logramos nuestro objetivo este mes.'},
+  {en:'however',ipa:'/haʊˈevər/',es:'sin embargo',xe:'It was late; however, we kept working.',xs:'Era tarde; sin embargo, seguimos trabajando.'},
+  {en:'reliable',ipa:'/rɪˈlaɪəbəl/',es:'fiable',xe:'This machine is very reliable.',xs:'Esta máquina es muy fiable.'},
+  {en:'meanwhile',ipa:'/ˈmiːnwaɪl/',es:'mientras tanto',xe:'Meanwhile, the water was boiling.',xs:'Mientras tanto, el agua hervía.'},
+  {en:'to struggle',ipa:'/ˈstrʌɡəl/',es:'tener dificultades',xe:'I struggle with phrasal verbs.',xs:'Me cuestan los phrasal verbs.'},
+  {en:'outcome',ipa:'/ˈaʊtkʌm/',es:'resultado',xe:'The outcome was better than expected.',xs:'El resultado fue mejor de lo esperado.'},
+  {en:'to remind',ipa:'/rɪˈmaɪnd/',es:'recordar (a alguien)',xe:'Remind me to call him later.',xs:'Recuérdame llamarle luego.'},
+  {en:'to commute',ipa:'/kəˈmjuːt/',es:'desplazarse al trabajo',xe:'I commute by train every morning.',xs:'Me desplazo en tren cada mañana.'},
+  {en:'deadline',ipa:'/ˈdedlaɪn/',es:'fecha límite',xe:'The deadline is on Friday.',xs:'La fecha límite es el viernes.'},
+  {en:'to afford',ipa:'/əˈfɔːrd/',es:'poder permitirse',xe:"We can't afford a new car.",xs:'No podemos permitirnos un carro nuevo.'},
+  {en:'insight',ipa:'/ˈɪnsaɪt/',es:'perspectiva',xe:"That's a useful insight.",xs:'Esa es una perspectiva útil.'},
+  {en:'willing',ipa:'/ˈwɪlɪŋ/',es:'dispuesto',xe:'Are you willing to help?',xs:'¿Estás dispuesto a ayudar?'},
+  {en:'shortcut',ipa:'/ˈʃɔːrtkʌt/',es:'atajo',xe:"There's no shortcut to fluency.",xs:'No hay atajos para la fluidez.'},
+  {en:'to borrow',ipa:'/ˈbɑːroʊ/',es:'pedir prestado',xe:'Can I borrow your charger?',xs:'¿Me prestas tu cargador?'},
+  {en:'overwhelming',ipa:'/ˌoʊvərˈwelmɪŋ/',es:'abrumador',xe:'The response was overwhelming.',xs:'La respuesta fue abrumadora.'},
+  {en:'awkward',ipa:'/ˈɔːkwərd/',es:'incómodo',xe:'There was an awkward silence.',xs:'Hubo un silencio incómodo.'},
+  {en:'spare',ipa:'/sper/',es:'de sobra, libre',xe:'Do you have a spare minute?',xs:'¿Tienes un minuto libre?'},
+  {en:'tricky',ipa:'/ˈtrɪki/',es:'complicado',xe:'Pronunciation is tricky.',xs:'La pronunciación es complicada.'},
+  {en:'nevertheless',ipa:'/ˌnevərðəˈles/',es:'no obstante',xe:'It rained; nevertheless, we went.',xs:'Llovió; no obstante, fuimos.'}
+];
+DECK.forEach((w, i) => { w.note = NOTES[i % NOTES.length]; });
+
+const INTERVALS = [1, 2, 4, 8, 16];   // días por caja 1..5
+const KEY = 'vocabruta.v2';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const today = () => new Date().toISOString().slice(0, 10);
+const addDays = (iso, n) => {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+
+/* ============ estado ============ */
+function loadStore(){
+  const base = {prog:{}, streak:6, last:null, day:today(), hits:0, miss:0,
+                audioOnly:false, pause:5, withEx:false, voiceEn:null, voiceEs:null};
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) return Object.assign(base, JSON.parse(raw));
+  }catch(e){}
+  return base;
+}
+const S = loadStore();
+function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+function prog(en){
+  return S.prog[en] || (S.prog[en] = {box:1, due:today(), seen:0, miss:0});
+}
+function gradeWord(en, knew){
+  const p = prog(en);
+  p.seen++;
+  if(knew){ p.box = Math.min(5, p.box + 1); }
+  else { p.box = 1; p.miss++; }
+  p.due = addDays(today(), INTERVALS[p.box - 1]);
+  persist();
+}
+const dueWords = () => DECK.filter(w => prog(w.en).due <= today());
+
+let view = 'inicio';
+let queue = [], qi = 0, revealed = false;          // tarjetas
+let qz = null, qzPick = null;                      // adivinar
+const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(p => p[1]);
+
+function buildQueue(){
+  const due = dueWords();
+  queue = (due.length ? due : DECK.slice())
+    .sort((a, b) => prog(a.en).box - prog(b.en).box);
+  queue = shuffle(queue).sort((a, b) => prog(a.en).box - prog(b.en).box).slice(0, 20);
+  qi = 0; revealed = false; S.hits = 0; S.miss = 0;
+}
+
+/* ============ voz ============ */
+/* El primer `en-US` que devuelve el navegador suele ser el peor: en macOS la lista
+   empieza por voces de novedad (Bad News, Bubbles, Zarvox…) y por versiones "compact".
+   Así que las puntuamos en vez de tomar la primera. */
+const NOVELTY = /albert|bad news|bahh|bells|boing|bubbles|cellos|deranged|good news|hysterical|jester|junior|kathy|organ|pipe|princess|ralph|superstar|trinoids|whisper|wobble|zarvox|eloquence|espeak|festival/i;
+function rankVoice(v){
+  const n = (v.name || '').toLowerCase();
+  let s = /^en[-_]US/i.test(v.lang) ? 10 : 4;
+  if(NOVELTY.test(n)) return -500;                       // descartar de plano
+  if(n.includes('google')) s += 60;                      // Chrome: la mejor disponible
+  if(/natural|neural|premium|enhanced/.test(n)) s += 55;  // voces descargadas de Apple/Windows
+  if(/siri|samantha|ava|allison|joanna|aria|jenny|guy|sonia|libby/.test(n)) s += 35;
+  if(v.localService === false) s += 25;                  // las remotas suelen ser las buenas
+  if(/compact/.test(n)) s -= 70;
+  return s;
+}
+let voicesEn = [], voicesEs = [], vEn = null, vEs = null;
+function pickVoices(){
+  if(!('speechSynthesis' in window)) return;
+  const all = speechSynthesis.getVoices();
+  const byRank = (a, b) => rankVoice(b) - rankVoice(a);
+  voicesEn = all.filter(v => /^en[-_]/i.test(v.lang) && rankVoice(v) > -100).sort(byRank);
+  voicesEs = all.filter(v => /^es[-_]/i.test(v.lang)).sort((a, b) => {
+    const pref = x => (/^es[-_](MX|US|419)/i.test(x.lang) ? 10 : 0) + (/google|natural|neural|enhanced|premium|paulina|mónica|monica/i.test(x.name) ? 30 : 0);
+    return pref(b) - pref(a);
+  });
+  vEn = voicesEn.find(v => v.name === S.voiceEn) || voicesEn[0] || null;
+  vEs = voicesEs.find(v => v.name === S.voiceEs) || voicesEs[0] || null;
+  if(all.length && !voicesEn.length){
+    $('#warn').textContent = 'Este navegador no tiene voces en inglés, así que aquí no sonará. En el celular casi siempre vienen de fábrica.';
+    $('#warn').hidden = false;
+  } else { $('#warn').hidden = true; }
+  if(view === 'inicio') render();
+}
+if('speechSynthesis' in window){
+  pickVoices();
+  speechSynthesis.addEventListener('voiceschanged', pickVoices);
+} else {
+  $('#warn').textContent = 'Este navegador no puede sintetizar voz. El resto del prototipo funciona igual.';
+  $('#warn').hidden = false;
+}
+
+function say(text, lang, rate, done){
+  let fired = false;
+  const fin = () => { if(!fired){ fired = true; done && done(); } };
+  if(!text || !('speechSynthesis' in window)){ setTimeout(fin, 900); return; }
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const v = lang === 'es' ? vEs : vEn;
+    u.lang = v ? v.lang : (lang === 'es' ? 'es-MX' : 'en-US');
+    if(v) u.voice = v;
+    u.rate = rate || .92;
+    u.onend = fin; u.onerror = fin;
+    speechSynthesis.speak(u);
+    setTimeout(fin, 2600 + text.length * 130);   // red de seguridad
+  }catch(e){ setTimeout(fin, 900); }
+}
+function speakBtn(btn, text, lang, rate){
+  if(btn){ btn.classList.add('speaking'); setTimeout(() => btn.classList.remove('speaking'), 1400); }
+  say(text, lang, rate);
+}
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => t.classList.remove('show'), 1700);
+}
+
+/* ============ iconos ============ */
+const I = {
+  spk:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>',
+  slow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M16 9.5a4 4 0 0 1 0 5"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86A1 1 0 0 0 8 5.14z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4.5" height="16" rx="1.5"/><rect x="13.5" y="4" width="4.5" height="16" rx="1.5"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17 6 12l5-5"/><path d="M18 17l-5-5 5-5"/></svg>',
+  fwd:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 7l5 5-5 5"/><path d="M6 7l5 5-5 5"/></svg>',
+  arr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
+  tick:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>',
+  cross:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  cards:'<svg viewBox="0 0 24 24" fill="none" stroke="#1C1B19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="13" height="13" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v11"/></svg>',
+  quiz:'<svg viewBox="0 0 24 24" fill="none" stroke="#1C1B19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.7"/><path d="M12 17h.01"/></svg>',
+  head:'<svg viewBox="0 0 24 24" fill="none" stroke="#1C1B19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/></svg>',
+  quote:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h4v4H9c0 2 .8 3 2 3.4V17c-2.8-.5-4-2.6-4-5.6V7zm8 0h4v4h-2c0 2 .8 3 2 3.4V17c-2.8-.5-4-2.6-4-5.6V7z"/></svg>'
+};
+
+/* ============ vistas ============ */
+function go(name){
+  view = name;
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.go === name)));
+  if(name !== 'camino') caminoStop();
+  render();
+  $('#views').scrollTop = 0;
+}
+
+function render(){
+  const v = $('#views');
+  if(view === 'inicio')   v.innerHTML = viewInicio();
+  if(view === 'tarjetas') { v.innerHTML = viewTarjetas(); armSwipe(); }
+  if(view === 'adivinar') v.innerHTML = viewAdivinar();
+  if(view === 'camino')   v.innerHTML = viewCamino();
+}
+
+function greeting(){
+  const h = new Date().getHours();
+  return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
+}
+
+function viewInicio(){
+  const due = dueWords().length;
+  const total = DECK.length;
+  const doneToday = total - due;
+  const pct = Math.round(doneToday / total * 100);
+  const C = 2 * Math.PI * 19;
+  const next = queue[qi] || DECK[0];
+  const counts = [0,0,0,0,0];
+  DECK.forEach(w => counts[prog(w.en).box - 1]++);
+  const max = Math.max.apply(null, counts.concat(1));
+
+  return `<section class="view">
+    <div class="hello">
+      <div>
+        <p class="eyebrow" style="margin:0 0 3px">${greeting()} · repaso de hoy</p>
+        <h1 class="h1">${due ? due + ' palabra' + (due === 1 ? '' : 's') + '<br>te esperan' : 'Todo<br>al día'}</h1>
+      </div>
+      <span class="streak"><span class="flame">🔥</span> ${S.streak}</span>
+    </div>
+
+    <div class="today">
+      <div class="ring">
+        <svg width="62" height="62" viewBox="0 0 44 44" aria-hidden="true">
+          <circle cx="22" cy="22" r="19" fill="none" stroke="var(--rule)" stroke-width="4"/>
+          <circle cx="22" cy="22" r="19" fill="none" stroke="var(--ink)" stroke-width="4"
+            stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}"
+            stroke-dashoffset="${(C * (1 - pct / 100)).toFixed(1)}"/>
+        </svg>
+        <span class="val">${pct}%</span>
+      </div>
+      <div class="txt">
+        <b>${doneToday} de ${total} al día</b>
+        <span class="muted">${due ? 'Te faltan ' + due + ' por repasar' : 'Vuelve mañana por las siguientes'}</span>
+      </div>
+    </div>
+
+    <button class="stack" data-go="tarjetas" aria-label="Practicar la siguiente palabra: ${esc(next.en)}">
+      <div class="lay b2"><div class="flat" style="background:${NOTES[2]}"></div></div>
+      <div class="lay b1"><div class="flat" style="background:${NOTES[1]}"></div></div>
+      <div class="lay top">
+        <div class="note" style="--note:${next.note}">
+          <span class="n-tag">Siguiente palabra</span>
+          <span class="en" style="font-size:2.35rem">${esc(next.en)}</span>
+          <span class="hand">toca para practicar →</span>
+        </div>
+      </div>
+    </button>
+
+    <div class="modes">
+      <p class="eyebrow" style="margin:0">Cómo quieres repasar</p>
+      <button class="mode" data-go="tarjetas">
+        <span class="ic" style="background:${NOTES[0]}">${I.cards}</span>
+        <span class="lab"><b>Tarjetas</b><span>Ver, escuchar y dar la vuelta</span></span>
+        <span class="arr">${I.arr}</span>
+      </button>
+      <button class="mode" data-go="adivinar">
+        <span class="ic" style="background:${NOTES[1]}">${I.quiz}</span>
+        <span class="lab"><b>Adivinar</b><span>Elige la traducción correcta</span></span>
+        <span class="arr">${I.arr}</span>
+      </button>
+      <button class="mode dark" data-go="camino">
+        <span class="ic" style="background:${NOTES[0]}">${I.head}</span>
+        <span class="lab"><b>Modo camino</b><span>Manos libres, solo audio</span></span>
+        <span class="arr">${I.arr}</span>
+      </button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <p class="eyebrow" style="margin:0">Tus cinco cajas de repaso</p>
+      <div class="boxes">
+        ${counts.map((n, i) => `<div class="bx">
+          <div class="col"><i style="height:${n ? Math.max(14, n / max * 100) : 0}%;background:${NOTES[i % 4]}"></i></div>
+          <span class="n">${n}</span><span class="l">caja ${i + 1}</span>
+        </div>`).join('')}
+      </div>
+      <p class="muted" style="font-size:.79rem">Cada acierto sube la palabra una caja: 1, 2, 4, 8 y 16 días.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <p class="eyebrow" style="margin:0">Voz</p>
+      <div class="voicebox">
+        <label class="vrow">
+          <span>Inglés</span>
+          <select id="vsel-en" class="sel">
+            ${voicesEn.length
+              ? voicesEn.map(v => `<option value="${esc(v.name)}"${vEn && v.name === vEn.name ? ' selected' : ''}>${esc(v.name)} · ${esc(v.lang)}</option>`).join('')
+              : '<option>Sin voces en inglés</option>'}
+          </select>
+        </label>
+        <label class="vrow">
+          <span>Español</span>
+          <select id="vsel-es" class="sel">
+            ${voicesEs.length
+              ? voicesEs.map(v => `<option value="${esc(v.name)}"${vEs && v.name === vEs.name ? ' selected' : ''}>${esc(v.name)} · ${esc(v.lang)}</option>`).join('')
+              : '<option>Sin voces en español</option>'}
+          </select>
+        </label>
+        <button class="btn" data-act="test-voice" style="min-height:44px">${I.spk} Probar esta voz</button>
+        <p class="muted" style="font-size:.78rem">Las mejores suelen llamarse <b>Google</b>, <b>Siri</b>,
+          <b>Enhanced</b> o <b>Premium</b>. Si tu lista se ve pobre, en iPhone y Mac se descargan voces
+          de mucha mejor calidad en <b>Ajustes → Accesibilidad → Contenido hablado → Voces</b>.</p>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <p class="eyebrow" style="margin:0">Mis listas</p>
+      <div class="chips">
+        <button class="pill on">Básicas · 20</button>
+        <button class="pill" data-soon="1">Trabajo · 14</button>
+        <button class="pill" data-soon="1">Viajes · 9</button>
+        <button class="pill dash" data-soon="1">+ Nueva</button>
+      </div>
+    </div>
+  </section>`;
+}
+
+function viewTarjetas(){
+  if(qi >= queue.length){
+    return `<section class="view">
+      <div class="topbar"><span class="h2">Tarjetas</span><span class="count">${queue.length}/${queue.length}</span></div>
+      <div class="done-card">
+        <span class="big-n">${S.hits}</span>
+        <p class="h2">¡Sesión terminada!</p>
+        <p class="muted">Acertaste ${S.hits} de ${queue.length}. ${S.miss ? S.miss + ' vuelven mañana.' : 'Ni una falla.'}</p>
+        <button class="btn solid" data-act="restart" style="margin-top:10px">Otra ronda</button>
+      </div>
+    </section>`;
+  }
+  const w = queue[qi], p = prog(w.en);
+  const pct = Math.round(qi / queue.length * 100);
+  return `<section class="view">
+    <div class="topbar">
+      <span class="h2">Tarjetas</span>
+      <span class="count">${qi + 1} / ${queue.length}</span>
+    </div>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+
+    <div class="deckarea">
+      <div class="peek p2" style="background:${NOTES[(qi + 2) % 4]}"></div>
+      <div class="peek p1" style="background:${NOTES[(qi + 1) % 4]}"></div>
+      <div id="live" class="dealt">
+        <div class="note" style="--note:${w.note}">
+          <span class="swipetag l">Otra vez</span>
+          <span class="swipetag r">¡Lo sabía!</span>
+          <div class="n-top">
+            <span class="n-tag">Inglés · caja ${p.box}</span>
+            <button class="spk" data-act="say-en" aria-label="Escuchar en inglés">${I.spk}</button>
+          </div>
+          <p class="en" style="margin-top:8px">${esc(w.en)}</p>
+          <p class="ipa">${esc(w.ipa)}</p>
+          <button class="example" data-act="say-ex" style="margin-top:12px">
+            ${I.quote}<span>${esc(w.xe)}</span>
+          </button>
+          ${revealed ? `
+            <hr class="rip">
+            <div class="reveal" style="display:flex;flex-direction:column;gap:5px">
+              <div class="n-top">
+                <span class="n-tag">Español</span>
+                <button class="spk sm" data-act="say-es" aria-label="Escuchar en español">${I.spk}</button>
+              </div>
+              <p class="es">${esc(w.es)}</p>
+              <p style="margin:0;font-size:.88rem;color:var(--note-soft)">${esc(w.xs)}</p>
+            </div>`
+          : `<div style="flex:1;display:flex;align-items:flex-end;padding-top:16px">
+              <button class="btn onnote wide" data-act="reveal">Ver traducción</button>
+             </div>`}
+        </div>
+      </div>
+    </div>
+
+    ${revealed
+      ? `<div class="row2">
+          <button class="btn" data-act="grade" data-k="0">Otra vez</button>
+          <button class="btn solid" data-act="grade" data-k="1">Lo sabía</button>
+         </div>
+         <p class="hint">O arrastra la tarjeta: ← otra vez · lo sabía →</p>`
+      : `<button class="btn wide" data-act="slow">${I.slow} Despacio</button>
+         <p class="hint">Piénsalo en español antes de descubrirla</p>`}
+  </section>`;
+}
+
+function newQuiz(){
+  const pool = dueWords().length ? dueWords() : DECK;
+  const w = shuffle(pool.slice()).sort((a, b) => prog(a.en).box - prog(b.en).box)[0];
+  const others = shuffle(DECK.filter(x => x.en !== w.en)).slice(0, 3);
+  qz = {w, opts: shuffle([w].concat(others)).map(x => x.es)};
+  qzPick = null;
+}
+function viewAdivinar(){
+  if(!qz) newQuiz();
+  const w = qz.w, answered = qzPick !== null;
+  const right = answered && qzPick === w.es;
+  const hideWord = S.audioOnly && !answered;
+  return `<section class="view">
+    <div class="topbar">
+      <span class="h2">Adivinar</span>
+      <span class="count">Aciertos ${S.hits}/${S.hits + S.miss}</span>
+    </div>
+
+    <button class="toggle" aria-pressed="${S.audioOnly}" data-act="audio-only">
+      <span>Solo audio <span class="muted" style="display:block;font-size:.76rem">para ir caminando</span></span>
+      <span class="knob"><i></i></span>
+    </button>
+
+    <div class="note" style="--note:${w.note};min-height:148px;justify-content:space-between">
+      <div class="n-top">
+        <div style="min-width:0">
+          <span class="n-tag">¿Qué significa?</span>
+          ${hideWord
+            ? `<p class="es" style="font-size:1.9rem;margin:6px 0 0">Escucha y adivina…</p>`
+            : `<p class="en" style="font-size:2.3rem;margin:4px 0 0">${esc(w.en)}</p>
+               <p class="ipa">${esc(w.ipa)}</p>`}
+        </div>
+        <button class="spk" data-act="say-en" aria-label="Escuchar la palabra" style="width:60px;height:60px">${I.spk}</button>
+      </div>
+    </div>
+
+    <div class="opts">
+      ${qz.opts.map((o, k) => {
+        let cls = '', mk = '';
+        if(answered){
+          if(o === w.es){ cls = ' good'; mk = `<span class="mk">${I.tick}</span>`; }
+          else if(o === qzPick){ cls = ' bad'; mk = `<span class="mk">${I.cross}</span>`; }
+          else cls = ' off';
+        }
+        return `<button class="opt${cls}" data-act="pick" data-o="${esc(o)}"${answered ? ' disabled' : ''}>
+          <span class="key">${'ABCD'[k]}</span><span class="lb">${esc(o)}</span>${mk}</button>`;
+      }).join('')}
+    </div>
+
+    <div style="flex:1"></div>
+    ${answered
+      ? `<div class="fb">
+          <div>
+            <p class="ttl ${right ? 'good' : 'bad'}">${right ? '¡Correcto!' : 'Casi…'}</p>
+            <p class="sub">${right ? esc(w.en) + ' = ' + esc(w.es) : 'La respuesta era «' + esc(w.es) + '»'}</p>
+          </div>
+          <button class="btn solid wide" data-act="next-q">Siguiente palabra</button>
+         </div>`
+      : `<p class="hint">Toca una opción · o usa las teclas A B C D</p>`}
+  </section>`;
+}
+
+function viewCamino(){
+  const i = CAM.i, w = DECK[i];
+  const labels = {idle:'Pulsa play para empezar', en:'Escucha…', think:'Piensa la respuesta', es:'Respuesta'};
+  const steps = [['en','1','Inglés'], ['think','2','Piensas'], ['es','3','Español']];
+  return `<section class="view ${CAM.on ? 'playing' : ''}">
+    <div class="topbar">
+      <span class="h2">Modo camino</span>
+      <span class="count">${i + 1} de ${DECK.length}</span>
+    </div>
+    <p class="muted">Ponte los auriculares y guarda el teléfono: oyes la palabra en inglés, piensas, y luego llega la respuesta en español.</p>
+
+    <div class="note" style="--note:${w.note};min-height:186px;justify-content:space-between;transform:rotate(-1.5deg)">
+      <span class="n-tag">${labels[CAM.phase] || labels.idle}</span>
+      <p class="en" style="font-size:2.5rem">${esc(w.en)}</p>
+      <p class="es" style="color:${CAM.phase === 'es' ? 'var(--on-note)' : 'rgba(28,27,25,.38)'}">
+        ${CAM.phase === 'es' ? esc(w.es) : '¿ … ?'}</p>
+    </div>
+
+    <div class="steps">
+      ${steps.map(([k, n, l]) => `<div class="step${CAM.phase === k ? ' on' : ''}"><b>${n}</b><span>${l}</span></div>`).join('')}
+    </div>
+
+    <div style="flex:1"></div>
+    <div class="transport">
+      <button class="tbtn" data-act="cam-replay" aria-label="Repetir palabra">${I.back}</button>
+      <span class="bigwrap">
+        <span class="halo"></span>
+        <button class="big" data-act="cam-toggle" aria-label="${CAM.on ? 'Pausar' : 'Reproducir'}">
+          ${CAM.phase === 'think' && CAM.left > 0 ? `<span class="tick">${CAM.left}</span>` : (CAM.on ? I.pause : I.play)}
+        </button>
+      </span>
+      <button class="tbtn" data-act="cam-skip" aria-label="Siguiente palabra">${I.fwd}</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <p class="eyebrow" style="margin:0">Tiempo para pensar</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        ${[3, 5, 8].map(s => `<button class="pill${S.pause === s ? ' on' : ''}" data-act="cam-pause" data-s="${s}" style="min-height:44px;font-weight:700">${s} s</button>`).join('')}
+      </div>
+      <button class="toggle" aria-pressed="${S.withEx}" data-act="cam-ex" style="background:#2A2926;border-color:#6B6457;color:#F3EFE6;box-shadow:none">
+        <span>Oír también la frase de ejemplo</span><span class="knob" style="background:${S.withEx ? '#F3EFE6' : '#4A483F'}"><i style="background:#1C1B19"></i></span>
+      </button>
+    </div>
+  </section>`;
+}
+
+/* ============ modo camino ============ */
+const CAM = {i:0, phase:'idle', on:false, left:0, t:null, tick:null};
+function caminoStop(){
+  CAM.on = false; CAM.phase = 'idle'; CAM.left = 0;
+  clearTimeout(CAM.t); clearInterval(CAM.tick);
+  try{ speechSynthesis.cancel(); }catch(e){}
+}
+function caminoRun(i){
+  if(!CAM.on) return;
+  const w = DECK[i];
+  CAM.i = i; CAM.phase = 'en'; CAM.left = 0;
+  if(view === 'camino') render();
+  say(w.en, 'en', .9, () => {
+    if(!CAM.on) return;
+    CAM.phase = 'think'; CAM.left = S.pause;
+    if(view === 'camino') render();
+    clearInterval(CAM.tick);
+    CAM.tick = setInterval(() => {
+      CAM.left--;
+      if(CAM.left <= 0) clearInterval(CAM.tick);
+      if(view === 'camino' && CAM.phase === 'think') render();
+    }, 1000);
+    CAM.t = setTimeout(() => {
+      if(!CAM.on) return;
+      clearInterval(CAM.tick);
+      CAM.phase = 'es'; CAM.left = 0;
+      if(view === 'camino') render();
+      say(w.es, 'es', .95, () => {
+        if(!CAM.on) return;
+        const after = () => { CAM.t = setTimeout(() => caminoRun((i + 1) % DECK.length), 1200); };
+        if(S.withEx) say(w.xe, 'en', .88, after); else after();
+      });
+    }, S.pause * 1000);
+  });
+}
+function caminoStart(i){
+  caminoStop();
+  CAM.on = true;
+  caminoRun(i);
+}
+
+/* ============ arrastrar la tarjeta ============ */
+function armSwipe(){
+  const live = $('#live');
+  if(!live || !revealed) return;
+  const L = live.querySelector('.swipetag.l'), R = live.querySelector('.swipetag.r');
+  let x0 = null, dx = 0;
+
+  live.addEventListener('pointerdown', e => {
+    if(e.target.closest('button')) return;
+    x0 = e.clientX; dx = 0;
+    live.style.transition = 'none';
+    live.setPointerCapture(e.pointerId);
+  });
+  live.addEventListener('pointermove', e => {
+    if(x0 === null) return;
+    dx = e.clientX - x0;
+    live.style.transform = `translateX(${dx}px) rotate(${dx / 22}deg)`;
+    L.style.opacity = dx < -24 ? Math.min(1, -dx / 90) : 0;
+    R.style.opacity = dx > 24 ? Math.min(1, dx / 90) : 0;
+  });
+  const end = () => {
+    if(x0 === null) return;
+    const d = dx; x0 = null;
+    live.style.transition = 'transform .28s cubic-bezier(.3,1.2,.5,1)';
+    if(Math.abs(d) > 92){
+      live.classList.add(d < 0 ? 'fly-left' : 'fly-right');
+      setTimeout(() => grade(d > 0), 220);
+    } else {
+      live.style.transform = '';
+      L.style.opacity = R.style.opacity = 0;
+    }
+  };
+  live.addEventListener('pointerup', end);
+  live.addEventListener('pointercancel', end);
+}
+
+function grade(knew){
+  const w = queue[qi];
+  gradeWord(w.en, knew);
+  if(knew) S.hits++; else S.miss++;
+  persist();
+  toast(knew ? `“${w.en}” sube a la caja ${prog(w.en).box}` : `“${w.en}” vuelve a la caja 1`);
+  qi++; revealed = false;
+  render(); armSwipe();
+}
+
+/* ============ eventos ============ */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act], [data-go], [data-soon]');
+  if(!b) return;
+
+  if(b.dataset.go){
+    if(b.dataset.go === 'tarjetas' && qi >= queue.length) buildQueue();
+    go(b.dataset.go);
+    return;
+  }
+  if(b.dataset.soon){ toast('Esa lista llega en la fase 3'); return; }
+
+  const w = queue[qi];
+  switch(b.dataset.act){
+    case 'say-en': speakBtn(b, view === 'adivinar' ? qz.w.en : w.en, 'en', .92); break;
+    case 'say-es': speakBtn(b, w.es, 'es', .95); break;
+    case 'say-ex': speakBtn(b, w.xe, 'en', .9); break;
+    case 'slow':   speakBtn(b, w.en, 'en', .55); break;
+    case 'reveal':
+      revealed = true; render(); armSwipe();
+      say(w.es, 'es', .95);
+      break;
+    case 'grade':  grade(b.dataset.k === '1'); break;
+    case 'restart': buildQueue(); render(); armSwipe(); break;
+
+    case 'audio-only':
+      S.audioOnly = !S.audioOnly; persist(); render();
+      if(S.audioOnly) say(qz.w.en, 'en', .92);
+      break;
+    case 'pick': {
+      if(qzPick !== null) break;
+      qzPick = b.dataset.o;
+      const ok = qzPick === qz.w.es;
+      gradeWord(qz.w.en, ok);
+      if(ok) S.hits++; else S.miss++;
+      persist(); render();
+      say(ok ? qz.w.es : qz.w.en, ok ? 'es' : 'en', ok ? .95 : .6);
+      break;
+    }
+    case 'next-q': newQuiz(); render(); say(qz.w.en, 'en', .92); break;
+
+    case 'cam-toggle':
+      if(CAM.on){ caminoStop(); render(); } else caminoStart(CAM.i);
+      break;
+    case 'cam-skip': {
+      const n = (CAM.i + 1) % DECK.length;
+      if(CAM.on) caminoStart(n); else { CAM.i = n; CAM.phase = 'idle'; render(); }
+      break;
+    }
+    case 'cam-replay':
+      if(CAM.on) caminoStart(CAM.i); else say(DECK[CAM.i].en, 'en', .9);
+      break;
+    case 'cam-pause': S.pause = +b.dataset.s; persist(); render(); break;
+    case 'cam-ex':    S.withEx = !S.withEx; persist(); render(); break;
+
+    case 'test-voice':
+      say('The way to achieve it is practice. Listen carefully.', 'en', .92, () => {
+        say('El camino para lograrlo es practicar.', 'es', .95);
+      });
+      break;
+  }
+});
+
+document.addEventListener('change', e => {
+  if(e.target.id === 'vsel-en'){
+    S.voiceEn = e.target.value; persist(); pickVoices();
+    say('This is how I sound. The way to achieve it is practice.', 'en', .92);
+  }
+  if(e.target.id === 'vsel-es'){
+    S.voiceEs = e.target.value; persist(); pickVoices();
+    say('Así suena esta voz en español.', 'es', .95);
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if(view === 'adivinar' && qzPick === null){
+    const k = 'ABCD'.indexOf(e.key.toUpperCase());
+    if(k > -1){
+      const el = document.querySelectorAll('.opt')[k];
+      if(el) el.click();
+    }
+  }
+  if(view === 'tarjetas' && e.key === ' ' && e.target === document.body){
+    e.preventDefault();
+    const el = $('[data-act="reveal"]') || $('[data-act="say-en"]');
+    if(el) el.click();
+  }
+});
+
+/* ============ arranque ============ */
+buildQueue();
+render();
+</script>
