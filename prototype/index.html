@@ -2,8 +2,14 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Caveat:wght@500..700&family=DM+Sans:opsz,wght@9..40,400..700&display=swap">
 <style>
 /* Layout: una pantalla de teléfono 390×756 centrada; los post-it son objetos físicos
-   (siempre papel con tinta oscura) y solo el entorno de la app cambia con el tema. */
+   (siempre papel con tinta oscura) y solo el entorno de la app cambia con el tema.
+
+   La app se compromete con el papel claro: es su identidad y es lo que hay que ver.
+   El tema oscuro se activa con `data-skin="dark"`, un atributo propio, y a propósito
+   NO se usa `prefers-color-scheme` ni `data-theme`: así el tema del sistema o del visor
+   no decide por la app. El botón de la pantalla de Inicio es quien manda. */
 :root{
+  color-scheme:light;
   --paper:#F3EFE6; --paper-2:#EAE4D7; --card:#FFFFFF;
   --ink:#1C1B19; --ink-soft:#5E5A52; --ink-faint:#8A8579;
   --rule:#E2DCCF; --edge:#1C1B19;
@@ -18,20 +24,7 @@
   --ui:'DM Sans',system-ui,-apple-system,sans-serif;
   --hand:'Caveat','Segoe Script',cursive;
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --paper:#1A1916; --paper-2:#24231F; --card:#24231F;
-    --ink:#F3EFE6; --ink-soft:#CFC8B8; --ink-faint:#8A8579;
-    --rule:#36342E; --edge:#4F4C44;
-    --ok:#6FD39B; --ok-bg:#16301F; --no:#FF9A6E; --no-bg:#33201A;
-    --bezel:#000000; --bezel-edge:#2E2C27;
-    --drop:0 12px 28px rgba(0,0,0,.55);
-    --lift:0 2px 0 rgba(0,0,0,.6);
-    --shadow:0 2px 8px rgba(0,0,0,.5), 0 36px 70px -30px rgba(0,0,0,.9);
-    color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
+:root[data-skin="dark"]{
   --paper:#1A1916; --paper-2:#24231F; --card:#24231F;
   --ink:#F3EFE6; --ink-soft:#CFC8B8; --ink-faint:#8A8579;
   --rule:#36342E; --edge:#4F4C44;
@@ -1037,8 +1030,13 @@ document.addEventListener('keydown', e => {
 
 /* ============ arranque ============ */
 /* Arranca en claro a propósito: la identidad de la app es papel, y es lo que hay que ver
-   primero aunque el sistema esté en oscuro. El botón de la pantalla de Inicio alterna. */
-function applyTheme(){ document.documentElement.setAttribute('data-theme', S.theme === 'dark' ? 'dark' : 'light'); }
+   primero aunque el sistema esté en oscuro. Se usa `data-skin`, no `data-theme`, para que
+   el visor de artifacts no pise la decisión. El botón de la pantalla de Inicio alterna. */
+function applyTheme(){
+  const r = document.documentElement;
+  if(S.theme === 'dark') r.setAttribute('data-skin', 'dark');
+  else r.removeAttribute('data-skin');
+}
 applyTheme();
 buildQueue();
 render();
