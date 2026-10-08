@@ -72,3 +72,24 @@ que heredan de `DCLogic`. Está en el repo solo como referencia visual.
 Las clases de lógica de dentro sí son JavaScript normal, y de ahí salió el patrón bueno para
 encadenar frases habladas: `utterance.onend` más un `setTimeout` de red de seguridad, porque
 `onend` no siempre se dispara. Eso se conservó.
+
+---
+
+## Lo que se añadió al construir la app real
+
+- **Ilustración por palabra.** Un emoji tratado como **pegatina** sobre el post-it: recuadro con
+  borde discontinuo, girado unos grados. No es un parche: para vocabulario, una imagen crea la
+  asociación no verbal que el texto solo no da, y un emoji pesa cero, funciona sin conexión y
+  se ve igual en todos los dispositivos. El modelo de datos admite `img` por palabra, así que
+  pasar a fotos reales no toca el código de las vistas.
+  En **Adivinar** la ilustración aparece solo **después** de responder: si se mostrara antes,
+  regalaría la respuesta.
+- **La palabra manda el ancho.** En la primera versión la pegatina iba al lado de la palabra y
+  "to commute" se partía en "to com / mute". Ahora la palabra ocupa todo el ancho y la pegatina
+  acompaña a la frase de ejemplo, que es su pareja natural: imagen y contexto juntos.
+- **La tarjeta crece al revelar.** Al principio tenía altura fija y la traducción se cortaba por
+  abajo. Ahora la vista hace scroll y nada se recorta — comprobado con las 20 palabras.
+- **MediaSession** en el Modo camino, para la pantalla de bloqueo y los botones de los
+  auriculares.
+- **Tema claro fijo como punto de partida**, con `data-skin` en vez de `data-theme`. El visor de
+  artifacts controla `data-theme` y pisaba la elección de la app.

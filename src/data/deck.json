@@ -1,0 +1,22 @@
+[
+  { "en": "the way",      "ipa": "/ðə weɪ/",          "es": "el camino",             "emoji": "🛣️", "xe": "I listen to podcasts on the way to work.", "xs": "Escucho pódcasts de camino al trabajo." },
+  { "en": "to achieve",   "ipa": "/əˈtʃiːv/",         "es": "lograr",                "emoji": "🏆", "xe": "We achieved our goal this month.",         "xs": "Logramos nuestro objetivo este mes." },
+  { "en": "however",      "ipa": "/haʊˈevər/",        "es": "sin embargo",           "emoji": "🔀", "xe": "It was late; however, we kept working.",   "xs": "Era tarde; sin embargo, seguimos trabajando." },
+  { "en": "reliable",     "ipa": "/rɪˈlaɪəbəl/",      "es": "fiable",                "emoji": "🛡️", "xe": "This machine is very reliable.",           "xs": "Esta máquina es muy fiable." },
+  { "en": "meanwhile",    "ipa": "/ˈmiːnwaɪl/",       "es": "mientras tanto",        "emoji": "⏳", "xe": "Meanwhile, the water was boiling.",        "xs": "Mientras tanto, el agua hervía." },
+  { "en": "to struggle",  "ipa": "/ˈstrʌɡəl/",        "es": "tener dificultades",    "emoji": "🧗", "xe": "I struggle with phrasal verbs.",           "xs": "Me cuestan los phrasal verbs." },
+  { "en": "outcome",      "ipa": "/ˈaʊtkʌm/",         "es": "resultado",             "emoji": "🎯", "xe": "The outcome was better than expected.",    "xs": "El resultado fue mejor de lo esperado." },
+  { "en": "to remind",    "ipa": "/rɪˈmaɪnd/",        "es": "recordar (a alguien)",  "emoji": "🔔", "xe": "Remind me to call him later.",             "xs": "Recuérdame llamarle luego." },
+  { "en": "to commute",   "ipa": "/kəˈmjuːt/",        "es": "desplazarse al trabajo","emoji": "🚆", "xe": "I commute by train every morning.",        "xs": "Me desplazo en tren cada mañana." },
+  { "en": "deadline",     "ipa": "/ˈdedlaɪn/",        "es": "fecha límite",          "emoji": "⏰", "xe": "The deadline is on Friday.",               "xs": "La fecha límite es el viernes." },
+  { "en": "to afford",    "ipa": "/əˈfɔːrd/",         "es": "poder permitirse",      "emoji": "💰", "xe": "We can't afford a new car.",               "xs": "No podemos permitirnos un carro nuevo." },
+  { "en": "insight",      "ipa": "/ˈɪnsaɪt/",         "es": "perspectiva",           "emoji": "💡", "xe": "That's a useful insight.",                 "xs": "Esa es una perspectiva útil." },
+  { "en": "willing",      "ipa": "/ˈwɪlɪŋ/",          "es": "dispuesto",             "emoji": "🙋", "xe": "Are you willing to help?",                 "xs": "¿Estás dispuesto a ayudar?" },
+  { "en": "shortcut",     "ipa": "/ˈʃɔːrtkʌt/",       "es": "atajo",                 "emoji": "⚡", "xe": "There's no shortcut to fluency.",          "xs": "No hay atajos para la fluidez." },
+  { "en": "to borrow",    "ipa": "/ˈbɑːroʊ/",         "es": "pedir prestado",        "emoji": "🤝", "xe": "Can I borrow your charger?",               "xs": "¿Me prestas tu cargador?" },
+  { "en": "overwhelming", "ipa": "/ˌoʊvərˈwelmɪŋ/",   "es": "abrumador",             "emoji": "🌊", "xe": "The response was overwhelming.",           "xs": "La respuesta fue abrumadora." },
+  { "en": "awkward",      "ipa": "/ˈɔːkwərd/",        "es": "incómodo",              "emoji": "😬", "xe": "There was an awkward silence.",            "xs": "Hubo un silencio incómodo." },
+  { "en": "spare",        "ipa": "/sper/",            "es": "de sobra, libre",       "emoji": "⏱️", "xe": "Do you have a spare minute?",              "xs": "¿Tienes un minuto libre?" },
+  { "en": "tricky",       "ipa": "/ˈtrɪki/",          "es": "complicado",            "emoji": "🧩", "xe": "Pronunciation is tricky.",                 "xs": "La pronunciación es complicada." },
+  { "en": "nevertheless", "ipa": "/ˌnevərðəˈles/",    "es": "no obstante",           "emoji": "☔", "xe": "It rained; nevertheless, we went.",        "xs": "Llovió; no obstante, fuimos." }
+]
