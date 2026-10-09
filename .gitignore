@@ -21,3 +21,9 @@ next-env.d.ts
 
 # coverage
 /coverage
+
+/lib/generated/prisma
+
+# el CLI de Vercel agregó .env*, que se tragaba también el ejemplo
+.env*
+!.env.example
