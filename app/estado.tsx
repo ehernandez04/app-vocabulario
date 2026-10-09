@@ -14,6 +14,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import BASE from '@/data/deck.json';
+import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
 import { grade, nextStreak, session, today, type Progress, type Word } from '@/lib/srs';
 
@@ -58,11 +59,17 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
       setCola(session(mazo, store.progressOf, 20));
       aplicarTema(store.get('theme'));
       setListo(true);
+      // Las voces no están disponibles de inmediato: initVoices engancha
+      // `voiceschanged` y repintamos cuando la lista real llegue.
+      audio.initVoices();
+      audio.loadAudioManifest();
     });
+    const soltar = audio.onVoicesChanged(repintar);
     return () => {
       vivo = false;
+      soltar();
     };
-  }, []);
+  }, [repintar]);
 
   const recargarMazo = useCallback(() => {
     setDeck(store.fullDeck(BASE_DECK));
