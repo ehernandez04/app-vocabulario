@@ -45,7 +45,7 @@ const BASE_DECK = BASE as Word[];
 
 export function ProveedorEstado({ children }: { children: React.ReactNode }) {
   const [listo, setListo] = useState(false);
-  const [, setVersion] = useState(0);
+  const [version, setVersion] = useState(0);
   const [deck, setDeck] = useState<Word[]>(BASE_DECK);
   const [cola, setCola] = useState<Word[]>([]);
   const [indice, setIndice] = useState(0);
@@ -150,7 +150,13 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
       recargarMazo,
       alternarTema,
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `version` no se usa dentro del memo: está a propósito, como disparador
     [
+      // `version` tiene que estar: el almacén y las voces viven fuera de React,
+      // así que un cambio ahí solo repinta si el valor del contexto cambia. Sin
+      // esto, `children` llega con la misma referencia y el árbol no se vuelve
+      // a renderizar — por eso el selector de voz se quedaba en la voz vieja.
+      version,
       listo,
       deck,
       cola,
