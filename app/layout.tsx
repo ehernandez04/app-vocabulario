@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, Caveat, DM_Sans } from 'next/font/google';
 import { Tabbar } from '@/components/Tabbar';
+import { Toast } from '@/components/Toast';
 import { ProveedorEstado } from './estado';
 import './globals.css';
 import './app.css';
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ProveedorEstado>
           <div className="app">
+            <Toast />
             <main className="views">{children}</main>
             <Tabbar />
           </div>

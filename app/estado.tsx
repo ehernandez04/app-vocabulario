@@ -25,10 +25,12 @@ type Estado = {
   indice: number;
   aciertos: number;
   fallos: number;
+  aviso: string | null;
+  avisar: (texto: string) => void;
   progresoDe: (en: string) => Progress;
   ajuste: <K extends keyof store.Settings>(k: K) => store.Settings[K];
   guardarAjuste: <K extends keyof store.Settings>(k: K, v: store.Settings[K]) => void;
-  calificar: (word: Word, acerto: boolean) => void;
+  calificar: (word: Word, acerto: boolean) => Progress;
   siguiente: () => void;
   rearmarCola: () => void;
   recargarMazo: () => void;
@@ -36,6 +38,8 @@ type Estado = {
 };
 
 const Ctx = createContext<Estado | null>(null);
+
+let temporizadorAviso: number | undefined;
 
 const BASE_DECK = BASE as Word[];
 
@@ -47,8 +51,15 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
   const [indice, setIndice] = useState(0);
   const [aciertos, setAciertos] = useState(0);
   const [fallos, setFallos] = useState(0);
+  const [aviso, setAviso] = useState<string | null>(null);
 
   const repintar = useCallback(() => setVersion((v) => v + 1), []);
+
+  const avisar = useCallback((texto: string) => {
+    setAviso(texto);
+    clearTimeout(temporizadorAviso);
+    temporizadorAviso = window.setTimeout(() => setAviso(null), 1800);
+  }, []);
 
   useEffect(() => {
     let vivo = true;
@@ -87,7 +98,8 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
   const calificar = useCallback(
     (word: Word, acerto: boolean) => {
       const antes = store.progressOf(word.en);
-      store.saveProgress(word.en, grade(antes, acerto));
+      const despues = grade(antes, acerto);
+      store.saveProgress(word.en, despues);
 
       const dia = today();
       if (store.get('lastDay') !== dia) {
@@ -97,6 +109,7 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
       if (acerto) setAciertos((n) => n + 1);
       else setFallos((n) => n + 1);
       repintar();
+      return despues;
     },
     [repintar]
   );
@@ -126,6 +139,8 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
       indice,
       aciertos,
       fallos,
+      aviso,
+      avisar,
       progresoDe: store.progressOf,
       ajuste: store.get,
       guardarAjuste,
@@ -142,6 +157,8 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
       indice,
       aciertos,
       fallos,
+      aviso,
+      avisar,
       guardarAjuste,
       calificar,
       siguiente,
