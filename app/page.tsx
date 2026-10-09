@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { Sticker } from '@/components/Sticker';
 import {
   IconAdivinar,
@@ -15,6 +16,9 @@ import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
 import { isDue } from '@/lib/srs';
 import { noteColor, peekColor, saludo } from '@/lib/ui';
+import { HojaImportar } from '@/components/HojaImportar';
+import { HojaNuevaPalabra } from '@/components/HojaNuevaPalabra';
+import { MisPalabras } from '@/components/MisPalabras';
 import { useEstado } from './estado';
 
 const COLORES_CAJA = ['#FFE066', '#FFB4A2', '#B8E1FF', '#C8F0A8', '#FFE066'];
@@ -50,7 +54,25 @@ function FilaDeVoz({ lang, etiqueta }: { lang: audio.Idioma; etiqueta: string })
 }
 
 export default function Inicio() {
-  const { listo, deck, cola, indice, progresoDe, ajuste, alternarTema } = useEstado();
+  const { listo, deck, cola, indice, progresoDe, ajuste, alternarTema, recargarMazo, rearmarCola, avisar } =
+    useEstado();
+  const [hoja, setHoja] = useState<'nueva' | 'importar' | null>(null);
+
+  const trasCambiarElMazo = (mensaje: string) => {
+    recargarMazo();
+    rearmarCola();
+    setHoja(null);
+    avisar(mensaje);
+  };
+
+  async function exportar() {
+    try {
+      await navigator.clipboard.writeText(store.exportAll());
+      avisar('Progreso copiado al portapapeles');
+    } catch {
+      avisar('No se pudo copiar aquí');
+    }
+  }
 
   // Hasta que IndexedDB conteste no sabemos el progreso real. Pintar números
   // provisionales y corregirlos medio segundo después se ve peor que esperar.
@@ -253,11 +275,37 @@ export default function Inicio() {
 
       <div className="block">
         <p className="eyebrow">Mi mazo · {total} palabras</p>
-        <p className="muted sm">
-          Agregar palabras, exportar e importar vuelven en el issue #34, que es lo último que
-          falta para poder retirar la versión anterior.
-        </p>
+        <button className="btn solid wide" onClick={() => setHoja('nueva')}>
+          ＋ Agregar una palabra
+        </button>
+        <div className="chips">
+          <button className="pill" onClick={exportar}>
+            Exportar
+          </button>
+          <button className="pill" onClick={() => setHoja('importar')}>
+            Importar
+          </button>
+        </div>
       </div>
+
+      <MisPalabras
+        alBorrar={(en) => {
+          store.deleteWord(en);
+          recargarMazo();
+          rearmarCola();
+          avisar(`“${en}” fuera del mazo`);
+        }}
+      />
+
+      {hoja === 'nueva' && (
+        <HojaNuevaPalabra
+          alCerrar={() => setHoja(null)}
+          alGuardar={(w) => trasCambiarElMazo(`“${w.en}” entra en la caja 1`)}
+        />
+      )}
+      {hoja === 'importar' && (
+        <HojaImportar alCerrar={() => setHoja(null)} alImportar={trasCambiarElMazo} />
+      )}
     </section>
   );
 }
