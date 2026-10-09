@@ -1,0 +1,17 @@
+// Esquema de la base. La cadena de conexión no vive acá: está en
+// prisma7.config.ts, que la lee de DATABASE_URL (ver .env.example).
+//
+// El .env local apunta SIEMPRE a la rama `development` de Neon, nunca a
+// `production`. En mi-presupuesto ya pasó una vez lo contrario y la API quedó
+// respondiendo contra datos de prueba sin que nadie lo notara.
+//
+// Los modelos (User, Word, Progress) llegan en la etapa 2, issue #27.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
