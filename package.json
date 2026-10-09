@@ -2,13 +2,16 @@
   "name": "app-vocabulario",
   "version": "0.2.0",
   "private": true,
+  "packageManager": "pnpm@10.32.1",
   "description": "Repasar vocabulario inglés-español en el camino, con audio y repetición espaciada",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "legacy:dev": "npm --prefix legacy run dev"
+    "legacy:dev": "npm --prefix legacy run dev",
+    "test": "TZ=America/Mexico_City vitest run",
+    "test:watch": "TZ=America/Mexico_City vitest"
   },
   "dependencies": {
     "@prisma/client": "^7.10.0",
@@ -26,6 +29,16 @@
     "eslint-config-next": "16.3.4",
     "prisma": "^7.10.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma",
+      "unrs-resolver"
+    ]
   }
 }
