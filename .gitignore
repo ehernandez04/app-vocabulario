@@ -3,7 +3,8 @@ dist/
 dev-dist/
 .DS_Store
 
-# claves de la API de texto a voz — nunca al repo
+# claves de la API de texto a voz y de Claude, y la cadena de conexión de Neon
+# nunca al repo
 .env
 .env.local
 .env.*.local
@@ -11,3 +12,12 @@ dev-dist/
 .vercel
 *.log
 build/
+
+# next
+/.next/
+/out/
+*.tsbuildinfo
+next-env.d.ts
+
+# coverage
+/coverage

@@ -7,58 +7,68 @@ Repo: https://github.com/ehernandez04/app-vocabulario
 
 ## Estado actual
 
-La app **ya existe y funciona**: PWA con Vite, instalable, sin conexión, en Docker.
-Verificada en el navegador: las 20 tarjetas se revelan y califican sin recortes, la
-repetición espaciada persiste en IndexedDB y el bucle del Modo camino encadena bien
-(inglés → cuenta atrás → español → siguiente).
+**El proyecto está migrando de una PWA local a una app con cuentas y base de datos.**
+El plan vive en los milestones del repo: Etapa 0 · Cimientos, Etapa 1 · Paridad,
+Etapa 2 · Cuentas, Etapa 3 · Sincronización. Verificar siempre contra los issues
+(`gh issue list --state all --json number,title,milestone`), no contra este archivo.
 
-Se pueden agregar palabras propias desde la app, borrarlas, y exportar e importar el mazo
-con el progreso (fusionando o reemplazando; al fusionar gana la caja más alta, nunca se
-retrocede lo ya aprendido).
-
-Lo que falta son los issues abiertos de la fase 3 y el audio pregenerado.
+- **`legacy/`** es la app que de verdad funciona hoy: PWA con Vite, instalable, sin
+  conexión, con los tres modos, agregar palabras propias, borrar, exportar e importar.
+  Se retira cuando la nueva alcance paridad (#26). **No borrarla antes.**
+- **La raíz** es el proyecto nuevo: Next 16 + Tailwind 4, con la API en el mismo
+  proyecto (Route Handlers), Postgres en Neon vía Prisma y Auth.js con Google.
 
 ## Cómo se corre
 
 ```
-npm install && npm run dev        # http://localhost:5173
-docker compose --profile dev up   # lo mismo, en contenedor, con recarga en caliente
-docker compose up -d web          # producción con nginx en http://localhost:8080
-npm run artifact                  # genera build/artifact.html para publicar como artifact
-npm run icons                     # regenera los iconos de la PWA
-npm run audio                     # genera los MP3 (requiere clave de API, ver docs/audio.md)
+npm install && npm run dev        # la app nueva, http://localhost:3000
+npm run build                     # build de producción
+npm run lint
+npm run legacy:dev                # la app vieja de Vite, http://localhost:5173
 ```
 
-**Al probar cambios en el contenedor, el service worker sirve la versión anterior desde caché.**
-Hay que desregistrarlo y borrar las cachés, o se ven cambios fantasma. En la consola:
+**Next 16 tiene cambios rompedores respecto a lo que el modelo sabe de memoria.**
+Antes de escribir código con una API de Next, leer la guía que corresponda en
+`node_modules/next/dist/docs/`. El bloque de `AGENTS.md` lo repite y lo reescribe
+`next dev` en cada arranque: si aparece en el diff, se commitea junto al trabajo.
+
+**Al probar cambios en el contenedor de legacy, el service worker sirve la versión
+anterior desde caché.** Hay que desregistrarlo y borrar las cachés, o se ven cambios
+fantasma. En la consola:
 `for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
 for (const k of await caches.keys()) await caches.delete(k); location.reload()`
 
 ## Decisiones ya tomadas (no volver a discutir)
 
-- **PWA instalable, no app nativa.** Una sola base de código. Si algún día hacen falta
-  notificaciones push fuertes o publicar en tiendas, se envuelve con Capacitor.
-- **Sin framework.** Vanilla HTML + CSS + JS con Vite. La app pesa ~30 KB de JS.
-- **Hosting: Vercel**, por los preview deployments por rama y el HTTPS gratis (que hace falta
-  para instalar la PWA en un teléfono de verdad). GitHub Pages se descartó: sirve en un subpath
-  y complica el scope del service worker.
-- **Sin backend.** El progreso vive en el dispositivo. La copia de seguridad es exportar JSON.
+- **Next.js, no vanilla.** Lo que viene —login, lista editable, revisar por lote lo que
+  pegaste, dictado, estado de sincronización— es estado vivo, justo donde re-renderizar
+  con `innerHTML` empieza a costar horas. Además Erick ya mantiene `mi-presupuesto` con
+  Next: un solo juego de costumbres entre los dos repos.
+- **La API vive dentro del mismo proyecto Next** (Route Handlers), no en un NestJS
+  aparte. Son unos ocho endpoints: un servicio más en Railway costaría dinero y
+  ceremonia sin ganar nada. Si algún día hacen falta trabajos largos en segundo plano o
+  websockets de verdad, ahí sí vuelve a tener sentido NestJS.
+- **Postgres en Neon con Prisma**, igual que `mi-presupuesto`: rama de desarrollo y rama
+  de producción, y el `.env` local **siempre** a desarrollo.
+- **Local-first, no solo servidor.** Postgres es la fuente de verdad; el teléfono
+  mantiene una copia en IndexedDB. El caso de uso principal es repasar en el metro sin
+  señal: si la app exige red, deja de servir justo donde se usa. Los conflictos se
+  resuelven como ya lo hacía el import: **gana la caja más alta, nunca se retrocede lo
+  aprendido.**
+- **Auth.js con Google y lista blanca de correos.** Sin contraseñas, sin registro, sin
+  recuperación, sin proveedor de correo. El motivo de que haya login no es la privacidad
+  del vocabulario: es que **las rutas que llaman a Claude y al TTS gastan dinero** y la
+  app queda expuesta a la red. La lista blanca cierra eso mejor que cualquier rate limit.
+- **Cada quien su mazo y su progreso.** Las palabras de fábrica las ve todo el mundo.
+- **PWA instalable, no app nativa.** Si algún día hacen falta notificaciones push fuertes
+  o publicar en tiendas, se envuelve con Capacitor.
+- **Hosting: Vercel.** Previews por rama y HTTPS gratis, que hace falta para instalar la
+  PWA en un teléfono de verdad. GitHub Pages se descartó: sirve en un subpath y complica
+  el scope del service worker.
 - **Audio: MP3 pregenerados con una TTS neuronal**, Web Speech API solo como respaldo.
-  Erick señaló que la voz del navegador suena mal y tiene razón. Más allá de la calidad, los MP3
-  resuelven el Modo camino en iPhone: `speechSynthesis` se corta al bloquear la pantalla y un
-  `<audio>` con MediaSession no. Ver [docs/audio.md](docs/audio.md).
-- **Una sola fuente de verdad.** `src/` es la app; el artifact se *genera* desde el mismo build
-  con `npm run artifact`. No hay prototipo aparte que mantener en paralelo.
-
-## Entornos
-
-| Entorno | Dónde | Para qué |
-|---|---|---|
-| Local | `npm run dev` → :5173 | Desarrollo. El service worker **sí** funciona en localhost. |
-| Docker dev | `docker compose --profile dev up` → :5173 | Lo mismo sin instalar Node en la máquina. |
-| Docker prod | `docker compose up -d web` → :8080 | nginx sirviendo el build, igual que en producción. |
-| Preview | Vercel, una URL por rama y PR | Probar en el celular real; instalar una PWA exige HTTPS. |
-| Producción | `main` → `*.vercel.app` | La app del día a día. |
+  Más allá de la calidad, los MP3 resuelven el Modo camino en iPhone: `speechSynthesis`
+  se corta al bloquear la pantalla y un `<audio>` con MediaSession no. Ver
+  [docs/audio.md](docs/audio.md).
 
 ## Identidad visual (respetarla al escribir código nuevo)
 
@@ -81,6 +91,10 @@ Oscuro    papel #1A1916 · tarjeta #24231F · tinta #F3EFE6 · regla #36342E
 - La ilustración de cada palabra se trata como una **pegatina** sobre la nota: recuadro con
   borde discontinuo, girado unos grados.
 
+Los tokens viven en `app/globals.css`, también expuestos como utilidades de Tailwind
+(`bg-paper`, `text-ink`, `bg-note-3`, `shadow-lift`…). Las tres tipografías se cargan con
+`next/font/google` en `app/layout.tsx`.
+
 **El tema claro no es negociable como punto de partida.** La app usa `data-skin="dark"`, un
 atributo propio, y **no** `prefers-color-scheme` ni `data-theme`. Esto es deliberado: con
 `data-theme` el visor de artifacts pisaba la elección de la app y la mostraba oscura. El botón
@@ -88,26 +102,33 @@ de la pantalla de Inicio es quien manda.
 
 ## Modelo de datos
 
+En Postgres (Prisma), a partir de la etapa 2:
+
+```
+User      id, email, name, createdAt
+Word      id, userId?, en, ipa, es, xe, xs, emoji, svg, audioEn, audioEs
+Progress  userId, wordId, box, due, seen, miss, updatedAt   @@unique([userId, wordId])
+```
+
+`Word.userId` nulo = palabra de fábrica, visible para todos; con dueño = privada.
+El SVG de la ilustración es texto y vive en su columna. Los MP3 van como `bytea`
+(~20 KB cada uno); si algún día crece, se mudan a almacenamiento de objetos.
+
+En el teléfono, como copia local para repasar sin señal (y hoy, en `legacy/`, como
+único almacén):
+
 ```js
-// src/data/deck.json — una palabra de fábrica
+// una palabra
 { "en": "the way", "ipa": "/ðə weɪ/", "es": "el camino", "emoji": "🛣️",
   "xe": "I listen to podcasts on the way to work.",
   "xs": "Escucho pódcasts de camino al trabajo." }
 
-// IndexedDB v2, almacén `progress`, clave = la palabra en inglés
+// IndexedDB, almacén `progress`, clave = la palabra en inglés
 { box: 1..5, due: "2026-10-10", seen: 0, miss: 0 }
-
-// IndexedDB v2, almacén `words` — las que agrega el usuario; mismo formato más:
-{ ..., mine: true, addedAt: "2026-10-09T04:12:39.243Z" }
 ```
 
-**El mazo es dinámico:** `store.fullDeck(BASE)` junta las de fábrica con las del usuario,
-descartando repetidas por `en` en minúsculas. En `main.js` se accede con `DECK()`, nunca con
-una constante, y hay que llamar a `refreshDeck()` después de agregar, borrar o importar.
-
 El color de post-it **no** se guarda: sale de la posición en el mazo (`noteColor`).
-Si una palabra trae `img`, se usa esa imagen en lugar del emoji — así se puede pasar a
-fotos reales sin tocar el código de las vistas.
+Si una palabra trae `img`, se usa esa imagen en lugar del emoji.
 
 **Repetición espaciada (Leitner, 5 cajas).** Intervalos en días: `[1, 2, 4, 8, 16]`.
 Acierto → sube una caja. Fallo → vuelve a la caja 1. `due = hoy + intervalo[caja]`.
@@ -140,36 +161,44 @@ sobrevivir al cambio de horario.
   voces de novedad de macOS (Bad News, Bubbles, Zarvox…) y las "compact".
 - iOS corta la síntesis al bloquear la pantalla. Por eso los MP3.
 
+**Dictado por voz (etapa 4)**
+- `SpeechRecognition` en iPhone es poco confiable, justo donde se va a usar. El dictado va
+  con `MediaRecorder` y transcripción en el servidor; necesita conexión, a diferencia del
+  repaso.
+
 **Maquetación**
-- La tarjeta de Tarjetas **manda la altura**: `#live` va en flujo normal y `.deckarea` crece con
+- La tarjeta de Tarjetas **manda la altura**: va en flujo normal y el área del mazo crece con
   ella. Si se vuelve a poner `position:absolute` con `inset:0`, al revelar la traducción el
   texto se recorta.
-- `.view.camino` **no** lleva márgenes negativos. El fondo oscuro ya ocupa todo el ancho de la
-  vista, y los márgenes negativos se comían el gutter lateral.
-- `.en` usa `clamp()` con `vw` para que "overwhelming" o "nevertheless" se encojan en vez de
-  partirse a mitad de palabra.
+- La vista del Modo camino **no** lleva márgenes negativos. El fondo oscuro ya ocupa todo el
+  ancho de la vista, y los márgenes negativos se comían el gutter lateral.
+- La palabra en inglés usa `clamp()` con `vw` para que "overwhelming" o "nevertheless" se
+  encojan en vez de partirse a mitad de palabra.
 
 **Español**
 - Cuidado con la concordancia en singular. Ya mordió dos veces: "1 palabra te **esperan**" y
-  "1 palabra**s** y 1 avance**s**". Hay un ayudante `plural(n, 'palabra')` en `ui.js`; para
-  frases con verbo hay que escribir las dos variantes a mano.
+  "1 palabra**s** y 1 avance**s**". Hay un ayudante `plural(n, 'palabra')`; para frases con
+  verbo hay que escribir las dos variantes a mano.
+
+**Ilustraciones generadas**
+- Claude dibuja bien un reloj o una puerta; "sin embargo" o "abrumador" no tienen dibujo
+  obvio y puede salir cualquier cosa. El usuario tiene que poder rechazar el SVG y quedarse
+  con el emoji. No fingir que siempre acierta.
 
 ## Archivos
 
 ```
-index.html              entrada de Vite
-src/main.js             estado, render y eventos
-src/styles.css          todos los tokens y estilos
-src/data/deck.json      el mazo (20 palabras)
-src/lib/srs.js          cajas Leitner, fechas locales, racha
-src/lib/store.js        IndexedDB + migración desde el localStorage del prototipo viejo
-src/lib/audio.js        elección de voz, MP3 con respaldo a síntesis, MediaSession
-src/lib/ui.js           iconos, escape, colores de nota, pegatina, aviso emergente
-src/views/*.js          una vista por modo
-src/views/sheet.js      la hoja inferior: agregar palabra e importar, y la lista "Tus palabras"
-scripts/make-icons.py   genera los PNG del icono sin dependencias
-scripts/generate-audio.mjs  genera los MP3 con OpenAI o ElevenLabs
-scripts/make-artifact.mjs   empaqueta dist/ en un HTML suelto para el artifact
+app/                    vistas y Route Handlers del proyecto nuevo
+app/layout.tsx          las tres tipografías y data-skin
+app/globals.css         tokens de color, tipografía y base
+prisma/                 schema y migraciones (desde la etapa 0, #19)
+legacy/                 la PWA de Vite que funciona hoy; se retira en #26
+legacy/src/main.js      estado, render y eventos de la app vieja
+legacy/src/lib/srs.js   cajas Leitner, fechas locales, racha — se porta en #21
+legacy/src/lib/store.js IndexedDB
+legacy/src/lib/audio.js elección de voz, MP3 con respaldo a síntesis, MediaSession
+legacy/scripts/         iconos, generación de audio, artifact
+docs/audio.md           por qué los MP3 y cómo se generan
 design-ref/             las 4 pantallas del canvas original, solo consulta
 ```
 
@@ -178,10 +207,13 @@ design-ref/             las 4 pantallas del canvas original, solo consulta
 
 ## Artifact publicado
 
-https://claude.ai/artifact/CWTWbBoeZwCmkrXQsd8HXJ — se regenera con `npm run artifact`
-y se republica a esa misma URL. No lleva service worker: los artifacts no los permiten.
+https://claude.ai/artifact/CWTWbBoeZwCmkrXQsd8HXJ — se generaba desde el build de Vite con
+`npm run artifact`, que ahora vive en `legacy/`. No lleva service worker: los artifacts no
+los permiten.
 
 ## Convenciones
 
 - Los commits y los issues van **en español**.
-- Rama por defecto: `main`.
+- Rama por defecto: `main`. Una rama por issue, con el número al final
+  (ej. `etapa-0/next-y-legacy-17`).
+- Los issues nuevos llevan milestone de etapa.

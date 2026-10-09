@@ -1,0 +1,131 @@
+@import 'tailwindcss';
+
+/* ===========================================================================
+   Vocabulario en Ruta — tokens
+
+   Portados tal cual desde legacy/src/styles.css. La app se compromete con el
+   papel claro: es su identidad. El tema oscuro vive en `data-skin="dark"`, un
+   atributo propio — a propósito NO se usa `prefers-color-scheme` ni
+   `data-theme`, para que ni el sistema ni el visor de artifacts decidan por la
+   app. El botón de la pantalla de Inicio es quien manda.
+
+   Regla que mantiene la coherencia entre los dos temas: el post-it es un objeto
+   físico, así que siempre es papel de color con tinta oscura (`--on-note`).
+   Solo cambia el entorno alrededor.
+   =========================================================================== */
+
+:root {
+  color-scheme: light;
+  --paper: #f3efe6;
+  --paper-2: #eae4d7;
+  --card: #ffffff;
+  --ink: #1c1b19;
+  --ink-soft: #5e5a52;
+  --ink-faint: #8a8579;
+  --rule: #e2dccf;
+  --edge: #1c1b19;
+  --on-note: #1c1b19;
+  --note-soft: #4a463f;
+  --ok: #1f6f43;
+  --no: #b4380b;
+  --no-bg: #fbe8e0;
+  --drop: 0 12px 24px rgba(60, 50, 20, 0.2);
+  --lift: 0 2px 0 var(--edge);
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+
+  /* Los cuatro papeles de post-it. No se guardan por palabra: salen de la
+     posición en el mazo (noteColor). */
+  --note-1: #ffe066;
+  --note-2: #ffb4a2;
+  --note-3: #b8e1ff;
+  --note-4: #c8f0a8;
+}
+
+:root[data-skin='dark'] {
+  color-scheme: dark;
+  --paper: #1a1916;
+  --paper-2: #24231f;
+  --card: #24231f;
+  --ink: #f3efe6;
+  --ink-soft: #cfc8b8;
+  --ink-faint: #8a8579;
+  --rule: #36342e;
+  --edge: #4f4c44;
+  --ok: #6fd39b;
+  --no: #ff9a6e;
+  --no-bg: #33201a;
+  --drop: 0 12px 28px rgba(0, 0, 0, 0.55);
+  --lift: 0 2px 0 rgba(0, 0, 0, 0.6);
+}
+
+/* Los tokens, disponibles también como utilidades de Tailwind:
+   bg-paper, text-ink, border-rule, bg-note-1… */
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-rule: var(--rule);
+  --color-edge: var(--edge);
+  --color-on-note: var(--on-note);
+  --color-note-soft: var(--note-soft);
+  --color-ok: var(--ok);
+  --color-no: var(--no);
+  --color-no-bg: var(--no-bg);
+  --color-note-1: var(--note-1);
+  --color-note-2: var(--note-2);
+  --color-note-3: var(--note-3);
+  --color-note-4: var(--note-4);
+
+  /* Display: la palabra en inglés. Manuscrita: solo para el español —
+     separa los dos idiomas sin necesidad de etiquetas. */
+  --font-display: var(--fuente-display), system-ui, sans-serif;
+  --font-ui: var(--fuente-ui), system-ui, -apple-system, sans-serif;
+  --font-hand: var(--fuente-hand), 'Segoe Script', cursive;
+
+  --shadow-lift: var(--lift);
+  --shadow-drop: var(--drop);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+img {
+  max-width: 100%;
+}
+
+button {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2.5px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

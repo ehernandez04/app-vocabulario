@@ -7,16 +7,23 @@ auriculares puestos y el teléfono en el bolsillo.
 Es una **PWA instalable**: se abre en el navegador, se agrega a la pantalla de inicio y
 funciona sin conexión.
 
+> **El proyecto está en migración.** La app que funciona hoy vive en [`legacy/`](legacy/)
+> —la PWA de Vite, local y sin cuentas— y la raíz es la versión nueva con Next, cuentas y
+> base de datos. El plan va por etapas en los milestones del repo. `legacy/` se retira
+> cuando la nueva alcance paridad.
+
 ## Empezar
 
 ```bash
 npm install
-npm run dev          # http://localhost:5173
+npm run dev          # la app nueva, http://localhost:3000
+npm run legacy:dev   # la app vieja de Vite, http://localhost:5173
 ```
 
-Con Docker, sin instalar nada más:
+La vieja también corre con Docker, sin instalar nada más:
 
 ```bash
+cd legacy
 docker compose --profile dev up      # desarrollo con recarga en caliente, :5173
 docker compose up -d web             # producción con nginx, :8080
 ```
@@ -48,25 +55,28 @@ retrocedes— o reemplazar.
 
 Cinco cajas, estilo Leitner. Cada palabra sube una caja cuando la aciertas y vuelve a la 1
 cuando falla. Los intervalos son de 1, 2, 4, 8 y 16 días, y la sesión del día se arma con lo
-que toca repasar, empezando por las cajas más bajas. El progreso vive en el dispositivo, en
-IndexedDB.
+que toca repasar, empezando por las cajas más bajas.
 
 ## Comandos
 
 | Comando | Qué hace |
 |---|---|
-| `npm run dev` | Servidor de desarrollo en :5173 |
-| `npm run build` | Build de producción en `dist/` |
-| `npm run preview` | Sirve el build en :4173 |
-| `npm run icons` | Regenera los iconos de la PWA |
-| `npm run audio` | Genera los MP3 del mazo (requiere clave de API) |
-| `npm run artifact` | Empaqueta el build en un HTML suelto |
+| `npm run dev` | La app nueva, en :3000 |
+| `npm run build` | Build de producción |
+| `npm run lint` | ESLint |
+| `npm run legacy:dev` | La app vieja de Vite, en :5173 |
+
+Dentro de `legacy/` siguen estando `npm run icons`, `npm run audio` y `npm run artifact`.
 
 ## Stack
 
-Vanilla HTML + CSS + JS con Vite, Workbox para el service worker, nginx en el contenedor de
-producción y Vercel para el despliegue. Sin framework: la app son unos 30 KB de JavaScript.
-Sin backend: el progreso es del dispositivo y la copia de seguridad es exportar un JSON.
+**La app nueva:** Next 16 con el App Router, Tailwind 4, y la API en el mismo proyecto
+—sin servicio aparte—. Postgres en Neon con Prisma, y Auth.js con Google para entrar.
+El progreso se guarda en el servidor, pero el teléfono mantiene una copia en IndexedDB:
+la idea es poder repasar en el metro sin señal y sincronizar al salir.
+
+**La app vieja (`legacy/`):** vanilla HTML + CSS + JS con Vite y Workbox, unos 30 KB de
+JavaScript, sin backend ni cuentas.
 
 ## Documentación
 

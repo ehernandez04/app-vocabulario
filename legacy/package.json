@@ -1,0 +1,19 @@
+{
+  "name": "app-vocabulario",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Repasar vocabulario inglés-español en el camino, con audio y repetición espaciada",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "icons": "python3 scripts/make-icons.py",
+    "audio": "node scripts/generate-audio.mjs",
+    "artifact": "npm run build && node scripts/make-artifact.mjs"
+  },
+  "devDependencies": {
+    "vite": "5.4.11",
+    "vite-plugin-pwa": "0.21.1"
+  }
+}
