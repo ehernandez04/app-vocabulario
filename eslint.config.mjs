@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // La app vieja tiene su propia configuración y se borra en #26; su dist/
+    // son archivos minificados que no tiene sentido analizar.
+    "legacy/**",
+    // Código generado por Prisma.
+    "lib/generated/**",
   ]),
 ]);
 
