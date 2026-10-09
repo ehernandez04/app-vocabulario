@@ -4,18 +4,50 @@ import Link from 'next/link';
 import { Sticker } from '@/components/Sticker';
 import {
   IconAdivinar,
+  IconAltavoz,
   IconAuriculares,
   IconFlecha,
   IconLuna,
   IconSol,
   IconTarjetas,
 } from '@/components/icons';
+import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
 import { isDue } from '@/lib/srs';
 import { noteColor, peekColor, saludo } from '@/lib/ui';
 import { useEstado } from './estado';
 
 const COLORES_CAJA = ['#FFE066', '#FFB4A2', '#B8E1FF', '#C8F0A8', '#FFE066'];
+
+/**
+ * Ninguna heurística acierta en todos los dispositivos, así que la última
+ * palabra sobre qué voz usar es del usuario.
+ */
+function FilaDeVoz({ lang, etiqueta }: { lang: audio.Idioma; etiqueta: string }) {
+  const lista = audio.voices[lang];
+  const actual = audio.currentVoice(lang);
+  return (
+    <label className="vrow">
+      <span>{etiqueta}</span>
+      <select
+        className="sel"
+        value={actual?.name ?? ''}
+        onChange={(e) => audio.chooseVoice(lang, e.target.value)}
+        disabled={!lista.length}
+      >
+        {lista.length ? (
+          lista.map((v) => (
+            <option key={v.name} value={v.name}>
+              {v.name} · {v.lang}
+            </option>
+          ))
+        ) : (
+          <option value="">Sin voces disponibles</option>
+        )}
+      </select>
+    </label>
+  );
+}
 
 export default function Inicio() {
   const { listo, deck, cola, indice, progresoDe, ajuste, alternarTema } = useEstado();
@@ -199,10 +231,31 @@ export default function Inicio() {
       </div>
 
       <div className="block">
+        <p className="eyebrow">Voz</p>
+        <div className="voicebox">
+          <FilaDeVoz lang="en" etiqueta="Inglés" />
+          <FilaDeVoz lang="es" etiqueta="Español" />
+          <button
+            className="btn"
+            onClick={() =>
+              audio.say('The way to achieve it is practice. Listen carefully.', 'en')
+            }
+          >
+            <IconAltavoz /> Probar esta voz
+          </button>
+          <p className="muted sm">
+            Las mejores suelen llamarse <b>Google</b>, <b>Siri</b>, <b>Enhanced</b> o{' '}
+            <b>Premium</b>. Si tu lista se ve pobre, en iPhone y Mac se descargan voces de mucha
+            mejor calidad en <b>Ajustes → Accesibilidad → Contenido hablado → Voces</b>.
+          </p>
+        </div>
+      </div>
+
+      <div className="block">
         <p className="eyebrow">Mi mazo · {total} palabras</p>
         <p className="muted sm">
-          Agregar palabras, el audio y la elección de voz vuelven en los próximos issues de
-          esta etapa. Mientras tanto siguen funcionando en la versión anterior.
+          Agregar palabras, exportar e importar vuelven en el issue #34, que es lo último que
+          falta para poder retirar la versión anterior.
         </p>
       </div>
     </section>
