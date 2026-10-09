@@ -65,6 +65,16 @@ for (const k of await caches.keys()) await caches.delete(k); location.reload()`
 - **Hosting: Vercel.** Previews por rama y HTTPS gratis, que hace falta para instalar la
   PWA en un teléfono de verdad. GitHub Pages se descartó: sirve en un subpath y complica
   el scope del service worker.
+- **El modelo para generar tarjetas es `claude-haiku-5-5`** (etapa 4). A $0.10/$0.50 por
+  millón de tokens cuesta diez veces menos que Haiku 4.5, que es lo que usa el asistente de
+  `mi-presupuesto`. Para traducir, sacar la fonética y escribir una frase de ejemplo sobra.
+  **Dos cuidados al escribir ese código:**
+  - En Haiku 5.5 el pensamiento viene **encendido por defecto** y `budget_tokens` devuelve
+    400. Si no se baja con `output_config: { effort: 'low' }`, cada palabra gasta más tokens
+    de salida de lo esperado y se come parte del ahorro.
+  - El SVG es harina de otro costal: dibujar es más difícil que traducir. Hay que comparar
+    contra un modelo mayor antes de darlo por bueno, y dejar que el usuario rechace el dibujo
+    y se quede con el emoji.
 - **Audio: MP3 pregenerados con una TTS neuronal**, Web Speech API solo como respaldo.
   Más allá de la calidad, los MP3 resuelven el Modo camino en iPhone: `speechSynthesis`
   se corta al bloquear la pantalla y un `<audio>` con MediaSession no. Ver
