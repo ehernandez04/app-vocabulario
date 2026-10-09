@@ -19,6 +19,10 @@ build/
 *.tsbuildinfo
 next-env.d.ts
 
+# el service worker lo genera `pnpm build`
+/public/sw.js
+/public/sw.js.map
+
 # coverage
 /coverage
 
