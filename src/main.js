@@ -1,13 +1,14 @@
 import './styles.css';
-import DECK from './data/deck.json';
+import BASE from './data/deck.json';
 import * as store from './lib/store.js';
 import * as audio from './lib/audio.js';
 import { session, grade, shuffle, nextStreak, today } from './lib/srs.js';
-import { $, toast } from './lib/ui.js';
+import { $, toast, plural } from './lib/ui.js';
 import { inicio } from './views/inicio.js';
 import { tarjetas } from './views/tarjetas.js';
 import { adivinar } from './views/adivinar.js';
 import { camino } from './views/camino.js';
+import { sheet } from './views/sheet.js';
 
 const VIEWS = { inicio, tarjetas, adivinar, camino };
 
@@ -16,16 +17,21 @@ const state = {
   queue: [], qi: 0, revealed: false,
   hits: 0, miss: 0,
   quiz: null,
-  cam: { i: 0, phase: 'idle', on: false, left: 0, timer: null, tick: null }
+  cam: { i: 0, phase: 'idle', on: false, left: 0, timer: null, tick: null },
+  sheet: null, form: null, formError: null
 };
 
-const ctx = { deck: DECK, state };
+// El mazo son las palabras de fábrica más las que agregue el usuario, así que
+// se recalcula cada vez que ese conjunto cambia.
+const ctx = { deck: BASE, state };
+const refreshDeck = () => { ctx.deck = store.fullDeck(BASE); };
+const DECK = () => ctx.deck;
 const current = () => state.queue[state.qi];
 
 /* ── sesión ─────────────────────────────────────────────────────────────── */
 
 function buildQueue() {
-  state.queue = session(DECK, store.progressOf, 20);
+  state.queue = session(DECK(), store.progressOf, 20);
   state.qi = 0;
   state.revealed = false;
   state.hits = 0;
@@ -33,9 +39,9 @@ function buildQueue() {
 }
 
 function newQuiz() {
-  const pool = session(DECK, store.progressOf, 20);
-  const word = pool[0] || DECK[0];
-  const others = shuffle(DECK.filter(x => x.en !== word.en)).slice(0, 3);
+  const pool = session(DECK(), store.progressOf, 20);
+  const word = pool[0] || DECK()[0];
+  const others = shuffle(DECK().filter(x => x.en !== word.en)).slice(0, 3);
   state.quiz = {
     word,
     options: shuffle([word, ...others]).map(x => x.es),
@@ -68,9 +74,78 @@ function applyTheme() {
 
 function render() {
   $('#views').innerHTML = VIEWS[state.view](ctx);
+  $('#sheet').innerHTML = sheet(ctx);
   document.querySelectorAll('.tab').forEach(t =>
     t.setAttribute('aria-selected', String(t.dataset.go === state.view)));
   if (state.view === 'tarjetas' && state.revealed) armSwipe();
+  if (state.sheet) $('#sheet input, #sheet textarea')?.focus({ preventScroll: true });
+}
+
+function openSheet(which) {
+  state.sheet = which;
+  state.formError = null;
+  if (which === 'nueva') state.form = { emoji: '📝' };
+  render();
+}
+
+function closeSheet() {
+  state.sheet = null;
+  state.form = null;
+  state.formError = null;
+  render();
+}
+
+/** Guarda lo escrito antes de repintar, para no perderlo al elegir un emoji. */
+function captureForm() {
+  const f = $('#form-nueva');
+  if (!f) return;
+  state.form = {
+    ...state.form,
+    en: f.en.value, es: f.es.value,
+    ipa: f.ipa?.value || '', xe: f.xe?.value || '', xs: f.xs?.value || ''
+  };
+}
+
+function saveWord() {
+  captureForm();
+  const { en = '', es = '' } = state.form || {};
+  if (!en.trim() || !es.trim()) {
+    state.formError = 'Hacen falta la palabra en inglés y su traducción.';
+    return render();
+  }
+  if (store.hasWord(BASE, en.trim())) {
+    state.formError = `“${en.trim()}” ya está en tu mazo.`;
+    return render();
+  }
+  const w = store.addWord(state.form);
+  store.saveProgress(w.en, { box: 1, due: today(), seen: 0, miss: 0 });
+  refreshDeck();
+  buildQueue();
+  newQuiz();
+  closeSheet();
+  toast(`“${w.en}” entra en la caja 1`);
+}
+
+function doImport() {
+  const f = $('#form-importar');
+  const texto = f.json.value.trim();
+  if (!texto) {
+    state.formError = 'Pega primero el JSON que exportaste.';
+    return render();
+  }
+  try {
+    const modo = f.modo.value;
+    const { palabras, avances } = store.importAll(texto, modo);
+    refreshDeck();
+    buildQueue();
+    newQuiz();
+    applyTheme();
+    closeSheet();
+    toast(`${plural(palabras, 'palabra')} y ${plural(avances, 'avance')}`);
+  } catch (e) {
+    state.formError = `No se pudo leer el JSON: ${e.message}`;
+    render();
+  }
 }
 
 function go(name) {
@@ -103,15 +178,15 @@ async function caminoRun(i) {
   const alive = () => c.on && token === caminoRun.token;
 
   while (alive()) {
-    const w = DECK[i];
+    const w = DECK()[i];
     c.i = i;
     c.phase = 'en';
     c.left = 0;
     audio.setNowPlaying(w, {
       play: () => caminoStart(c.i),
       pause: () => { caminoStop(); repaint(); },
-      nexttrack: () => caminoStart((c.i + 1) % DECK.length),
-      previoustrack: () => caminoStart((c.i - 1 + DECK.length) % DECK.length)
+      nexttrack: () => caminoStart((c.i + 1) % DECK().length),
+      previoustrack: () => caminoStart((c.i - 1 + DECK().length) % DECK().length)
     });
     audio.setPlaybackState('playing');
     repaint();
@@ -140,7 +215,7 @@ async function caminoRun(i) {
 
     await wait(1200);
     if (!alive()) return;
-    i = (i + 1) % DECK.length;
+    i = (i + 1) % DECK().length;
   }
 }
 caminoRun.token = 0;
@@ -278,14 +353,14 @@ document.addEventListener('click', async e => {
       if (state.cam.on) { caminoStop(); render(); } else caminoStart(state.cam.i);
       break;
     case 'cam-skip': {
-      const n = (state.cam.i + 1) % DECK.length;
+      const n = (state.cam.i + 1) % DECK().length;
       if (state.cam.on) caminoStart(n);
       else { state.cam.i = n; state.cam.phase = 'idle'; render(); }
       break;
     }
     case 'cam-replay':
       if (state.cam.on) caminoStart(state.cam.i);
-      else audio.say(DECK[state.cam.i].en, 'en', { word: DECK[state.cam.i].en, part: 'en' });
+      else audio.say(DECK()[state.cam.i].en, 'en', { word: DECK()[state.cam.i].en, part: 'en' });
       break;
     case 'cam-pause': store.set('pause', +b.dataset.s); render(); break;
     case 'cam-ex':    store.set('withEx', !store.get('withEx')); render(); break;
@@ -302,7 +377,31 @@ document.addEventListener('click', async e => {
       );
       break;
     }
+
+    case 'sheet-nueva':    openSheet('nueva'); break;
+    case 'sheet-importar': openSheet('importar'); break;
+    case 'sheet-close':    closeSheet(); break;
+    case 'pick-emoji':
+      captureForm();
+      state.form = { ...state.form, emoji: b.dataset.e };
+      render();
+      break;
+    case 'del-word': {
+      const en = b.dataset.en;
+      store.deleteWord(en);
+      refreshDeck();
+      buildQueue();
+      newQuiz();
+      render();
+      toast(`“${en}” fuera del mazo`);
+      break;
+    }
   }
+});
+
+document.addEventListener('submit', e => {
+  if (e.target.id === 'form-nueva')    { e.preventDefault(); saveWord(); }
+  if (e.target.id === 'form-importar') { e.preventDefault(); doImport(); }
 });
 
 document.addEventListener('change', e => {
@@ -315,6 +414,10 @@ document.addEventListener('change', e => {
 });
 
 document.addEventListener('keydown', e => {
+  if (state.sheet) {
+    if (e.key === 'Escape') closeSheet();
+    return;   // con la hoja abierta, los atajos de las vistas estorban
+  }
   if (state.view === 'adivinar' && state.quiz && state.quiz.picked === null) {
     const k = 'ABCD'.indexOf(e.key.toUpperCase());
     if (k > -1) document.querySelectorAll('.opt')[k]?.click();
@@ -329,6 +432,7 @@ document.addEventListener('keydown', e => {
 
 async function boot() {
   await store.init();
+  refreshDeck();
   applyTheme();
   buildQueue();
   newQuiz();

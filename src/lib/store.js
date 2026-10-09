@@ -9,7 +9,7 @@
 import { emptyProgress, today } from './srs.js';
 
 const DB = 'vocabulario';
-const VERSION = 1;
+const VERSION = 2;   // v2 añade el almacén `words`, para las palabras que agrega el usuario
 const LEGACY_KEY = 'vocabruta.v2';   // el prototipo guardaba aquí, en localStorage
 
 const DEFAULTS = {
@@ -26,6 +26,7 @@ const DEFAULTS = {
 let db = null;
 let progress = {};
 let settings = { ...DEFAULTS };
+let words = {};        // las que agrega el usuario, por palabra en inglés
 
 function open() {
   return new Promise((resolve, reject) => {
@@ -35,6 +36,7 @@ function open() {
       const d = req.result;
       if (!d.objectStoreNames.contains('progress')) d.createObjectStore('progress');
       if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings');
+      if (!d.objectStoreNames.contains('words')) d.createObjectStore('words');
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -65,6 +67,13 @@ function put(store, key, value) {
   } catch { /* el estado en memoria ya está bien; perder la escritura no rompe la sesión */ }
 }
 
+function del(store, key) {
+  if (!db) return;
+  try {
+    db.transaction(store, 'readwrite').objectStore(store).delete(key);
+  } catch { /* igual que arriba */ }
+}
+
 /** Trae lo que el prototipo hubiera dejado en localStorage. Se hace una sola vez. */
 function migrateLegacy() {
   let raw;
@@ -87,11 +96,50 @@ export async function init() {
     db = await open();
     progress = await readAll('progress');
     settings = { ...DEFAULTS, ...(await readAll('settings')) };
+    words = await readAll('words');
     migrateLegacy();
   } catch {
     db = null;   // seguimos solo en memoria
   }
-  return { progress, settings };
+  return { progress, settings, words };
+}
+
+/* ── palabras propias ─────────────────────────────────────────────────────── */
+
+/** El mazo completo: las de fábrica más las tuyas, sin repetir. */
+export function fullDeck(base) {
+  const mine = Object.values(words).sort((a, b) => (a.addedAt || '').localeCompare(b.addedAt || ''));
+  const taken = new Set(base.map(w => w.en.toLowerCase()));
+  return base.concat(mine.filter(w => !taken.has(w.en.toLowerCase())));
+}
+
+export const userWords = () => Object.values(words);
+
+export const hasWord = (base, en) =>
+  base.some(w => w.en.toLowerCase() === en.toLowerCase()) ||
+  Object.keys(words).some(k => k.toLowerCase() === en.toLowerCase());
+
+export function addWord(w) {
+  const word = {
+    en: w.en.trim(),
+    es: w.es.trim(),
+    ipa: (w.ipa || '').trim(),
+    emoji: (w.emoji || '').trim() || '📝',
+    xe: (w.xe || '').trim(),
+    xs: (w.xs || '').trim(),
+    mine: true,
+    addedAt: new Date().toISOString()
+  };
+  words[word.en] = word;
+  put('words', word.en, word);
+  return word;
+}
+
+export function deleteWord(en) {
+  delete words[en];
+  del('words', en);
+  delete progress[en];
+  del('progress', en);
 }
 
 export const get = key => settings[key];
@@ -120,5 +168,45 @@ export function boxCounts(deck) {
 }
 
 export function exportAll() {
-  return JSON.stringify({ version: 1, exportedAt: today(), progress, settings }, null, 2);
+  return JSON.stringify(
+    { version: 2, exportedAt: today(), words: Object.values(words), progress, settings },
+    null, 2);
+}
+
+/**
+ * Importa un JSON exportado antes.
+ * @param {string} text
+ * @param {'merge'|'replace'} modo  fusionar conserva lo que ya hay y gana lo más avanzado
+ */
+export function importAll(text, modo = 'merge') {
+  const data = JSON.parse(text);
+  if (!data || typeof data !== 'object') throw new Error('El archivo no tiene el formato esperado');
+
+  if (modo === 'replace') {
+    for (const k of Object.keys(words)) del('words', k);
+    for (const k of Object.keys(progress)) del('progress', k);
+    words = {};
+    progress = {};
+  }
+
+  let palabras = 0, avances = 0;
+  for (const w of data.words || []) {
+    if (!w?.en || !w?.es) continue;
+    if (modo === 'merge' && words[w.en]) continue;
+    words[w.en] = w;
+    put('words', w.en, w);
+    palabras++;
+  }
+  for (const [key, p] of Object.entries(data.progress || {})) {
+    if (!p || typeof p.box !== 'number') continue;
+    // Al fusionar gana la caja más alta: nunca hacemos retroceder lo ya aprendido.
+    if (modo === 'merge' && progress[key] && progress[key].box >= p.box) continue;
+    progress[key] = p;
+    put('progress', key, p);
+    avances++;
+  }
+  for (const [k, v] of Object.entries(data.settings || {})) {
+    if (k in DEFAULTS) set(k, v);
+  }
+  return { palabras, avances };
 }

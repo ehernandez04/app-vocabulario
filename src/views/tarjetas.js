@@ -12,7 +12,9 @@ export function tarjetas({ deck, state }) {
         <span class="big-n">${state.hits}</span>
         <p class="h2">¡Sesión terminada!</p>
         <p class="muted">Acertaste ${state.hits} de ${queue.length}.
-          ${state.miss ? `${state.miss} vuelven mañana.` : 'Ni una falla.'}</p>
+          ${!state.miss ? 'Ni una falla.'
+            : state.miss === 1 ? '1 vuelve mañana.'
+            : `${state.miss} vuelven mañana.`}</p>
         <button class="btn solid" data-act="restart">Otra ronda</button>
       </div>
     </section>`;

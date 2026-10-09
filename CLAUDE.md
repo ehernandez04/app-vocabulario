@@ -12,6 +12,10 @@ Verificada en el navegador: las 20 tarjetas se revelan y califican sin recortes,
 repetición espaciada persiste en IndexedDB y el bucle del Modo camino encadena bien
 (inglés → cuenta atrás → español → siguiente).
 
+Se pueden agregar palabras propias desde la app, borrarlas, y exportar e importar el mazo
+con el progreso (fusionando o reemplazando; al fusionar gana la caja más alta, nunca se
+retrocede lo ya aprendido).
+
 Lo que falta son los issues abiertos de la fase 3 y el audio pregenerado.
 
 ## Cómo se corre
@@ -85,14 +89,21 @@ de la pantalla de Inicio es quien manda.
 ## Modelo de datos
 
 ```js
-// src/data/deck.json — una palabra
+// src/data/deck.json — una palabra de fábrica
 { "en": "the way", "ipa": "/ðə weɪ/", "es": "el camino", "emoji": "🛣️",
   "xe": "I listen to podcasts on the way to work.",
   "xs": "Escucho pódcasts de camino al trabajo." }
 
-// IndexedDB, almacén `progress`, clave = la palabra en inglés
+// IndexedDB v2, almacén `progress`, clave = la palabra en inglés
 { box: 1..5, due: "2026-10-10", seen: 0, miss: 0 }
+
+// IndexedDB v2, almacén `words` — las que agrega el usuario; mismo formato más:
+{ ..., mine: true, addedAt: "2026-10-09T04:12:39.243Z" }
 ```
+
+**El mazo es dinámico:** `store.fullDeck(BASE)` junta las de fábrica con las del usuario,
+descartando repetidas por `en` en minúsculas. En `main.js` se accede con `DECK()`, nunca con
+una constante, y hay que llamar a `refreshDeck()` después de agregar, borrar o importar.
 
 El color de post-it **no** se guarda: sale de la posición en el mazo (`noteColor`).
 Si una palabra trae `img`, se usa esa imagen en lugar del emoji — así se puede pasar a
@@ -138,6 +149,11 @@ sobrevivir al cambio de horario.
 - `.en` usa `clamp()` con `vw` para que "overwhelming" o "nevertheless" se encojan en vez de
   partirse a mitad de palabra.
 
+**Español**
+- Cuidado con la concordancia en singular. Ya mordió dos veces: "1 palabra te **esperan**" y
+  "1 palabra**s** y 1 avance**s**". Hay un ayudante `plural(n, 'palabra')` en `ui.js`; para
+  frases con verbo hay que escribir las dos variantes a mano.
+
 ## Archivos
 
 ```
@@ -150,6 +166,7 @@ src/lib/store.js        IndexedDB + migración desde el localStorage del prototi
 src/lib/audio.js        elección de voz, MP3 con respaldo a síntesis, MediaSession
 src/lib/ui.js           iconos, escape, colores de nota, pegatina, aviso emergente
 src/views/*.js          una vista por modo
+src/views/sheet.js      la hoja inferior: agregar palabra e importar, y la lista "Tus palabras"
 scripts/make-icons.py   genera los PNG del icono sin dependencias
 scripts/generate-audio.mjs  genera los MP3 con OpenAI o ElevenLabs
 scripts/make-artifact.mjs   empaqueta dist/ en un HTML suelto para el artifact

@@ -2,6 +2,7 @@ import { esc, I, peekColor, noteColor, sticker } from '../lib/ui.js';
 import { isDue } from '../lib/srs.js';
 import * as store from '../lib/store.js';
 import { voices, currentVoice } from '../lib/audio.js';
+import { misPalabras } from './sheet.js';
 
 function greeting() {
   const h = new Date().getHours();
@@ -36,9 +37,9 @@ export function inicio({ deck, state }) {
     <div class="hello">
       <div>
         <p class="eyebrow">${greeting()}</p>
-        <h1 class="h1">${due
-          ? `${due} palabra${due === 1 ? '' : 's'}<br>te esperan`
-          : 'Todo<br>al día'}</h1>
+        <h1 class="h1">${!due ? 'Todo<br>al día'
+          : due === 1 ? '1 palabra<br>te espera'
+          : `${due} palabras<br>te esperan`}</h1>
       </div>
       <div class="hello-side">
         <span class="streak"><span class="flame">🔥</span> ${store.get('streak')}</span>
@@ -60,7 +61,9 @@ export function inicio({ deck, state }) {
       </div>
       <div class="txt">
         <b>${al_dia} de ${total} al día</b>
-        <span class="muted">${due ? `Te faltan ${due} por repasar` : 'Vuelve mañana por las siguientes'}</span>
+        <span class="muted">${!due ? 'Vuelve mañana por las siguientes'
+          : due === 1 ? 'Te falta 1 por repasar'
+          : `Te faltan ${due} por repasar`}</span>
       </div>
     </div>
 
@@ -124,11 +127,14 @@ export function inicio({ deck, state }) {
     </div>
 
     <div class="block">
-      <p class="eyebrow">Mi mazo</p>
+      <p class="eyebrow">Mi mazo · ${total} palabras</p>
+      <button class="btn solid wide" data-act="sheet-nueva">＋ Agregar una palabra</button>
       <div class="chips">
-        <button class="pill on">Básicas · ${total}</button>
-        <button class="pill" data-act="export">Exportar progreso</button>
+        <button class="pill" data-act="export">Exportar</button>
+        <button class="pill" data-act="sheet-importar">Importar</button>
       </div>
     </div>
+
+    ${misPalabras()}
   </section>`;
 }

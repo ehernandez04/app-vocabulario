@@ -7,6 +7,10 @@ export const esc = s => String(s).replace(/[&<>"]/g, c =>
 
 export const NOTES = ['#FFE066', '#FFB4A2', '#B8E1FF', '#C8F0A8'];
 
+/** `plural(1,'palabra')` → "1 palabra"; `plural(3,'palabra')` → "3 palabras". */
+export const plural = (n, singular, plural = singular + 's') =>
+  `${n} ${n === 1 ? singular : plural}`;
+
 /** Color de la nota de una palabra, por su posición en el mazo. */
 export const noteColor = (deck, w) => NOTES[deck.indexOf(w) % NOTES.length];
 

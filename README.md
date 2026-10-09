@@ -34,6 +34,16 @@ la palabra escrita, para ir caminando.
 pensarla, y llega la respuesta en español. Encadena solo, con el teléfono guardado, y se
 controla desde los auriculares.
 
+## Tu propio mazo
+
+Vienen 20 palabras de fábrica, pero puedes agregar las tuyas desde la pantalla de Inicio:
+inglés, español, un emoji como ilustración y, si quieres, la fonética y una frase de ejemplo.
+Entran en la caja 1, así que las ves el mismo día.
+
+También puedes exportar el mazo con tu progreso y volver a importarlo en otro teléfono. Al
+importar eliges fusionar —que conserva lo tuyo y se queda con la caja más alta, así nunca
+retrocedes— o reemplazar.
+
 ## Cómo repasa
 
 Cinco cajas, estilo Leitner. Cada palabra sube una caja cuando la aciertas y vuelve a la 1
