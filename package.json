@@ -6,7 +6,7 @@
   "description": "Repasar vocabulario inglés-español en el camino, con audio y repetición espaciada",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && serwist build serwist.config.ts",
     "start": "next start",
     "lint": "eslint",
     "legacy:dev": "npm --prefix legacy run dev",
@@ -17,9 +17,12 @@
     "@prisma/client": "^7.10.0",
     "next": "16.3.4",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "serwist": "9.5.13"
   },
   "devDependencies": {
+    "@serwist/cli": "9.5.13",
+    "@serwist/next": "9.5.13",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

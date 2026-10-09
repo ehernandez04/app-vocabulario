@@ -6,4 +6,7 @@ const nextConfig: NextConfig = {
   turbopack: { root: __dirname },
 };
 
+// El service worker NO se construye acá: `@serwist/next` enganchado al bundler
+// no funciona con Turbopack. Se arma aparte, con el CLI, después de next build
+// (ver serwist.config.ts y el script `build`).
 export default nextConfig;

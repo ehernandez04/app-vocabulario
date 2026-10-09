@@ -17,6 +17,9 @@ const eslintConfig = defineConfig([
     "legacy/**",
     // Código generado por Prisma.
     "lib/generated/**",
+    // El service worker compilado, que genera el CLI de Serwist.
+    "public/sw.js",
+    "public/sw.js.map",
   ]),
 ]);
 
