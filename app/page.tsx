@@ -1,84 +1,210 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
+import { Sticker } from '@/components/Sticker';
+import {
+  IconAdivinar,
+  IconAuriculares,
+  IconFlecha,
+  IconLuna,
+  IconSol,
+  IconTarjetas,
+} from '@/components/icons';
+import * as store from '@/lib/local-store';
+import { isDue } from '@/lib/srs';
+import { noteColor, peekColor, saludo } from '@/lib/ui';
+import { useEstado } from './estado';
 
-/**
- * Pantalla provisional de la etapa 0: no es la app, es la prueba de que el
- * stack nuevo arranca y de que la identidad visual sobrevivió al port.
- * Se reemplaza por la vista Inicio en la etapa 1 (#22).
- */
-export default function Page() {
-  const [oscuro, setOscuro] = useState(false);
+const COLORES_CAJA = ['#FFE066', '#FFB4A2', '#B8E1FF', '#C8F0A8', '#FFE066'];
 
-  function cambiarTema() {
-    const siguiente = !oscuro;
-    setOscuro(siguiente);
-    document.documentElement.dataset.skin = siguiente ? 'dark' : 'light';
-  }
+export default function Inicio() {
+  const { listo, deck, cola, indice, progresoDe, ajuste, alternarTema } = useEstado();
+
+  // Hasta que IndexedDB conteste no sabemos el progreso real. Pintar números
+  // provisionales y corregirlos medio segundo después se ve peor que esperar.
+  if (!listo) return <section className="view" aria-busy="true" />;
+
+  const vencidas = deck.filter((w) => isDue(progresoDe(w.en))).length;
+  const total = deck.length;
+  const alDia = total - vencidas;
+  const pct = total ? Math.round((alDia / total) * 100) : 0;
+  const C = 2 * Math.PI * 19;
+
+  const siguiente = cola[indice] || deck[0];
+  const cuentas = store.boxCounts(deck);
+  const max = Math.max(...cuentas, 1);
+  const oscuro = ajuste('theme') === 'dark';
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-[460px] flex-col gap-6 px-5 py-8">
-      <header className="flex items-start justify-between gap-4">
+    <section className="view">
+      <div className="hello">
         <div>
-          <p className="text-xs font-bold tracking-[0.14em] text-ink-faint uppercase">Etapa 0</p>
-          <h1 className="font-display text-3xl leading-tight tracking-[-0.03em]">
-            Vocabulario en Ruta
+          <p className="eyebrow">{saludo()}</p>
+          {/* Concordancia a mano: el helper plural() no sirve con verbo. */}
+          <h1 className="h1">
+            {!vencidas ? (
+              <>
+                Todo
+                <br />
+                al día
+              </>
+            ) : vencidas === 1 ? (
+              <>
+                1 palabra
+                <br />
+                te espera
+              </>
+            ) : (
+              <>
+                {vencidas} palabras
+                <br />
+                te esperan
+              </>
+            )}
           </h1>
-          <p className="mt-1 text-sm text-ink-soft">
-            Next 16 + Tailwind 4, con los tokens de siempre.
-          </p>
         </div>
-        <button
-          onClick={cambiarTema}
-          className="shrink-0 rounded-full border-2 border-edge bg-card px-3 py-2 text-sm font-medium shadow-lift transition-transform active:translate-y-[2px] active:shadow-none"
-          aria-pressed={oscuro}
-        >
-          {oscuro ? 'Claro' : 'Oscuro'}
-        </button>
-      </header>
-
-      {/* El post-it es un objeto físico: papel de color con tinta oscura, en los
-          dos temas. Solo cambia el entorno. */}
-      <article className="relative rounded-2xl border-2 border-edge bg-note-3 p-5 text-on-note shadow-drop">
-        <p className="text-[11px] font-bold tracking-[0.14em] uppercase opacity-70">
-          Inglés · caja 1
-        </p>
-        <h2 className="font-display mt-2 text-4xl leading-none tracking-[-0.04em]">the way</h2>
-        <p className="mt-1 text-sm opacity-70">/ðə weɪ/</p>
-
-        <div className="mt-4 flex items-center gap-4">
-          <span className="grid size-[72px] shrink-0 -rotate-3 place-items-center rounded-2xl border-2 border-dashed border-on-note/30 bg-white/55 text-[42px]">
-            🛣️
+        <div className="hello-side">
+          <span className="streak">
+            <span className="flame">🔥</span> {ajuste('streak')}
           </span>
-          <p className="text-[0.95rem] italic">I listen to podcasts on the way to work.</p>
+          <button
+            className="themebtn"
+            onClick={alternarTema}
+            aria-label="Cambiar entre tema claro y oscuro"
+          >
+            {oscuro ? <IconSol /> : <IconLuna />}
+          </button>
         </div>
+      </div>
 
-        <hr className="my-4 border-0 border-t-2 border-dashed border-on-note/25" />
-
-        <p className="text-[11px] font-bold tracking-[0.14em] uppercase opacity-70">Español</p>
-        <p className="font-hand mt-1 text-4xl leading-none">el camino</p>
-        <p className="mt-1 text-sm">Escucho pódcasts de camino al trabajo.</p>
-      </article>
-
-      <section className="flex flex-col gap-3">
-        <p className="text-xs font-bold tracking-[0.14em] text-ink-faint uppercase">
-          Los cuatro papeles
-        </p>
-        <div className="flex gap-3">
-          {['bg-note-1', 'bg-note-2', 'bg-note-3', 'bg-note-4'].map((color) => (
-            <span
-              key={color}
-              className={`h-12 flex-1 rounded-xl border-2 border-edge ${color} shadow-lift`}
+      <div className="today">
+        <div className="ring">
+          <svg width="62" height="62" viewBox="0 0 44 44" aria-hidden="true">
+            <circle cx="22" cy="22" r="19" fill="none" stroke="var(--rule)" strokeWidth="4" />
+            <circle
+              cx="22"
+              cy="22"
+              r="19"
+              fill="none"
+              stroke="var(--ink)"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeDasharray={C.toFixed(1)}
+              strokeDashoffset={(C * (1 - pct / 100)).toFixed(1)}
             />
+          </svg>
+          <span className="val">{pct}%</span>
+        </div>
+        <div className="txt">
+          <b>
+            {alDia} de {total} al día
+          </b>
+          <span className="muted">
+            {!vencidas
+              ? 'Vuelve mañana por las siguientes'
+              : vencidas === 1
+                ? 'Te falta 1 por repasar'
+                : `Te faltan ${vencidas} por repasar`}
+          </span>
+        </div>
+      </div>
+
+      <Link
+        href="/tarjetas"
+        className="stack"
+        aria-label={`Practicar la siguiente palabra: ${siguiente.en}`}
+      >
+        <div className="lay b2">
+          <div className="flat" style={{ background: peekColor(deck, siguiente, 2) }} />
+        </div>
+        <div className="lay b1">
+          <div className="flat" style={{ background: peekColor(deck, siguiente, 1) }} />
+        </div>
+        <div className="lay top">
+          <div
+            className="note"
+            style={{ '--note': noteColor(deck, siguiente) } as React.CSSProperties}
+          >
+            <div className="n-top">
+              <span className="n-tag">Siguiente palabra</span>
+              <Sticker word={siguiente} size="sm" />
+            </div>
+            <span className="en sm">{siguiente.en}</span>
+            <span className="hand">toca para practicar →</span>
+          </div>
+        </div>
+      </Link>
+
+      <div className="block">
+        <p className="eyebrow">Cómo quieres repasar</p>
+        <div className="modes">
+          <Link href="/tarjetas" className="mode">
+            <span className="ic" style={{ background: '#FFE066' }}>
+              <IconTarjetas />
+            </span>
+            <span className="lab">
+              <b>Tarjetas</b>
+              <span>Ver, escuchar y dar la vuelta</span>
+            </span>
+            <span className="arr">
+              <IconFlecha />
+            </span>
+          </Link>
+          <Link href="/adivinar" className="mode">
+            <span className="ic" style={{ background: '#FFB4A2' }}>
+              <IconAdivinar />
+            </span>
+            <span className="lab">
+              <b>Adivinar</b>
+              <span>Elige la traducción correcta</span>
+            </span>
+            <span className="arr">
+              <IconFlecha />
+            </span>
+          </Link>
+          <Link href="/camino" className="mode dark">
+            <span className="ic" style={{ background: '#FFE066' }}>
+              <IconAuriculares />
+            </span>
+            <span className="lab">
+              <b>Modo camino</b>
+              <span>Manos libres, solo audio</span>
+            </span>
+            <span className="arr">
+              <IconFlecha />
+            </span>
+          </Link>
+        </div>
+      </div>
+
+      <div className="block">
+        <p className="eyebrow">Tus cinco cajas de repaso</p>
+        <div className="boxes">
+          {cuentas.map((n, i) => (
+            <div className="bx" key={i}>
+              <div className="col">
+                <i
+                  style={{
+                    height: n ? `${Math.max(14, (n / max) * 100)}%` : 0,
+                    background: COLORES_CAJA[i],
+                  }}
+                />
+              </div>
+              <span className="n">{n}</span>
+              <span className="l">caja {i + 1}</span>
+            </div>
           ))}
         </div>
-      </section>
+        <p className="muted sm">Cada acierto sube la palabra una caja: 1, 2, 4, 8 y 16 días.</p>
+      </div>
 
-      <p className="mt-auto text-sm text-ink-soft">
-        La app que ya funciona sigue en <code className="font-mono">legacy/</code> y se corre con{' '}
-        <code className="font-mono">npm run legacy:dev</code>. Se retira cuando esta alcance
-        paridad (#26).
-      </p>
-    </main>
+      <div className="block">
+        <p className="eyebrow">Mi mazo · {total} palabras</p>
+        <p className="muted sm">
+          Agregar palabras, el audio y la elección de voz vuelven en los próximos issues de
+          esta etapa. Mientras tanto siguen funcionando en la versión anterior.
+        </p>
+      </div>
+    </section>
   );
 }

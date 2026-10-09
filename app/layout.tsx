@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, Caveat, DM_Sans } from 'next/font/google';
+import { Tabbar } from '@/components/Tabbar';
+import { ProveedorEstado } from './estado';
 import './globals.css';
+import './app.css';
 
 // Display: la palabra en inglés, con letter-spacing negativo.
 const display = Bricolage_Grotesque({
@@ -25,7 +28,9 @@ const hand = Caveat({
 
 export const metadata: Metadata = {
   title: 'Vocabulario en Ruta',
-  description: 'Repasar vocabulario inglés-español en el camino, con audio y repetición espaciada',
+  description:
+    'Repasa vocabulario inglés-español en el camino: tarjetas con audio, modo adivinar y modo manos libres.',
+  appleWebApp: { capable: true, title: 'Vocabulario', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {
@@ -36,8 +41,19 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     // data-skin, no prefers-color-scheme: la app arranca en claro y el botón manda.
-    <html lang="es" data-skin="light" className={`${display.variable} ${ui.variable} ${hand.variable}`}>
-      <body>{children}</body>
+    <html
+      lang="es"
+      data-skin="light"
+      className={`${display.variable} ${ui.variable} ${hand.variable}`}
+    >
+      <body>
+        <ProveedorEstado>
+          <div className="app">
+            <main className="views">{children}</main>
+            <Tabbar />
+          </div>
+        </ProveedorEstado>
+      </body>
     </html>
   );
 }
