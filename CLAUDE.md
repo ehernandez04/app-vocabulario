@@ -5,6 +5,37 @@ con audio y modo adivinar. Usuario y dueño: Erick (`ehernandez04`). La interfaz
 
 Repo: https://github.com/ehernandez04/app-vocabulario
 
+## Cómo retomar el trabajo (leer primero, sobre todo después de /clear o /compact)
+
+1. **El backlog real son los issues y los milestones, no este archivo.**
+   `gh issue list --state open --json number,title,milestone --jq '.[] | "\(.number) \(.milestone.title // "sin etapa") \(.title)"'`
+   Este archivo guarda reglas estables y el porqué de las decisiones; el estado del
+   trabajo se consulta siempre contra GitHub.
+2. **Antes de tomar nada:** `git status`, `git branch` y `gh pr list`, para no pisar una
+   rama abierta ni un PR sin mergear.
+3. **El orden es por etapas**, y dentro de cada etapa por número de issue. Si una etapa
+   tiene issues abiertos, no se empieza la siguiente.
+4. Al cerrar algo relevante, actualizar la sección "Estado actual" de este archivo.
+
+## Cómo se trabaja
+
+- **Una rama por issue**, nunca commits directos a `main`: `main` autodespliega a
+  producción. Nombre `<etapa>/<descripcion>-<n°>`, ej. `etapa-1/hoja-y-pwa-34`.
+- **PR con `Closes #N`** y una sección de lo verificado.
+- **Claude no puede mergear**: el clasificador de permisos bloquea el merge sin revisión.
+  Hay que pedirle a Erick que corra `! gh pr merge <n> --rebase` y esperar. Se usa
+  `--rebase` y no squash cuando el PR trae varios commits que cierran issues distintos.
+- **Verificar en el navegador antes de decir que algo funciona.** No alcanza con que
+  compile. Dos trampas que ya costaron tiempo: el service worker **solo se registra en
+  producción** (`pnpm build && pnpm start`), así que probarlo contra `pnpm dev` no prueba
+  nada; y si el puerto 3000 está ocupado por el servidor de desarrollo, `pnpm start`
+  falla y uno sigue mirando la versión equivocada sin enterarse.
+- **Antes de pushear:** `pnpm build`, `pnpm lint` y `pnpm test` en verde.
+- Los commits y los issues van **en español**, en imperativo, diciendo *por qué* y no solo
+  qué. Este repo **sí** lleva `Co-Authored-By` (a diferencia de `mi-presupuesto`).
+- Si aparece un hueco en el plan —algo necesario sin issue— se crea el issue, no se hace
+  a escondidas.
+
 ## Estado actual
 
 **El proyecto está migrando de una PWA local a una app con cuentas y base de datos.**
@@ -81,10 +112,25 @@ for (const k of await caches.keys()) await caches.delete(k); location.reload()`
   - El SVG es harina de otro costal: dibujar es más difícil que traducir. Hay que comparar
     contra un modelo mayor antes de darlo por bueno, y dejar que el usuario rechace el dibujo
     y se quede con el emoji.
-- **Audio: MP3 pregenerados con una TTS neuronal**, Web Speech API solo como respaldo.
+- **Audio: MP3 pregenerados con ElevenLabs**, Web Speech API solo como respaldo.
   Más allá de la calidad, los MP3 resuelven el Modo camino en iPhone: `speechSynthesis`
   se corta al bloquear la pantalla y un `<audio>` con MediaSession no. Ver
   [docs/audio.md](docs/audio.md).
+
+  **El audio se genera una sola vez por palabra y se guarda.** Darle play no cuesta nada
+  ni necesita conexión. El gasto lo marca cuánto vocabulario hay, no cuánto se estudia:
+  el mazo de 20 son unos 2.400 caracteres y el plan gratuito da 10.000 al mes.
+
+  **Limitación del plan gratuito, descubierta el 2026-10-10:** solo se pueden usar las
+  21 voces por defecto, y **todas son inglesas**. Las voces latinoamericanas de la
+  biblioteca compartida devuelven `402 paid_plan_required`; hacen falta 5 dólares de
+  crédito. Mientras tanto el español lo lee una voz inglesa con `eleven_multilingual_v2`.
+  No se puede evitar generando el español con la voz del navegador: en el Modo camino
+  con la pantalla bloqueada eso es justo lo que no funciona.
+
+  La clave vive en `.env` como `ELEVENLABS_API_KEY`, restringida a texto a voz y a leer
+  voces. El script es `scripts/generate-audio.mjs` (`pnpm audio`), y se corre con
+  `node --env-file=.env` para que lea el `.env`.
 
 ## Identidad visual (respetarla al escribir código nuevo)
 
