@@ -31,3 +31,6 @@ next-env.d.ts
 # el CLI de Vercel agregó .env*, que se tragaba también el ejemplo
 .env*
 !.env.example
+
+# muestras de voz, solo para elegir
+/public/muestras/

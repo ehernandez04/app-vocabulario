@@ -11,6 +11,13 @@
  * Por palabra escribe cuatro pistas: en, es, xe (ejemplo en inglés) y xs.
  * El nombre sale de un hash del texto más la voz, así que volver a correrlo solo
  * genera lo que falta.
+ *
+ * Trabaja **por voz**: `pnpm audio` usa la de por defecto y `pnpm audio eric`
+ * genera ese juego completo sin tocar los anteriores. El índice guarda todas las
+ * voces disponibles, que es lo que permite ofrecerlas a elegir dentro de la app.
+ *
+ * Ojo con el costo: cada voz es el mazo entero otra vez. Veinte palabras son
+ * unos 2.100 caracteres, y el plan gratuito de ElevenLabs da 10.000 al mes.
  */
 
 import { createHash } from 'node:crypto';
@@ -22,10 +29,27 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DECK = join(ROOT, 'data', 'deck.json');
 const OUT = join(ROOT, 'public', 'audio');
 
-const VOICES = {
-  openai: { en: 'alloy', es: 'nova' },
-  elevenlabs: { en: '21m00Tcm4TlvDq8ikWAM', es: 'XrExE9yKIg1WjnnlVkGX' }
+/**
+ * Las voces que Erick escuchó y aprobó. Todas americanas: el mazo usa fonética
+ * de inglés americano y ese es el acento que está aprendiendo.
+ *
+ * Una sola voz lee los dos idiomas. En español suena con acento inglés, porque
+ * el plan gratuito de ElevenLabs no deja usar las voces latinoamericanas de la
+ * biblioteca: devuelven 402 y piden cargar 5 dólares.
+ */
+const CATALOGO = {
+  sarah:   { id: 'EXAVITQu4vr4xnSDxMaL', nombre: 'Sarah',   rasgo: 'joven, segura' },
+  eric:    { id: 'cjVigY5qzO86Huf0OWal', nombre: 'Eric',    rasgo: 'hombre, suave' },
+  matilda: { id: 'XrExE9yKIg1WjnnlVkGX', nombre: 'Matilda', rasgo: 'mujer, profesional' },
+  bella:   { id: 'hpp4J3VqNfWAUOO0d1Us', nombre: 'Bella',   rasgo: 'mujer, cálida' },
+  brian:   { id: 'nPczCjzI2devNBz1zQrb', nombre: 'Brian',   rasgo: 'hombre, grave y pausado' },
+  river:   { id: 'SAz9YHcvj6GT2YYXdXww', nombre: 'River',   rasgo: 'neutra, informativa' }
 };
+
+const POR_DEFECTO = 'sarah';
+
+/** Las de OpenAI, por si alguna vez se vuelve a ese proveedor. */
+const VOCES_OPENAI = { en: 'alloy', es: 'nova' };
 
 function provider() {
   if (process.env.ELEVENLABS_API_KEY) return 'elevenlabs';
@@ -42,7 +66,7 @@ async function synthOpenAI(text, lang) {
     },
     body: JSON.stringify({
       model: process.env.TTS_MODEL || 'gpt-4o-mini-tts',
-      voice: VOICES.openai[lang],
+      voice: VOCES_OPENAI[lang],
       input: text,
       response_format: 'mp3',
       speed: 0.95
@@ -52,8 +76,8 @@ async function synthOpenAI(text, lang) {
   return Buffer.from(await res.arrayBuffer());
 }
 
-async function synthElevenLabs(text, lang) {
-  const id = VOICES.elevenlabs[lang];
+async function synthElevenLabs(text, lang, voz) {
+  const id = CATALOGO[voz].id;
   const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${id}`, {
     method: 'POST',
     headers: {
@@ -79,24 +103,41 @@ async function main() {
   if (!who) {
     console.error(`No hay clave de API.
 
-Pon una de estas en .env.local (que ya está en .gitignore) y exportala:
+Pon una de estas en .env (que ya está en .gitignore):
 
-  export OPENAI_API_KEY=sk-...          # integración más simple
-  export ELEVENLABS_API_KEY=...         # la voz más natural
+  ELEVENLABS_API_KEY=...   # la voz más natural, es la que se usa
+  OPENAI_API_KEY=sk-...    # alternativa
 
-Luego:  npm run audio
+Luego:  pnpm audio [voz]
 
 Sin esto la app sigue funcionando: usa la voz del dispositivo.
 Ver docs/audio.md.`);
     process.exit(1);
   }
 
-  const synth = who === 'elevenlabs' ? synthElevenLabs : synthOpenAI;
+  const voz = process.argv[2] || POR_DEFECTO;
+  if (who === 'elevenlabs' && !CATALOGO[voz]) {
+    console.error(`No conozco la voz "${voz}". Las que hay:\n`);
+    for (const [k, v] of Object.entries(CATALOGO)) {
+      console.error(`  ${k.padEnd(9)} ${v.nombre} — ${v.rasgo}`);
+    }
+    process.exit(1);
+  }
+
   const deck = JSON.parse(await readFile(DECK, 'utf8'));
   await mkdir(OUT, { recursive: true });
 
-  const index = {};
-  let made = 0, kept = 0, chars = 0;
+  // El índice se conserva entre corridas: generar una voz nueva no borra las
+  // anteriores, que es lo que permite ofrecerlas a elegir dentro de la app.
+  let indice = { porDefecto: POR_DEFECTO, voces: {} };
+  try {
+    indice = JSON.parse(await readFile(join(OUT, 'index.json'), 'utf8'));
+    indice.voces ||= {};
+  } catch { /* primera corrida */ }
+
+  const etiqueta = who === 'elevenlabs' ? CATALOGO[voz].nombre : `OpenAI ${voz}`;
+  const pistas = {};
+  let hechas = 0, existian = 0, chars = 0;
 
   for (const w of deck) {
     const tracks = [
@@ -107,23 +148,29 @@ Ver docs/audio.md.`);
     ];
     for (const [part, text, lang] of tracks) {
       if (!text) continue;
-      const file = `${hash(`${who}:${lang}:${text}`)}.mp3`;
-      index[`${w.en}::${part}`] = file;
+      const file = `${hash(`${who}:${voz}:${lang}:${text}`)}.mp3`;
+      pistas[`${w.en}::${part}`] = file;
       const path = join(OUT, file);
-      if (await exists(path)) { kept++; continue; }
+      if (await exists(path)) { existian++; continue; }
       process.stdout.write(`  ${w.en} · ${part} … `);
-      const buf = await synth(text, lang);
+      const buf = who === 'elevenlabs'
+        ? await synthElevenLabs(text, lang, voz)
+        : await synthOpenAI(text, lang);
       await writeFile(path, buf);
       chars += text.length;
-      made++;
+      hechas++;
       console.log(`${(buf.length / 1024).toFixed(0)} KB`);
       await new Promise(r => setTimeout(r, 120));   // no atropellar la API
     }
   }
 
-  await writeFile(join(OUT, 'index.json'), JSON.stringify(index, null, 2));
-  console.log(`\nProveedor: ${who}`);
-  console.log(`Generados ${made}, ya existían ${kept}. ${chars} caracteres facturados.`);
+  indice.voces[voz] = { nombre: etiqueta, pistas };
+  indice.porDefecto ||= voz;
+  await writeFile(join(OUT, 'index.json'), JSON.stringify(indice, null, 2));
+
+  console.log(`\nVoz: ${etiqueta} (${voz}) · proveedor: ${who}`);
+  console.log(`Generadas ${hechas}, ya existían ${existian}. ${chars} caracteres facturados.`);
+  console.log(`Voces en el índice: ${Object.keys(indice.voces).join(', ')}`);
   console.log('Comitea public/audio/ para que el deploy no dependa de la API.');
 }
 

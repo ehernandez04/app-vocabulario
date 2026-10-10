@@ -28,6 +28,8 @@ export type Settings = {
   audioOnly: boolean;
   voiceEn: string | null;
   voiceEs: string | null;
+  /** Cuál de las voces grabadas usar. null = la de por defecto del índice. */
+  voiceMp3: string | null;
   theme: 'light' | 'dark';
 };
 
@@ -39,6 +41,7 @@ export const DEFAULTS: Settings = {
   audioOnly: false,
   voiceEn: null,
   voiceEs: null,
+  voiceMp3: null,
   theme: 'light',
 };
 
