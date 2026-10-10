@@ -84,9 +84,19 @@ export function voiceSupport(): 'none' | 'no-english' | 'ok' {
 
 /* ── MP3 pregenerados ─────────────────────────────────────────────────────────
    Si el índice no existe la app funciona igual, solo que sintetizando. A partir
-   de la etapa 5 el índice lo sirve la API, no un archivo estático. */
+   de la etapa 5 el índice lo sirve la API, no un archivo estático.
 
-let manifiesto: Record<string, string> | null = null;
+   El índice está organizado por voz: `pnpm audio <voz>` agrega un juego sin
+   tocar los anteriores, y eso es lo que permite ofrecerlas a elegir acá. */
+
+export type VozGrabada = { clave: string; nombre: string };
+
+type Manifiesto = {
+  porDefecto: string;
+  voces: Record<string, { nombre: string; pistas: Record<string, string> }>;
+};
+
+let manifiesto: Manifiesto | null = null;
 
 export async function loadAudioManifest() {
   try {
@@ -98,10 +108,21 @@ export async function loadAudioManifest() {
   return manifiesto;
 }
 
-const claveTrack = (word: string, part: string) => `${word}::${part}`;
+/** Las voces grabadas disponibles. Vacío si todavía no se generó ninguna. */
+export function recordedVoices(): VozGrabada[] {
+  if (!manifiesto) return [];
+  return Object.entries(manifiesto.voces).map(([clave, v]) => ({ clave, nombre: v.nombre }));
+}
+
+function vozActiva() {
+  if (!manifiesto) return null;
+  const elegida = store.get('voiceMp3');
+  if (elegida && manifiesto.voces[elegida]) return manifiesto.voces[elegida];
+  return manifiesto.voces[manifiesto.porDefecto] ?? null;
+}
 
 const urlTrack = (word: string, part: string) => {
-  const file = manifiesto && manifiesto[claveTrack(word, part)];
+  const file = vozActiva()?.pistas[`${word}::${part}`];
   return file ? `/audio/${file}` : null;
 };
 

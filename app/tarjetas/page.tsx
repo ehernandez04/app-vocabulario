@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Sticker } from '@/components/Sticker';
 import { IconAltavoz, IconComillas, IconDespacio } from '@/components/icons';
 import * as audio from '@/lib/audio';
@@ -20,8 +20,15 @@ export default function Tarjetas() {
     siguiente,
     rearmarCola,
     avisar,
+    deshacer,
   } = useEstado();
   const [revelada, setRevelada] = useState(false);
+  // El aviso se arma en el momento de calificar y vive más que ese render, así
+  // que tiene que llamar al deshacer de entonces, no al de ahora.
+  const deshacerRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    deshacerRef.current = deshacer;
+  }, [deshacer]);
 
   if (!listo) return <section className="view" aria-busy="true" />;
 
@@ -63,7 +70,17 @@ export default function Tarjetas() {
   const calificarTarjeta = (acerto: boolean) => {
     const despues = calificar(w, acerto);
     avisar(
-      acerto ? `“${w.en}” sube a la caja ${despues.box}` : `“${w.en}” vuelve a la caja 1`
+      acerto ? `“${w.en}” sube a la caja ${despues.box}` : `“${w.en}” vuelve a la caja 1`,
+      // Tocar el botón equivocado pasa, sobre todo en el transporte. Deshacer
+      // devuelve la caja, la racha y el contador a como estaban, y vuelve a la
+      // tarjeta con la traducción a la vista.
+      {
+        etiqueta: 'Deshacer',
+        alPulsar: () => {
+          deshacerRef.current?.();
+          setRevelada(true);
+        },
+      }
     );
     setRevelada(false);
     siguiente();

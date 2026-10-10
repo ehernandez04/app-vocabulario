@@ -5,6 +5,37 @@ con audio y modo adivinar. Usuario y dueño: Erick (`ehernandez04`). La interfaz
 
 Repo: https://github.com/ehernandez04/app-vocabulario
 
+## Cómo retomar el trabajo (leer primero, sobre todo después de /clear o /compact)
+
+1. **El backlog real son los issues y los milestones, no este archivo.**
+   `gh issue list --state open --json number,title,milestone --jq '.[] | "\(.number) \(.milestone.title // "sin etapa") \(.title)"'`
+   Este archivo guarda reglas estables y el porqué de las decisiones; el estado del
+   trabajo se consulta siempre contra GitHub.
+2. **Antes de tomar nada:** `git status`, `git branch` y `gh pr list`, para no pisar una
+   rama abierta ni un PR sin mergear.
+3. **El orden es por etapas**, y dentro de cada etapa por número de issue. Si una etapa
+   tiene issues abiertos, no se empieza la siguiente.
+4. Al cerrar algo relevante, actualizar la sección "Estado actual" de este archivo.
+
+## Cómo se trabaja
+
+- **Una rama por issue**, nunca commits directos a `main`: `main` autodespliega a
+  producción. Nombre `<etapa>/<descripcion>-<n°>`, ej. `etapa-1/hoja-y-pwa-34`.
+- **PR con `Closes #N`** y una sección de lo verificado.
+- **Claude no puede mergear**: el clasificador de permisos bloquea el merge sin revisión.
+  Hay que pedirle a Erick que corra `! gh pr merge <n> --rebase` y esperar. Se usa
+  `--rebase` y no squash cuando el PR trae varios commits que cierran issues distintos.
+- **Verificar en el navegador antes de decir que algo funciona.** No alcanza con que
+  compile. Dos trampas que ya costaron tiempo: el service worker **solo se registra en
+  producción** (`pnpm build && pnpm start`), así que probarlo contra `pnpm dev` no prueba
+  nada; y si el puerto 3000 está ocupado por el servidor de desarrollo, `pnpm start`
+  falla y uno sigue mirando la versión equivocada sin enterarse.
+- **Antes de pushear:** `pnpm build`, `pnpm lint` y `pnpm test` en verde.
+- Los commits y los issues van **en español**, en imperativo, diciendo *por qué* y no solo
+  qué. Este repo **sí** lleva `Co-Authored-By` (a diferencia de `mi-presupuesto`).
+- Si aparece un hueco en el plan —algo necesario sin issue— se crea el issue, no se hace
+  a escondidas.
+
 ## Estado actual
 
 **El proyecto está migrando de una PWA local a una app con cuentas y base de datos.**
@@ -12,29 +43,35 @@ El plan vive en los milestones del repo: Etapa 0 · Cimientos, Etapa 1 · Parida
 Etapa 2 · Cuentas, Etapa 3 · Sincronización. Verificar siempre contra los issues
 (`gh issue list --state all --json number,title,milestone`), no contra este archivo.
 
-- **`legacy/`** es la app que de verdad funciona hoy: PWA con Vite, instalable, sin
-  conexión, con los tres modos, agregar palabras propias, borrar, exportar e importar.
-  Se retira cuando la nueva alcance paridad (#26). **No borrarla antes.**
-- **La raíz** es el proyecto nuevo: Next 16 + Tailwind 4, con la API en el mismo
-  proyecto (Route Handlers), Postgres en Neon vía Prisma y Auth.js con Google.
+La app corre sobre **Next 16 + Tailwind 4**, con la API prevista en el mismo proyecto
+(Route Handlers), Postgres en Neon vía Prisma y Auth.js con Google. La etapa 1 está
+cerrada: los tres modos, agregar palabras, exportar e importar, el audio y la PWA
+funcionan, y `legacy/` ya se borró. Lo que falta son las cuentas y la sincronización.
 
 ## Cómo se corre
 
 ```
-npm install && npm run dev        # la app nueva, http://localhost:3000
-npm run build                     # build de producción
-npm run lint
-npm run legacy:dev                # la app vieja de Vite, http://localhost:5173
+pnpm install && pnpm dev          # http://localhost:3000
+pnpm build                        # build de producción, incluido el service worker
+pnpm start                        # sirve el build; el SW solo se registra acá
+pnpm test                         # tests de la repetición espaciada
+pnpm icons                        # regenera los iconos de la PWA
+pnpm audio                        # genera los MP3 (requiere clave, ver docs/audio.md)
 ```
+
+**El service worker se construye fuera del build de Next.** `@serwist/next` enganchado al
+bundler no funciona con Turbopack —el build por defecto de Next 16— y falla en silencio:
+genera un service worker válido que no cachea nada. Por eso el script de build llama al
+CLI de Serwist después (`serwist.config.ts`), y el registro va a mano en `RegistrarSW`.
 
 **Next 16 tiene cambios rompedores respecto a lo que el modelo sabe de memoria.**
 Antes de escribir código con una API de Next, leer la guía que corresponda en
 `node_modules/next/dist/docs/`. El bloque de `AGENTS.md` lo repite y lo reescribe
 `next dev` en cada arranque: si aparece en el diff, se commitea junto al trabajo.
 
-**Al probar cambios en el contenedor de legacy, el service worker sirve la versión
-anterior desde caché.** Hay que desregistrarlo y borrar las cachés, o se ven cambios
-fantasma. En la consola:
+**Al probar el build de producción, el service worker sirve la versión anterior desde
+caché.** Hay que desregistrarlo y borrar las cachés, o se ven cambios fantasma. En
+desarrollo no se registra justamente por esto. En la consola:
 `for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
 for (const k of await caches.keys()) await caches.delete(k); location.reload()`
 
@@ -65,10 +102,35 @@ for (const k of await caches.keys()) await caches.delete(k); location.reload()`
 - **Hosting: Vercel.** Previews por rama y HTTPS gratis, que hace falta para instalar la
   PWA en un teléfono de verdad. GitHub Pages se descartó: sirve en un subpath y complica
   el scope del service worker.
-- **Audio: MP3 pregenerados con una TTS neuronal**, Web Speech API solo como respaldo.
+- **El modelo para generar tarjetas es `claude-haiku-5-5`** (etapa 4). A $0.10/$0.50 por
+  millón de tokens cuesta diez veces menos que Haiku 4.5, que es lo que usa el asistente de
+  `mi-presupuesto`. Para traducir, sacar la fonética y escribir una frase de ejemplo sobra.
+  **Dos cuidados al escribir ese código:**
+  - En Haiku 5.5 el pensamiento viene **encendido por defecto** y `budget_tokens` devuelve
+    400. Si no se baja con `output_config: { effort: 'low' }`, cada palabra gasta más tokens
+    de salida de lo esperado y se come parte del ahorro.
+  - El SVG es harina de otro costal: dibujar es más difícil que traducir. Hay que comparar
+    contra un modelo mayor antes de darlo por bueno, y dejar que el usuario rechace el dibujo
+    y se quede con el emoji.
+- **Audio: MP3 pregenerados con ElevenLabs**, Web Speech API solo como respaldo.
   Más allá de la calidad, los MP3 resuelven el Modo camino en iPhone: `speechSynthesis`
   se corta al bloquear la pantalla y un `<audio>` con MediaSession no. Ver
   [docs/audio.md](docs/audio.md).
+
+  **El audio se genera una sola vez por palabra y se guarda.** Darle play no cuesta nada
+  ni necesita conexión. El gasto lo marca cuánto vocabulario hay, no cuánto se estudia:
+  el mazo de 20 son unos 2.400 caracteres y el plan gratuito da 10.000 al mes.
+
+  **Limitación del plan gratuito, descubierta el 2026-10-10:** solo se pueden usar las
+  21 voces por defecto, y **todas son inglesas**. Las voces latinoamericanas de la
+  biblioteca compartida devuelven `402 paid_plan_required`; hacen falta 5 dólares de
+  crédito. Mientras tanto el español lo lee una voz inglesa con `eleven_multilingual_v2`.
+  No se puede evitar generando el español con la voz del navegador: en el Modo camino
+  con la pantalla bloqueada eso es justo lo que no funciona.
+
+  La clave vive en `.env` como `ELEVENLABS_API_KEY`, restringida a texto a voz y a leer
+  voces. El script es `scripts/generate-audio.mjs` (`pnpm audio`), y se corre con
+  `node --env-file=.env` para que lea el `.env`.
 
 ## Identidad visual (respetarla al escribir código nuevo)
 
@@ -114,8 +176,8 @@ Progress  userId, wordId, box, due, seen, miss, updatedAt   @@unique([userId, wo
 El SVG de la ilustración es texto y vive en su columna. Los MP3 van como `bytea`
 (~20 KB cada uno); si algún día crece, se mudan a almacenamiento de objetos.
 
-En el teléfono, como copia local para repasar sin señal (y hoy, en `legacy/`, como
-único almacén):
+En el teléfono, como copia local para repasar sin señal (y hoy, hasta que lleguen las
+cuentas, como único almacén):
 
 ```js
 // una palabra
@@ -192,12 +254,15 @@ app/                    vistas y Route Handlers del proyecto nuevo
 app/layout.tsx          las tres tipografías y data-skin
 app/globals.css         tokens de color, tipografía y base
 prisma/                 schema y migraciones (desde la etapa 0, #19)
-legacy/                 la PWA de Vite que funciona hoy; se retira en #26
-legacy/src/main.js      estado, render y eventos de la app vieja
-legacy/src/lib/srs.js   cajas Leitner, fechas locales, racha — se porta en #21
-legacy/src/lib/store.js IndexedDB
-legacy/src/lib/audio.js elección de voz, MP3 con respaldo a síntesis, MediaSession
-legacy/scripts/         iconos, generación de audio, artifact
+app/estado.tsx          el estado de la app y el único sitio donde se escribe
+app/sw.ts               el service worker; lo compila el CLI de Serwist
+app/manifest.ts         el manifiesto que la hace instalable
+components/             piezas compartidas: tarjeta, hoja, aviso, iconos
+lib/srs.ts              cajas Leitner, fechas locales, racha — con tests
+lib/local-store.ts      IndexedDB
+lib/audio.ts            elección de voz, MP3 con respaldo a síntesis, MediaSession
+data/deck.json          el mazo de fábrica
+scripts/                iconos y generación de audio
 docs/audio.md           por qué los MP3 y cómo se generan
 design-ref/             las 4 pantallas del canvas original, solo consulta
 ```
@@ -207,9 +272,10 @@ design-ref/             las 4 pantallas del canvas original, solo consulta
 
 ## Artifact publicado
 
-https://claude.ai/artifact/CWTWbBoeZwCmkrXQsd8HXJ — se generaba desde el build de Vite con
-`npm run artifact`, que ahora vive en `legacy/`. No lleva service worker: los artifacts no
-los permiten.
+https://claude.ai/artifact/CWTWbBoeZwCmkrXQsd8HXJ — quedó congelado en la versión de Vite.
+El script que lo empaquetaba (`make-artifact.mjs`) se borró con `legacy/`: era específico
+del build de Vite y no sirve para Next. Si alguna vez hace falta volver a publicarlo, hay
+que escribirlo de nuevo.
 
 ## Convenciones
 

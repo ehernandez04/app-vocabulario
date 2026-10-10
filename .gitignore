@@ -19,6 +19,10 @@ build/
 *.tsbuildinfo
 next-env.d.ts
 
+# el service worker lo genera `pnpm build`
+/public/sw.js
+/public/sw.js.map
+
 # coverage
 /coverage
 
@@ -27,3 +31,6 @@ next-env.d.ts
 # el CLI de Vercel agregó .env*, que se tragaba también el ejemplo
 .env*
 !.env.example
+
+# muestras de voz, solo para elegir
+/public/muestras/

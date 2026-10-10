@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { Sticker } from '@/components/Sticker';
 import {
   IconAdivinar,
@@ -15,13 +16,44 @@ import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
 import { isDue } from '@/lib/srs';
 import { noteColor, peekColor, saludo } from '@/lib/ui';
+import { HojaImportar } from '@/components/HojaImportar';
+import { HojaNuevaPalabra } from '@/components/HojaNuevaPalabra';
+import { MisPalabras } from '@/components/MisPalabras';
 import { useEstado } from './estado';
 
 const COLORES_CAJA = ['#FFE066', '#FFB4A2', '#B8E1FF', '#C8F0A8', '#FFE066'];
 
 /**
- * Ninguna heurística acierta en todos los dispositivos, así que la última
- * palabra sobre qué voz usar es del usuario.
+ * Las voces grabadas, que son las que de verdad se oyen mientras el mazo las
+ * tenga. Si solo hay una no se muestra el selector: no hay nada que elegir.
+ */
+function VocesGrabadas() {
+  const { ajuste, guardarAjuste } = useEstado();
+  const voces = audio.recordedVoices();
+  if (voces.length < 2) return null;
+  const actual = ajuste('voiceMp3') ?? voces[0].clave;
+  return (
+    <label className="vrow">
+      <span>Grabada</span>
+      <select
+        className="sel"
+        value={actual}
+        onChange={(e) => guardarAjuste('voiceMp3', e.target.value)}
+      >
+        {voces.map((v) => (
+          <option key={v.clave} value={v.clave}>
+            {v.nombre}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+/**
+ * Las voces del dispositivo. Solo se oyen cuando una palabra no tiene MP3 —las
+ * que agregás vos, por ahora—. Ninguna heurística acierta en todos los
+ * dispositivos, así que la última palabra es del usuario.
  */
 function FilaDeVoz({ lang, etiqueta }: { lang: audio.Idioma; etiqueta: string }) {
   const lista = audio.voices[lang];
@@ -50,7 +82,25 @@ function FilaDeVoz({ lang, etiqueta }: { lang: audio.Idioma; etiqueta: string })
 }
 
 export default function Inicio() {
-  const { listo, deck, cola, indice, progresoDe, ajuste, alternarTema } = useEstado();
+  const { listo, deck, cola, indice, progresoDe, ajuste, alternarTema, recargarMazo, rearmarCola, avisar } =
+    useEstado();
+  const [hoja, setHoja] = useState<'nueva' | 'importar' | null>(null);
+
+  const trasCambiarElMazo = (mensaje: string) => {
+    recargarMazo();
+    rearmarCola();
+    setHoja(null);
+    avisar(mensaje);
+  };
+
+  async function exportar() {
+    try {
+      await navigator.clipboard.writeText(store.exportAll());
+      avisar('Progreso copiado al portapapeles');
+    } catch {
+      avisar('No se pudo copiar aquí');
+    }
+  }
 
   // Hasta que IndexedDB conteste no sabemos el progreso real. Pintar números
   // provisionales y corregirlos medio segundo después se ve peor que esperar.
@@ -233,6 +283,7 @@ export default function Inicio() {
       <div className="block">
         <p className="eyebrow">Voz</p>
         <div className="voicebox">
+          <VocesGrabadas />
           <FilaDeVoz lang="en" etiqueta="Inglés" />
           <FilaDeVoz lang="es" etiqueta="Español" />
           <button
@@ -244,20 +295,46 @@ export default function Inicio() {
             <IconAltavoz /> Probar esta voz
           </button>
           <p className="muted sm">
-            Las mejores suelen llamarse <b>Google</b>, <b>Siri</b>, <b>Enhanced</b> o{' '}
-            <b>Premium</b>. Si tu lista se ve pobre, en iPhone y Mac se descargan voces de mucha
-            mejor calidad en <b>Ajustes → Accesibilidad → Contenido hablado → Voces</b>.
+            Las palabras de fábrica usan audio grabado. Las que agregues vos todavía hablan
+            con la voz del dispositivo: si tu lista se ve pobre, en iPhone y Mac se descargan
+            voces mucho mejores en <b>Ajustes → Accesibilidad → Contenido hablado → Voces</b>.
           </p>
         </div>
       </div>
 
       <div className="block">
         <p className="eyebrow">Mi mazo · {total} palabras</p>
-        <p className="muted sm">
-          Agregar palabras, exportar e importar vuelven en el issue #34, que es lo último que
-          falta para poder retirar la versión anterior.
-        </p>
+        <button className="btn solid wide" onClick={() => setHoja('nueva')}>
+          ＋ Agregar una palabra
+        </button>
+        <div className="chips">
+          <button className="pill" onClick={exportar}>
+            Exportar
+          </button>
+          <button className="pill" onClick={() => setHoja('importar')}>
+            Importar
+          </button>
+        </div>
       </div>
+
+      <MisPalabras
+        alBorrar={(en) => {
+          store.deleteWord(en);
+          recargarMazo();
+          rearmarCola();
+          avisar(`“${en}” fuera del mazo`);
+        }}
+      />
+
+      {hoja === 'nueva' && (
+        <HojaNuevaPalabra
+          alCerrar={() => setHoja(null)}
+          alGuardar={(w) => trasCambiarElMazo(`“${w.en}” entra en la caja 1`)}
+        />
+      )}
+      {hoja === 'importar' && (
+        <HojaImportar alCerrar={() => setHoja(null)} alImportar={trasCambiarElMazo} />
+      )}
     </section>
   );
 }

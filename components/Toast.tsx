@@ -7,7 +7,12 @@ export function Toast() {
   const { aviso } = useEstado();
   return (
     <div className={`toast${aviso ? ' show' : ''}`} role="status" aria-live="polite">
-      {aviso}
+      <span>{aviso?.texto}</span>
+      {aviso?.accion && (
+        <button className="toast-accion" onClick={aviso.accion.alPulsar}>
+          {aviso.accion.etiqueta}
+        </button>
+      )}
     </div>
   );
 }
