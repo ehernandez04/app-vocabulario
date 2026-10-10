@@ -9,9 +9,10 @@
     "build": "next build && serwist build serwist.config.ts",
     "start": "next start",
     "lint": "eslint",
-    "legacy:dev": "npm --prefix legacy run dev",
     "test": "TZ=America/Mexico_City vitest run",
-    "test:watch": "TZ=America/Mexico_City vitest"
+    "test:watch": "TZ=America/Mexico_City vitest",
+    "icons": "python3 scripts/make-icons.py",
+    "audio": "node scripts/generate-audio.mjs"
   },
   "dependencies": {
     "@prisma/client": "^7.10.0",

@@ -19,7 +19,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DECK = join(ROOT, 'src', 'data', 'deck.json');
+const DECK = join(ROOT, 'data', 'deck.json');
 const OUT = join(ROOT, 'public', 'audio');
 
 const VOICES = {

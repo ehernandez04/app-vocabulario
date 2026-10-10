@@ -12,29 +12,35 @@ El plan vive en los milestones del repo: Etapa 0 · Cimientos, Etapa 1 · Parida
 Etapa 2 · Cuentas, Etapa 3 · Sincronización. Verificar siempre contra los issues
 (`gh issue list --state all --json number,title,milestone`), no contra este archivo.
 
-- **`legacy/`** es la app que de verdad funciona hoy: PWA con Vite, instalable, sin
-  conexión, con los tres modos, agregar palabras propias, borrar, exportar e importar.
-  Se retira cuando la nueva alcance paridad (#26). **No borrarla antes.**
-- **La raíz** es el proyecto nuevo: Next 16 + Tailwind 4, con la API en el mismo
-  proyecto (Route Handlers), Postgres en Neon vía Prisma y Auth.js con Google.
+La app corre sobre **Next 16 + Tailwind 4**, con la API prevista en el mismo proyecto
+(Route Handlers), Postgres en Neon vía Prisma y Auth.js con Google. La etapa 1 está
+cerrada: los tres modos, agregar palabras, exportar e importar, el audio y la PWA
+funcionan, y `legacy/` ya se borró. Lo que falta son las cuentas y la sincronización.
 
 ## Cómo se corre
 
 ```
-npm install && npm run dev        # la app nueva, http://localhost:3000
-npm run build                     # build de producción
-npm run lint
-npm run legacy:dev                # la app vieja de Vite, http://localhost:5173
+pnpm install && pnpm dev          # http://localhost:3000
+pnpm build                        # build de producción, incluido el service worker
+pnpm start                        # sirve el build; el SW solo se registra acá
+pnpm test                         # tests de la repetición espaciada
+pnpm icons                        # regenera los iconos de la PWA
+pnpm audio                        # genera los MP3 (requiere clave, ver docs/audio.md)
 ```
+
+**El service worker se construye fuera del build de Next.** `@serwist/next` enganchado al
+bundler no funciona con Turbopack —el build por defecto de Next 16— y falla en silencio:
+genera un service worker válido que no cachea nada. Por eso el script de build llama al
+CLI de Serwist después (`serwist.config.ts`), y el registro va a mano en `RegistrarSW`.
 
 **Next 16 tiene cambios rompedores respecto a lo que el modelo sabe de memoria.**
 Antes de escribir código con una API de Next, leer la guía que corresponda en
 `node_modules/next/dist/docs/`. El bloque de `AGENTS.md` lo repite y lo reescribe
 `next dev` en cada arranque: si aparece en el diff, se commitea junto al trabajo.
 
-**Al probar cambios en el contenedor de legacy, el service worker sirve la versión
-anterior desde caché.** Hay que desregistrarlo y borrar las cachés, o se ven cambios
-fantasma. En la consola:
+**Al probar el build de producción, el service worker sirve la versión anterior desde
+caché.** Hay que desregistrarlo y borrar las cachés, o se ven cambios fantasma. En
+desarrollo no se registra justamente por esto. En la consola:
 `for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
 for (const k of await caches.keys()) await caches.delete(k); location.reload()`
 
@@ -124,8 +130,8 @@ Progress  userId, wordId, box, due, seen, miss, updatedAt   @@unique([userId, wo
 El SVG de la ilustración es texto y vive en su columna. Los MP3 van como `bytea`
 (~20 KB cada uno); si algún día crece, se mudan a almacenamiento de objetos.
 
-En el teléfono, como copia local para repasar sin señal (y hoy, en `legacy/`, como
-único almacén):
+En el teléfono, como copia local para repasar sin señal (y hoy, hasta que lleguen las
+cuentas, como único almacén):
 
 ```js
 // una palabra
@@ -202,12 +208,15 @@ app/                    vistas y Route Handlers del proyecto nuevo
 app/layout.tsx          las tres tipografías y data-skin
 app/globals.css         tokens de color, tipografía y base
 prisma/                 schema y migraciones (desde la etapa 0, #19)
-legacy/                 la PWA de Vite que funciona hoy; se retira en #26
-legacy/src/main.js      estado, render y eventos de la app vieja
-legacy/src/lib/srs.js   cajas Leitner, fechas locales, racha — se porta en #21
-legacy/src/lib/store.js IndexedDB
-legacy/src/lib/audio.js elección de voz, MP3 con respaldo a síntesis, MediaSession
-legacy/scripts/         iconos, generación de audio, artifact
+app/estado.tsx          el estado de la app y el único sitio donde se escribe
+app/sw.ts               el service worker; lo compila el CLI de Serwist
+app/manifest.ts         el manifiesto que la hace instalable
+components/             piezas compartidas: tarjeta, hoja, aviso, iconos
+lib/srs.ts              cajas Leitner, fechas locales, racha — con tests
+lib/local-store.ts      IndexedDB
+lib/audio.ts            elección de voz, MP3 con respaldo a síntesis, MediaSession
+data/deck.json          el mazo de fábrica
+scripts/                iconos y generación de audio
 docs/audio.md           por qué los MP3 y cómo se generan
 design-ref/             las 4 pantallas del canvas original, solo consulta
 ```
@@ -217,9 +226,10 @@ design-ref/             las 4 pantallas del canvas original, solo consulta
 
 ## Artifact publicado
 
-https://claude.ai/artifact/CWTWbBoeZwCmkrXQsd8HXJ — se generaba desde el build de Vite con
-`npm run artifact`, que ahora vive en `legacy/`. No lleva service worker: los artifacts no
-los permiten.
+https://claude.ai/artifact/CWTWbBoeZwCmkrXQsd8HXJ — quedó congelado en la versión de Vite.
+El script que lo empaquetaba (`make-artifact.mjs`) se borró con `legacy/`: era específico
+del build de Vite y no sirve para Next. Si alguna vez hace falta volver a publicarlo, hay
+que escribirlo de nuevo.
 
 ## Convenciones
 
