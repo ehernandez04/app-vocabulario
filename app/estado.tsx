@@ -25,16 +25,30 @@ type Estado = {
   indice: number;
   aciertos: number;
   fallos: number;
-  aviso: string | null;
-  avisar: (texto: string) => void;
+  aviso: Aviso | null;
+  avisar: (texto: string, accion?: AccionAviso) => void;
   progresoDe: (en: string) => Progress;
   ajuste: <K extends keyof store.Settings>(k: K) => store.Settings[K];
   guardarAjuste: <K extends keyof store.Settings>(k: K, v: store.Settings[K]) => void;
   calificar: (word: Word, acerto: boolean) => Progress;
+  /** Devuelve la última calificación a como estaba. null si no hay nada que deshacer. */
+  deshacer: (() => void) | null;
   siguiente: () => void;
   rearmarCola: () => void;
   recargarMazo: () => void;
   alternarTema: () => void;
+};
+
+export type AccionAviso = { etiqueta: string; alPulsar: () => void };
+export type Aviso = { texto: string; accion?: AccionAviso };
+
+/** Lo necesario para devolver una calificación a como estaba. */
+type Revertible = {
+  word: Word;
+  progreso: Progress;
+  acerto: boolean;
+  streak: number;
+  lastDay: string | null;
 };
 
 const Ctx = createContext<Estado | null>(null);
@@ -51,14 +65,17 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
   const [indice, setIndice] = useState(0);
   const [aciertos, setAciertos] = useState(0);
   const [fallos, setFallos] = useState(0);
-  const [aviso, setAviso] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<Aviso | null>(null);
+  const [revertible, setRevertible] = useState<Revertible | null>(null);
 
   const repintar = useCallback(() => setVersion((v) => v + 1), []);
 
-  const avisar = useCallback((texto: string) => {
-    setAviso(texto);
+  const avisar = useCallback((texto: string, accion?: AccionAviso) => {
+    setAviso({ texto, accion });
     clearTimeout(temporizadorAviso);
-    temporizadorAviso = window.setTimeout(() => setAviso(null), 1800);
+    // Con algo que pulsar hace falta más tiempo: 1,8 s no alcanza para leer,
+    // decidir y llegar al botón.
+    temporizadorAviso = window.setTimeout(() => setAviso(null), accion ? 6000 : 1800);
   }, []);
 
   useEffect(() => {
@@ -99,6 +116,15 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
     (word: Word, acerto: boolean) => {
       const antes = store.progressOf(word.en);
       const despues = grade(antes, acerto);
+      // Se guarda lo de antes —incluida la racha— para poder deshacer. Es la
+      // única copia: solo se puede deshacer la última.
+      setRevertible({
+        word,
+        progreso: antes,
+        acerto,
+        streak: store.get('streak'),
+        lastDay: store.get('lastDay'),
+      });
       store.saveProgress(word.en, despues);
 
       const dia = today();
@@ -113,6 +139,19 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
     },
     [repintar]
   );
+
+  const deshacer = useCallback(() => {
+    if (!revertible) return;
+    store.saveProgress(revertible.word.en, revertible.progreso);
+    store.set('streak', revertible.streak);
+    store.set('lastDay', revertible.lastDay);
+    if (revertible.acerto) setAciertos((n) => Math.max(0, n - 1));
+    else setFallos((n) => Math.max(0, n - 1));
+    setIndice((i) => Math.max(0, i - 1));
+    setRevertible(null);
+    setAviso(null);
+    repintar();
+  }, [revertible, repintar]);
 
   const siguiente = useCallback(() => setIndice((i) => i + 1), []);
 
@@ -141,6 +180,7 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
       fallos,
       aviso,
       avisar,
+      deshacer: revertible ? deshacer : null,
       progresoDe: store.progressOf,
       ajuste: store.get,
       guardarAjuste,
@@ -165,6 +205,8 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
       fallos,
       aviso,
       avisar,
+      revertible,
+      deshacer,
       guardarAjuste,
       calificar,
       siguiente,

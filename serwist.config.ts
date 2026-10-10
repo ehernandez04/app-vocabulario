@@ -11,5 +11,7 @@ import { serwist } from '@serwist/next/config';
 export default serwist({
   swSrc: 'app/sw.ts',
   swDest: 'public/sw.js',
-  globDirectory: '.next',
+  // Sin `globDirectory`: el helper ya arma los patrones relativos a la raíz
+  // del proyecto (`.next/static/**` y `public/**`). Si se le cambia la base,
+  // busca en `.next/.next/` y el precache sale vacío sin avisar de nada.
 });
