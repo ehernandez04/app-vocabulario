@@ -364,10 +364,18 @@
 
 /* ── avisos ──────────────────────────────────────────────────────────────── */
 .toast{position:absolute;left:50%;top:calc(14px + var(--safe-t));z-index:30;
+  display:flex;align-items:center;gap:12px;
   transform:translateX(-50%) translateY(-80px);background:var(--ink);color:var(--paper);
   padding:9px 16px;border-radius:99px;font:700 .84rem var(--ui);opacity:0;pointer-events:none;
   white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis;
   transition:transform .32s cubic-bezier(.25,1.4,.5,1),opacity .25s}
-.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+/* El botón de deshacer necesita recibir el clic, así que cuando el aviso trae
+   acción el toast deja de ser transparente a los punteros (ver .toast.show). */
+.toast-accion{appearance:none;background:none;border:0;cursor:pointer;flex:none;
+  color:var(--paper);font:700 .84rem var(--ui);text-decoration:underline;
+  text-underline-offset:3px;padding:0;pointer-events:auto}
+.toast-accion:hover{opacity:.75}
+
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
 .warn{margin:calc(10px + var(--safe-t)) 20px 0;padding:9px 12px;border-radius:11px;
   background:var(--no-bg);color:var(--no);font-size:.78rem;border:1.5px solid var(--no)}
