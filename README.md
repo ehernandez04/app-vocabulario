@@ -7,26 +7,19 @@ auriculares puestos y el teléfono en el bolsillo.
 Es una **PWA instalable**: se abre en el navegador, se agrega a la pantalla de inicio y
 funciona sin conexión.
 
-> **El proyecto está en migración.** La app que funciona hoy vive en [`legacy/`](legacy/)
-> —la PWA de Vite, local y sin cuentas— y la raíz es la versión nueva con Next, cuentas y
-> base de datos. El plan va por etapas en los milestones del repo. `legacy/` se retira
-> cuando la nueva alcance paridad.
+> **El proyecto está en migración.** La app ya corre sobre Next y hace todo lo que hacía
+> la versión anterior, que ya se retiró. Lo que falta son las cuentas y la sincronización;
+> el plan va por etapas en los milestones del repo.
 
 ## Empezar
 
 ```bash
-npm install
-npm run dev          # la app nueva, http://localhost:3000
-npm run legacy:dev   # la app vieja de Vite, http://localhost:5173
+pnpm install
+pnpm dev             # http://localhost:3000
 ```
 
-La vieja también corre con Docker, sin instalar nada más:
-
-```bash
-cd legacy
-docker compose --profile dev up      # desarrollo con recarga en caliente, :5173
-docker compose up -d web             # producción con nginx, :8080
-```
+El service worker solo se registra en producción, así que para probar el modo sin conexión
+hace falta `pnpm build && pnpm start`.
 
 ## Los tres modos
 
@@ -61,12 +54,13 @@ que toca repasar, empezando por las cajas más bajas.
 
 | Comando | Qué hace |
 |---|---|
-| `npm run dev` | La app nueva, en :3000 |
-| `npm run build` | Build de producción |
-| `npm run lint` | ESLint |
-| `npm run legacy:dev` | La app vieja de Vite, en :5173 |
-
-Dentro de `legacy/` siguen estando `npm run icons`, `npm run audio` y `npm run artifact`.
+| `pnpm dev` | Servidor de desarrollo en :3000 |
+| `pnpm build` | Build de producción, con el service worker |
+| `pnpm start` | Sirve el build, que es donde el service worker sí se registra |
+| `pnpm test` | Los tests de la repetición espaciada |
+| `pnpm lint` | ESLint |
+| `pnpm icons` | Regenera los iconos de la PWA |
+| `pnpm audio` | Genera los MP3 del mazo (requiere clave de API) |
 
 ## Stack
 
@@ -75,8 +69,8 @@ Dentro de `legacy/` siguen estando `npm run icons`, `npm run audio` y `npm run a
 El progreso se guarda en el servidor, pero el teléfono mantiene una copia en IndexedDB:
 la idea es poder repasar en el metro sin señal y sincronizar al salir.
 
-**La app vieja (`legacy/`):** vanilla HTML + CSS + JS con Vite y Workbox, unos 30 KB de
-JavaScript, sin backend ni cuentas.
+El service worker lo arma Serwist **fuera** del build de Next: enganchado al bundler no
+funciona con Turbopack, que es el build por defecto de Next 16, y falla sin avisar.
 
 ## Documentación
 
