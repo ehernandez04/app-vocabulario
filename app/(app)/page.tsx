@@ -5,94 +5,26 @@ import { useState } from 'react';
 import { Sticker } from '@/components/Sticker';
 import {
   IconAdivinar,
-  IconAltavoz,
   IconAuriculares,
   IconFlecha,
   IconLuna,
   IconSol,
   IconTarjetas,
 } from '@/components/icons';
-import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
 import { isDue } from '@/lib/srs';
 import { noteColor, peekColor, saludo } from '@/lib/ui';
+import { HojaAjustes } from '@/components/HojaAjustes';
 import { HojaImportar } from '@/components/HojaImportar';
 import { HojaNuevaPalabra } from '@/components/HojaNuevaPalabra';
-import { MisPalabras } from '@/components/MisPalabras';
-import { useEstado } from './estado';
+import { useEstado } from '../estado';
 
 const COLORES_CAJA = ['#FFE066', '#FFB4A2', '#B8E1FF', '#C8F0A8', '#FFE066'];
 
-/**
- * La voz grabada: la que de verdad se oye en las palabras de fábrica.
- *
- * Se muestra **siempre**, aunque haya una sola. Esconderla cuando no hay nada
- * que elegir parecía razonable y resultó confuso: debajo quedaban las voces del
- * dispositivo y la app aparentaba hablar con Samantha, que es una voz del
- * sistema y no la que suena.
- */
-function VocesGrabadas() {
-  const { ajuste, guardarAjuste } = useEstado();
-  const voces = audio.recordedVoices();
-  if (!voces.length) return null;
-  const actual = ajuste('voiceMp3') ?? voces[0].clave;
-  return (
-    <label className="vrow">
-      <span>Grabada</span>
-      {voces.length > 1 ? (
-        <select
-          className="sel"
-          value={actual}
-          onChange={(e) => guardarAjuste('voiceMp3', e.target.value)}
-        >
-          {voces.map((v) => (
-            <option key={v.clave} value={v.clave}>
-              {v.nombre}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <span className="sel comoTexto">{voces[0].nombre}</span>
-      )}
-    </label>
-  );
-}
-
-/**
- * Las voces del dispositivo. Solo se oyen cuando una palabra no tiene MP3 —las
- * que agregás vos, por ahora—. Ninguna heurística acierta en todos los
- * dispositivos, así que la última palabra es del usuario.
- */
-function FilaDeVoz({ lang, etiqueta }: { lang: audio.Idioma; etiqueta: string }) {
-  const lista = audio.voices[lang];
-  const actual = audio.currentVoice(lang);
-  return (
-    <label className="vrow">
-      <span>{etiqueta}</span>
-      <select
-        className="sel"
-        value={actual?.name ?? ''}
-        onChange={(e) => audio.chooseVoice(lang, e.target.value)}
-        disabled={!lista.length}
-      >
-        {lista.length ? (
-          lista.map((v) => (
-            <option key={v.name} value={v.name}>
-              {v.name} · {v.lang}
-            </option>
-          ))
-        ) : (
-          <option value="">Sin voces disponibles</option>
-        )}
-      </select>
-    </label>
-  );
-}
-
 export default function Inicio() {
-  const { listo, deck, cola, indice, progresoDe, ajuste, alternarTema, recargarMazo, rearmarCola, avisar } =
+  const { listo, deck, cola, indice, progresoDe, ajuste, alternarTema, recargarMazo, rearmarCola, avisar, usuario } =
     useEstado();
-  const [hoja, setHoja] = useState<'nueva' | 'importar' | null>(null);
+  const [hoja, setHoja] = useState<'nueva' | 'importar' | 'ajustes' | null>(null);
 
   const trasCambiarElMazo = (mensaje: string) => {
     recargarMazo();
@@ -101,14 +33,6 @@ export default function Inicio() {
     avisar(mensaje);
   };
 
-  async function exportar() {
-    try {
-      await navigator.clipboard.writeText(store.exportAll());
-      avisar('Progreso copiado al portapapeles');
-    } catch {
-      avisar('No se pudo copiar aquí');
-    }
-  }
 
   // Hasta que IndexedDB conteste no sabemos el progreso real. Pintar números
   // provisionales y corregirlos medio segundo después se ve peor que esperar.
@@ -124,12 +48,14 @@ export default function Inicio() {
   const cuentas = store.boxCounts(deck);
   const max = Math.max(...cuentas, 1);
   const oscuro = ajuste('theme') === 'dark';
+  const primerNombre = usuario.nombre?.trim().split(/\s+/)[0] ?? null;
+  const inicial = (usuario.nombre ?? usuario.correo ?? '?').trim().charAt(0).toUpperCase();
 
   return (
     <section className="view">
       <div className="hello">
         <div>
-          <p className="eyebrow">{saludo()}</p>
+          <p className="eyebrow">{saludo()}{primerNombre ? `, ${primerNombre}` : ''}</p>
           {/* Concordancia a mano: el helper plural() no sirve con verbo. */}
           <h1 className="h1">
             {!vencidas ? (
@@ -163,6 +89,18 @@ export default function Inicio() {
             aria-label="Cambiar entre tema claro y oscuro"
           >
             {oscuro ? <IconSol /> : <IconLuna />}
+          </button>
+          <button
+            className="avatarbtn"
+            onClick={() => setHoja('ajustes')}
+            aria-label="Tu cuenta y ajustes"
+          >
+            {usuario.foto ? (
+              // eslint-disable-next-line @next/next/no-img-element -- la sirve Google; next/image no aporta acá
+              <img src={usuario.foto} alt="" width={36} height={36} />
+            ) : (
+              inicial
+            )}
           </button>
         </div>
       </div>
@@ -289,52 +227,10 @@ export default function Inicio() {
       </div>
 
       <div className="block">
-        <p className="eyebrow">Voz</p>
-        <div className="voicebox">
-          <VocesGrabadas />
-          <FilaDeVoz lang="en" etiqueta="Inglés" />
-          <FilaDeVoz lang="es" etiqueta="Español" />
-          <button
-            className="btn"
-            onClick={() =>
-              audio.say('The way to achieve it is practice. Listen carefully.', 'en')
-            }
-          >
-            <IconAltavoz /> Probar esta voz
-          </button>
-          <p className="muted sm">
-            <b>Grabada</b> es la voz de las 20 palabras de fábrica, y es la que oyes casi
-            siempre. Las dos de abajo son voces de tu dispositivo y solo se usan en las
-            palabras que agregues vos, que todavía no tienen audio grabado. Si esa lista se
-            ve pobre, en iPhone y Mac se descargan voces mucho mejores en{' '}
-            <b>Ajustes → Accesibilidad → Contenido hablado → Voces</b>.
-          </p>
-        </div>
-      </div>
-
-      <div className="block">
-        <p className="eyebrow">Mi mazo · {total} palabras</p>
         <button className="btn solid wide" onClick={() => setHoja('nueva')}>
           ＋ Agregar una palabra
         </button>
-        <div className="chips">
-          <button className="pill" onClick={exportar}>
-            Exportar
-          </button>
-          <button className="pill" onClick={() => setHoja('importar')}>
-            Importar
-          </button>
-        </div>
       </div>
-
-      <MisPalabras
-        alBorrar={(en) => {
-          store.deleteWord(en);
-          recargarMazo();
-          rearmarCola();
-          avisar(`“${en}” fuera del mazo`);
-        }}
-      />
 
       {hoja === 'nueva' && (
         <HojaNuevaPalabra
@@ -344,6 +240,9 @@ export default function Inicio() {
       )}
       {hoja === 'importar' && (
         <HojaImportar alCerrar={() => setHoja(null)} alImportar={trasCambiarElMazo} />
+      )}
+      {hoja === 'ajustes' && (
+        <HojaAjustes alCerrar={() => setHoja(null)} alAbrirImportar={() => setHoja('importar')} />
       )}
     </section>
   );

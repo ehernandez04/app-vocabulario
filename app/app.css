@@ -383,3 +383,40 @@
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
 .warn{margin:calc(10px + var(--safe-t)) 20px 0;padding:9px 12px;border-radius:11px;
   background:var(--no-bg);color:var(--no);font-size:.78rem;border:1.5px solid var(--no)}
+
+/* ── entrar y sin acceso ─────────────────────────────────────────────────── */
+.view.entrada{justify-content:space-between;padding:64px 24px calc(32px + var(--safe-b))}
+.entrada .h1{margin-top:4px}
+.entrada-mazo{position:relative;height:200px;margin:8px 0}
+.entrada-mazo .lay{position:absolute;inset:0}
+.entrada-mazo .b2{transform:rotate(5deg) translate(8px,10px)}
+.entrada-mazo .b1{transform:rotate(-3deg) translate(-4px,4px)}
+.entrada-mazo .flat{height:100%;border:2px solid var(--edge);border-radius:16px}
+.entrada-mazo .top{transform:rotate(1deg)}
+.entrada-mazo .note{height:100%;box-shadow:var(--drop)}
+.entrada-aviso{display:flex;align-items:center;flex:1}
+.entrada-aviso .note{transform:rotate(-1.5deg);box-shadow:var(--drop)}
+.entrada-aviso p{margin:0;color:var(--on-note)}
+.center{text-align:center}
+
+/* El botón de Google es blanco y no de tinta: es el de una marca ajena, y
+   teñirlo de negro lo haría parecer nuestro. */
+.btn.google{background:var(--card);gap:12px}
+
+/* ── la cuenta ───────────────────────────────────────────────────────────── */
+.avatarbtn{width:36px;height:36px;flex:none;padding:0;overflow:hidden;cursor:pointer;
+  border:1.5px solid var(--edge);border-radius:99px;background:var(--note-3, #B8E1FF);
+  font:700 .9rem var(--ui);color:var(--on-note);display:grid;place-items:center}
+.avatarbtn img{width:100%;height:100%;object-fit:cover}
+
+.ajustes{display:flex;flex-direction:column;gap:14px}
+.ajustes .eyebrow{margin:6px 0 -6px}
+.cuenta{display:flex;align-items:center;gap:12px;background:var(--card);
+  border:2px solid var(--edge);border-radius:16px;padding:12px 14px;box-shadow:var(--lift)}
+.cuenta .avatar{width:42px;height:42px;flex:none;border-radius:99px;overflow:hidden;
+  border:1.5px solid var(--edge);background:#B8E1FF;color:#1C1B19;
+  display:grid;place-items:center;font:700 1rem var(--ui);object-fit:cover}
+.cuenta-txt{display:flex;flex-direction:column;flex:1;min-width:0}
+.cuenta-txt b{font-size:.92rem}
+.cuenta-txt span{font-size:.78rem;color:var(--ink-faint);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

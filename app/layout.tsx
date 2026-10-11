@@ -1,9 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, Caveat, DM_Sans } from 'next/font/google';
 import { RegistrarSW } from '@/components/RegistrarSW';
-import { Tabbar } from '@/components/Tabbar';
-import { Toast } from '@/components/Toast';
-import { ProveedorEstado } from './estado';
 import './globals.css';
 import './app.css';
 
@@ -40,6 +37,13 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
+/**
+ * Solo el armazón mínimo: tipografías, tema y service worker.
+ *
+ * Las pestañas y el estado viven en (app)/layout, que exige sesión. Entrar y
+ * sin-acceso cuelgan de acá y se ven sin ella: si no, la pantalla de entrada
+ * mostraría la barra de navegación de una app en la que todavía no entraste.
+ */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     // data-skin, no prefers-color-scheme: la app arranca en claro y el botón manda.
@@ -50,13 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body>
         <RegistrarSW />
-        <ProveedorEstado>
-          <div className="app">
-            <Toast />
-            <main className="views">{children}</main>
-            <Tabbar />
-          </div>
-        </ProveedorEstado>
+        <div className="app">{children}</div>
       </body>
     </html>
   );

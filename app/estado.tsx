@@ -18,7 +18,10 @@ import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
 import { grade, nextStreak, session, today, type Progress, type Word } from '@/lib/srs';
 
+export type Usuario = { nombre: string | null; correo: string | null; foto: string | null };
+
 type Estado = {
+  usuario: Usuario;
   listo: boolean;
   deck: Word[];
   cola: Word[];
@@ -57,7 +60,13 @@ let temporizadorAviso: number | undefined;
 
 const BASE_DECK = BASE as Word[];
 
-export function ProveedorEstado({ children }: { children: React.ReactNode }) {
+export function ProveedorEstado({
+  children,
+  usuario,
+}: {
+  children: React.ReactNode;
+  usuario: Usuario;
+}) {
   const [listo, setListo] = useState(false);
   const [version, setVersion] = useState(0);
   const [deck, setDeck] = useState<Word[]>(BASE_DECK);
@@ -174,6 +183,7 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
 
   const valor = useMemo<Estado>(
     () => ({
+      usuario,
       listo,
       deck,
       cola,
@@ -199,6 +209,7 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
       // esto, `children` llega con la misma referencia y el árbol no se vuelve
       // a renderizar — por eso el selector de voz se quedaba en la voz vieja.
       version,
+      usuario,
       listo,
       deck,
       cola,

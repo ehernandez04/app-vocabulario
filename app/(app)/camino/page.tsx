@@ -6,7 +6,7 @@ import { IconAdelante, IconAtras, IconPausa, IconPlay } from '@/components/icons
 import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
 import { noteColor } from '@/lib/ui';
-import { useEstado } from '../estado';
+import { useEstado } from '../../estado';
 
 type Fase = 'idle' | 'en' | 'think' | 'es' | 'ex';
 
