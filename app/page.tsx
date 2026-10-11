@@ -24,28 +24,36 @@ import { useEstado } from './estado';
 const COLORES_CAJA = ['#FFE066', '#FFB4A2', '#B8E1FF', '#C8F0A8', '#FFE066'];
 
 /**
- * Las voces grabadas, que son las que de verdad se oyen mientras el mazo las
- * tenga. Si solo hay una no se muestra el selector: no hay nada que elegir.
+ * La voz grabada: la que de verdad se oye en las palabras de fábrica.
+ *
+ * Se muestra **siempre**, aunque haya una sola. Esconderla cuando no hay nada
+ * que elegir parecía razonable y resultó confuso: debajo quedaban las voces del
+ * dispositivo y la app aparentaba hablar con Samantha, que es una voz del
+ * sistema y no la que suena.
  */
 function VocesGrabadas() {
   const { ajuste, guardarAjuste } = useEstado();
   const voces = audio.recordedVoices();
-  if (voces.length < 2) return null;
+  if (!voces.length) return null;
   const actual = ajuste('voiceMp3') ?? voces[0].clave;
   return (
     <label className="vrow">
       <span>Grabada</span>
-      <select
-        className="sel"
-        value={actual}
-        onChange={(e) => guardarAjuste('voiceMp3', e.target.value)}
-      >
-        {voces.map((v) => (
-          <option key={v.clave} value={v.clave}>
-            {v.nombre}
-          </option>
-        ))}
-      </select>
+      {voces.length > 1 ? (
+        <select
+          className="sel"
+          value={actual}
+          onChange={(e) => guardarAjuste('voiceMp3', e.target.value)}
+        >
+          {voces.map((v) => (
+            <option key={v.clave} value={v.clave}>
+              {v.nombre}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <span className="sel comoTexto">{voces[0].nombre}</span>
+      )}
     </label>
   );
 }
@@ -295,9 +303,11 @@ export default function Inicio() {
             <IconAltavoz /> Probar esta voz
           </button>
           <p className="muted sm">
-            Las palabras de fábrica usan audio grabado. Las que agregues vos todavía hablan
-            con la voz del dispositivo: si tu lista se ve pobre, en iPhone y Mac se descargan
-            voces mucho mejores en <b>Ajustes → Accesibilidad → Contenido hablado → Voces</b>.
+            <b>Grabada</b> es la voz de las 20 palabras de fábrica, y es la que oyes casi
+            siempre. Las dos de abajo son voces de tu dispositivo y solo se usan en las
+            palabras que agregues vos, que todavía no tienen audio grabado. Si esa lista se
+            ve pobre, en iPhone y Mac se descargan voces mucho mejores en{' '}
+            <b>Ajustes → Accesibilidad → Contenido hablado → Voces</b>.
           </p>
         </div>
       </div>
