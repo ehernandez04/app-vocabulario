@@ -5,7 +5,7 @@ import { Sticker } from '@/components/Sticker';
 import { IconAltavoz, IconComillas, IconDespacio } from '@/components/icons';
 import * as audio from '@/lib/audio';
 import { noteColor, peekColor } from '@/lib/ui';
-import { useEstado } from '../estado';
+import { useEstado } from '../../estado';
 
 export default function Tarjetas() {
   const {

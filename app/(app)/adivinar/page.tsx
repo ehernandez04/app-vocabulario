@@ -7,7 +7,7 @@ import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
 import { session, shuffle, type Word } from '@/lib/srs';
 import { noteColor } from '@/lib/ui';
-import { useEstado } from '../estado';
+import { useEstado } from '../../estado';
 
 type Pregunta = { word: Word; opciones: string[] };
 
