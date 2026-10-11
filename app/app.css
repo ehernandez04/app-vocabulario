@@ -168,6 +168,10 @@
   background:var(--card);border:2px solid var(--edge);box-shadow:var(--lift)}
 .vrow{display:flex;align-items:center;gap:10px;font:700 .84rem var(--ui)}
 .vrow>span{flex:none;width:58px}
+/* Cuando hay una sola voz grabada no hay nada que elegir, pero el dato tiene
+   que verse igual: se muestra con la misma caja y sin la flecha ni el cursor. */
+.sel.comoTexto{background-image:none;padding-right:11px;cursor:default}
+
 .sel{flex:1;min-width:0;appearance:none;font:500 .84rem var(--ui);color:var(--ink);
   background:var(--paper-2);border:1.5px solid var(--rule);border-radius:11px;
   padding:9px 30px 9px 11px;cursor:pointer;

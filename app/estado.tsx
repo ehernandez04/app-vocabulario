@@ -90,7 +90,9 @@ export function ProveedorEstado({ children }: { children: React.ReactNode }) {
       // Las voces no están disponibles de inmediato: initVoices engancha
       // `voiceschanged` y repintamos cuando la lista real llegue.
       audio.initVoices();
-      audio.loadAudioManifest();
+      // El índice llega después del primer render, así que hay que repintar:
+      // si no, Inicio no se entera de que hay voces grabadas y no las muestra.
+      audio.loadAudioManifest().then(repintar);
     });
     const soltar = audio.onVoicesChanged(repintar);
     return () => {
