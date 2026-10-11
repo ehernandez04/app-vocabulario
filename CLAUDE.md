@@ -19,6 +19,17 @@ Repo: https://github.com/ehernandez04/app-vocabulario
 
 ## Cómo se trabaja
 
+- **Mockup primero en todo cambio de interfaz, por chico que parezca.** Antes de tocar
+  código hay que mostrar cómo va a quedar —publicado como artifact, para que Erick lo
+  pueda abrir en el teléfono— y **esperar su aprobación explícita**. Si pide un ajuste, se
+  actualiza el mismo mockup y se vuelve a pedir el visto bueno. Los arreglos de errores y
+  lo que no se ve no lo necesitan.
+- **Preguntar antes de decidir, no después.** Nada de elegir solo y avisar en el commit.
+  Entran acá: dependencias nuevas, el modelo de datos, la arquitectura, los proveedores,
+  cualquier cosa que cueste dinero o toque sus cuentas, y cualquier decisión difícil de
+  revertir. Si la pregunta es muy técnica se le ofrecen las opciones con una recomendación
+  y el porqué, y él puede devolverla ("decidí vos"), pero la decisión se plantea igual.
+  Lo mecánico —cómo nombrar una variable, qué orden llevan los imports— no se pregunta.
 - **Una rama por issue**, nunca commits directos a `main`: `main` autodespliega a
   producción. Nombre `<etapa>/<descripcion>-<n°>`, ej. `etapa-1/hoja-y-pwa-34`.
 - **PR con `Closes #N`** y una sección de lo verificado.
@@ -87,6 +98,33 @@ for (const k of await caches.keys()) await caches.delete(k); location.reload()`
   websockets de verdad, ahí sí vuelve a tener sentido NestJS.
 - **Postgres en Neon con Prisma**, igual que `mi-presupuesto`: rama de desarrollo y rama
   de producción, y el `.env` local **siempre** a desarrollo.
+
+  **Prisma 7 ya no se conecta por su cuenta: hay que darle un adaptador.** Usamos
+  `@prisma/adapter-neon`, que habla por HTTP en vez de abrir una conexión TCP; en rutas
+  de Next sobre Vercel eso evita que la primera petición tras un rato sin uso cargue con
+  el costo de levantar la conexión. **La contra es que ata el proyecto a Neon**: si algún
+  día estorba, se cambia por `@prisma/adapter-pg` apuntando al endpoint con pooler. El
+  cliente único está en `lib/prisma.ts`.
+
+  Otras dos cosas de Prisma 7 que sorprenden: **genera TypeScript, no JavaScript**, y sus
+  imports internos van sin extensión, así que los scripts se corren con `tsx` y no con
+  `node`. Y la siembra ya no corre sola con las migraciones: es `pnpm seed`.
+
+- **Las palabras de fábrica viven en la base, sin dueño** (`userId` nulo), visibles para
+  todos; cada quien lleva su progreso. Así hay un solo camino de código para todas las
+  palabras. Se siembran desde `data/deck.json` y la siembra es idempotente, así que
+  corregir una errata es cambiar el JSON y volver a sembrar, sin desplegar.
+
+  **Cuidado con los nulos en Postgres:** dos nulos no chocan entre sí, así que el índice
+  único `[userId, en]` no impide duplicar las de fábrica. Lo que lo impide es un índice
+  parcial aparte (`words_en_fabrica_key`), que es único por `en` solo cuando no hay dueño.
+
+- **El audio de fábrica se queda en archivos; el de cada usuario va a la base.** Las 80
+  pistas de `public/audio/` las cachea el CDN y las precachea el service worker, así que
+  funcionan sin conexión desde que instalás. El audio que se genere en caliente no puede
+  vivir en el repo, así que va a la tabla `audio` como `bytea` y el service worker lo
+  guarda la primera vez que suena. No hace falta que el usuario elija qué descargar: lo
+  de fábrica ya está y lo suyo se cachea al usarse.
 - **Local-first, no solo servidor.** Postgres es la fuente de verdad; el teléfono
   mantiene una copia en IndexedDB. El caso de uso principal es repasar en el metro sin
   señal: si la app exige red, deja de servir justo donde se usa. Los conflictos se

@@ -4,8 +4,6 @@
 // El .env local apunta SIEMPRE a la rama `development` de Neon, nunca a
 // `production`. En mi-presupuesto ya pasó una vez lo contrario y la API quedó
 // respondiendo contra datos de prueba sin que nadie lo notara.
-//
-// Los modelos (User, Word, Progress) llegan en la etapa 2, issue #27.
 
 generator client {
   provider = "prisma-client"
@@ -14,4 +12,114 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+/// Quien usa la app. No hay registro: se entra con Google y solo pasan los
+/// correos de la lista blanca (#28), que es lo que protege las rutas que
+/// gastan dinero. Por eso no hay contraseña ni token de recuperación.
+model User {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique
+  name      String?
+  image     String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  words    Word[]
+  progress Progress[]
+
+  @@map("users")
+}
+
+/// Una palabra del mazo.
+///
+/// `userId` nulo = palabra de fábrica, visible para todo el mundo. Con dueño =
+/// privada de esa persona. Es la decisión que permite un solo camino de código
+/// para las dos: las consultas filtran por `userId IN (null, yo)`.
+///
+/// Las de fábrica se siembran desde data/deck.json y la siembra es idempotente
+/// (upsert por `en`), así que corregir una errata en el ejemplo es cambiar el
+/// JSON y volver a sembrar, sin desplegar nada.
+model Word {
+  id     String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String? @map("user_id") @db.Uuid
+
+  en    String
+  es    String
+  ipa   String  @default("")
+  emoji String  @default("📝")
+  /// Frase de ejemplo en inglés y su traducción.
+  xe    String  @default("")
+  xs    String  @default("")
+  /// La ilustración, cuando no es un emoji. Guarda el SVG completo: es texto y
+  /// pesa menos de un kilobyte. Si está, se usa en lugar del emoji.
+  svg   String?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user     User?      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  progress Progress[]
+  audio    Audio[]
+
+  /// Nadie puede tener la misma palabra dos veces. En Postgres los nulos no
+  /// chocan entre sí, así que esto no impide que dos personas tengan cada una
+  /// su "to commute": solo impide que una la tenga repetida.
+  @@unique([userId, en])
+  @@index([userId])
+  @@map("words")
+}
+
+/// El avance de una persona con una palabra: cajas Leitner, cinco niveles.
+///
+/// `updatedAt` es la pieza de la sincronización (#30): al fusionar gana la caja
+/// más alta, y a igualdad de caja, lo más reciente. Nunca se retrocede lo ya
+/// aprendido.
+model Progress {
+  userId String @map("user_id") @db.Uuid
+  wordId String @map("word_id") @db.Uuid
+
+  box  Int    @default(1)
+  /// Fecha local en YYYY-MM-DD, no un timestamp: el día de repaso se decide en
+  /// la zona horaria de quien estudia. A las 11 de la noche en México, UTC ya
+  /// está en el día siguiente y los repasos se adelantarían.
+  due  String @db.VarChar(10)
+  seen Int    @default(0)
+  miss Int    @default(0)
+
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  word Word @relation(fields: [wordId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userId, wordId])
+  @@index([userId, due])
+  @@map("progress")
+}
+
+/// El audio de una palabra, por voz y por pista.
+///
+/// Solo vive acá el audio que se genera en caliente, o sea el de las palabras
+/// que agrega cada quien. **El de las 20 de fábrica NO está en la base**: son
+/// archivos en public/audio/, que el CDN cachea y el service worker precachea,
+/// y así funcionan sin conexión desde el momento de instalar. Meterlos acá
+/// costaría una consulta por reproducción y rompería ese precacheo.
+///
+/// 20 KB por pista; mil palabras serían unos 80 MB. Si algún día crece, se
+/// mudan a almacenamiento de objetos sin tocar el resto del modelo.
+model Audio {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  wordId String @map("word_id") @db.Uuid
+
+  /// Cuál de las voces grabadas: `sarah`, `eric`… Las mismas claves que usa el
+  /// índice de public/audio/.
+  voz   String
+  /// Qué se dice: `en`, `es`, `xe` o `xs`.
+  parte String @db.VarChar(2)
+
+  mp3       Bytes
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  word Word @relation(fields: [wordId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([wordId, voz, parte])
+  @@map("audio")
 }

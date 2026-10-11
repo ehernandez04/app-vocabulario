@@ -7,6 +7,9 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    // tsx y no node a secas: el generador de Prisma 7 emite TypeScript, y sus
+    // imports internos van sin extensión, que Node no sabe resolver.
+    seed: "tsx prisma/seed.ts",
   },
   datasource: {
     url: process.env["DATABASE_URL"],
