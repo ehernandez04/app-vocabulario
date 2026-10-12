@@ -1,10 +1,15 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * La hoja que se desliza desde abajo. El armazón sirve para cualquier
  * formulario que venga después (la revisión por lote de la etapa 4 vive acá).
+ *
+ * Se monta siempre en el armazón (`.app`) y no donde la llaman: dentro de una
+ * vista, la hoja acababa debajo de la barra de pestañas y sus botones quedaban
+ * tapados en el teléfono. Solo se llega acá tras un toque, o sea ya en el cliente.
  */
 export function Hoja({
   titulo,
@@ -28,7 +33,7 @@ export function Hoja({
     return () => window.removeEventListener('keydown', alTeclear);
   }, [alCerrar]);
 
-  return (
+  return createPortal(
     <>
       <button className="scrim" onClick={alCerrar} aria-label="Cerrar" />
       <div className="sheet" role="dialog" aria-modal="true" aria-label={titulo}>
@@ -45,6 +50,7 @@ export function Hoja({
           {children}
         </div>
       </div>
-    </>
+    </>,
+    document.querySelector('.app') ?? document.body
   );
 }
