@@ -112,3 +112,15 @@ export const IconSol = svg(
     <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6" />
   </>
 );
+
+export const IconMicro = svg(
+  <>
+    <rect x="9" y="3" width="6" height="12" rx="3" />
+    <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+  </>
+);
+
+export const IconParar = svg(<rect x="6.5" y="6.5" width="11" height="11" rx="2" />, {
+  fill: 'currentColor',
+  stroke: 'none',
+});
