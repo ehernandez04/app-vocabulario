@@ -14,9 +14,7 @@ import {
 import * as store from '@/lib/local-store';
 import { isDue } from '@/lib/srs';
 import { noteColor, peekColor, saludo } from '@/lib/ui';
-import { Avatar } from '@/components/Avatar';
-import { HojaAjustes } from '@/components/HojaAjustes';
-import { HojaImportar } from '@/components/HojaImportar';
+import { BotonAjustes } from '@/components/BotonAjustes';
 import { HojaNuevaPalabra } from '@/components/HojaNuevaPalabra';
 import { useEstado } from '../estado';
 
@@ -25,7 +23,7 @@ const COLORES_CAJA = ['#FFE066', '#FFB4A2', '#B8E1FF', '#C8F0A8', '#FFE066'];
 export default function Inicio() {
   const { listo, deck, cola, indice, progresoDe, ajuste, alternarTema, recargarMazo, rearmarCola, avisar, usuario } =
     useEstado();
-  const [hoja, setHoja] = useState<'nueva' | 'importar' | 'ajustes' | null>(null);
+  const [hoja, setHoja] = useState<'nueva' | null>(null);
 
   const trasCambiarElMazo = (mensaje: string) => {
     recargarMazo();
@@ -90,18 +88,7 @@ export default function Inicio() {
           >
             {oscuro ? <IconSol /> : <IconLuna />}
           </button>
-          <button
-            className="avatarbtn"
-            onClick={() => setHoja('ajustes')}
-            aria-label="Tu cuenta y ajustes"
-          >
-            <Avatar
-              foto={usuario.foto}
-              nombre={usuario.nombre}
-              correo={usuario.correo}
-              size={36}
-            />
-          </button>
+          <BotonAjustes />
         </div>
       </div>
 
@@ -237,12 +224,6 @@ export default function Inicio() {
           alCerrar={() => setHoja(null)}
           alGuardar={(w) => trasCambiarElMazo(`“${w.en}” entra en la caja 1`)}
         />
-      )}
-      {hoja === 'importar' && (
-        <HojaImportar alCerrar={() => setHoja(null)} alImportar={trasCambiarElMazo} />
-      )}
-      {hoja === 'ajustes' && (
-        <HojaAjustes alCerrar={() => setHoja(null)} alAbrirImportar={() => setHoja('importar')} />
       )}
     </section>
   );

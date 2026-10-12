@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { BotonAjustes } from '@/components/BotonAjustes';
 import { Sticker } from '@/components/Sticker';
 import { IconAltavoz, IconCruz, IconTick } from '@/components/icons';
 import * as audio from '@/lib/audio';
@@ -81,8 +82,11 @@ export default function Adivinar() {
     <section className="view">
       <div className="topbar">
         <span className="h2">Adivinar</span>
-        <span className="count">
-          Aciertos {aciertos}/{aciertos + fallos}
+        <span className="lado">
+          <span className="count">
+            Aciertos {aciertos}/{aciertos + fallos}
+          </span>
+          <BotonAjustes />
         </span>
       </div>
 
