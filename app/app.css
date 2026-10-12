@@ -407,7 +407,8 @@
 .avatarbtn{width:36px;height:36px;flex:none;padding:0;overflow:hidden;cursor:pointer;
   border:1.5px solid var(--edge);border-radius:99px;background:var(--note-3, #B8E1FF);
   font:700 .9rem var(--ui);color:var(--on-note);display:grid;place-items:center}
-.avatarbtn img{width:100%;height:100%;object-fit:cover}
+.avatarbtn > span{width:100%;height:100%;display:grid;place-items:center}
+.avatarbtn img{width:100%;height:100%;object-fit:cover;display:block}
 
 .ajustes{display:flex;flex-direction:column;gap:14px}
 .ajustes .eyebrow{margin:6px 0 -6px}
@@ -415,7 +416,8 @@
   border:2px solid var(--edge);border-radius:16px;padding:12px 14px;box-shadow:var(--lift)}
 .cuenta .avatar{width:42px;height:42px;flex:none;border-radius:99px;overflow:hidden;
   border:1.5px solid var(--edge);background:#B8E1FF;color:#1C1B19;
-  display:grid;place-items:center;font:700 1rem var(--ui);object-fit:cover}
+  display:grid;place-items:center;font:700 1rem var(--ui)}
+.cuenta .avatar img{width:100%;height:100%;object-fit:cover;display:block}
 .cuenta-txt{display:flex;flex-direction:column;flex:1;min-width:0}
 .cuenta-txt b{font-size:.92rem}
 .cuenta-txt span{font-size:.78rem;color:var(--ink-faint);
