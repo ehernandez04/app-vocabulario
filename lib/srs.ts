@@ -88,6 +88,28 @@ export function session(
     .slice(0, limit);
 }
 
+/**
+ * Las palabras que más se te resisten: por fallos acumulados, con un mínimo para
+ * que una pifia suelta no aparezca. A igualdad gana la peor proporción de
+ * fallos sobre veces vista, y luego la caja más baja.
+ */
+export function masFalladas(
+  deck: Word[],
+  progressOf: (en: string) => Progress,
+  minimo = 2,
+  limite = 20
+): Word[] {
+  const tasa = (p: Progress) => (p.seen ? p.miss / p.seen : 0);
+  return deck
+    .filter((w) => progressOf(w.en).miss >= minimo)
+    .sort((a, b) => {
+      const pa = progressOf(a.en);
+      const pb = progressOf(b.en);
+      return pb.miss - pa.miss || tasa(pb) - tasa(pa) || pa.box - pb.box;
+    })
+    .slice(0, limite);
+}
+
 export function shuffle<T>(list: readonly T[]): T[] {
   const a = list.slice();
   for (let i = a.length - 1; i > 0; i--) {

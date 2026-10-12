@@ -43,6 +43,9 @@ type Estado = {
   deshacer: (() => void) | null;
   siguiente: () => void;
   rearmarCola: () => void;
+  /** true mientras la cola es un repaso de las más falladas y no la sesión del día. */
+  dirigida: boolean;
+  repasarLista: (palabras: Word[]) => void;
   recargarMazo: () => void;
   alternarTema: () => void;
   sync: EstadoSync;
@@ -82,6 +85,7 @@ export function ProveedorEstado({
   const [aciertos, setAciertos] = useState(0);
   const [fallos, setFallos] = useState(0);
   const [aviso, setAviso] = useState<Aviso | null>(null);
+  const [dirigida, setDirigida] = useState(false);
   const [revertible, setRevertible] = useState<Revertible | null>(null);
 
   const repintar = useCallback(() => setVersion((v) => v + 1), []);
@@ -251,6 +255,16 @@ export function ProveedorEstado({
 
   const rearmarCola = useCallback(() => {
     setCola(session(store.fullDeck(BASE_DECK), store.progressOf, 20));
+    setDirigida(false);
+    setIndice(0);
+    setAciertos(0);
+    setFallos(0);
+  }, []);
+
+  /** Una sesión con solo estas palabras, sin mirar si están vencidas. */
+  const repasarLista = useCallback((palabras: Word[]) => {
+    setCola(palabras);
+    setDirigida(true);
     setIndice(0);
     setAciertos(0);
     setFallos(0);
@@ -347,6 +361,8 @@ export function ProveedorEstado({
       calificar,
       siguiente,
       rearmarCola,
+      dirigida,
+      repasarLista,
       recargarMazo,
       alternarTema,
     }),
@@ -374,6 +390,8 @@ export function ProveedorEstado({
       calificar,
       siguiente,
       rearmarCola,
+      dirigida,
+      repasarLista,
       recargarMazo,
       alternarTema,
     ]

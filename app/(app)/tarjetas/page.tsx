@@ -20,6 +20,7 @@ export default function Tarjetas() {
     calificar,
     siguiente,
     rearmarCola,
+    dirigida,
     avisar,
     deshacer,
   } = useEstado();
@@ -60,7 +61,7 @@ export default function Tarjetas() {
               setRevelada(false);
             }}
           >
-            Otra ronda
+            {dirigida ? 'Volver al repaso de hoy' : 'Otra ronda'}
           </button>
         </div>
       </section>
@@ -101,6 +102,19 @@ export default function Tarjetas() {
           <BotonAjustes />
         </span>
       </div>
+      {dirigida && (
+        <div className="dirigida">
+          <span>Repaso de las más falladas</span>
+          <button
+            onClick={() => {
+              rearmarCola();
+              setRevelada(false);
+            }}
+          >
+            Salir
+          </button>
+        </div>
+      )}
       <div className="bar">
         <i style={{ width: `${pct}%` }} />
       </div>

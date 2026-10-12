@@ -5,6 +5,7 @@ import {
   emptyProgress,
   grade,
   isDue,
+  masFalladas,
   nextStreak,
   session,
   today,
@@ -121,5 +122,31 @@ describe('racha', () => {
 
   it('sobrevive al cambio de horario', () => {
     expect(nextStreak(3, '2026-10-25', '2026-10-26')).toBe(4);
+  });
+});
+
+describe('las más falladas', () => {
+  const mazo: Word[] = ['a', 'b', 'c', 'd', 'e'].map((en) => ({ en, es: en }));
+  const p = (box: number, seen: number, miss: number): Progress => ({ box, due: '2026-10-09', seen, miss });
+  const progreso: Record<string, Progress> = {
+    a: p(1, 10, 4),
+    b: p(2, 5, 4), // mismos fallos que a, peor proporción: va antes
+    c: p(1, 3, 1), // una pifia suelta: no entra
+    d: p(3, 4, 2),
+    e: p(1, 4, 2), // empata con d: caja más baja primero
+  };
+  const progressOf = (en: string) => progreso[en];
+
+  it('ordena por fallos, luego por proporción, luego por caja', () => {
+    expect(masFalladas(mazo, progressOf).map((w) => w.en)).toEqual(['b', 'a', 'e', 'd']);
+  });
+
+  it('respeta el mínimo y el límite', () => {
+    expect(masFalladas(mazo, progressOf, 4).map((w) => w.en)).toEqual(['b', 'a']);
+    expect(masFalladas(mazo, progressOf, 2, 2)).toHaveLength(2);
+  });
+
+  it('sin fallos no devuelve nada', () => {
+    expect(masFalladas(mazo, () => p(1, 5, 0))).toEqual([]);
   });
 });
