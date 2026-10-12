@@ -15,6 +15,7 @@ import * as store from '@/lib/local-store';
 import { isDue } from '@/lib/srs';
 import { noteColor, peekColor, saludo } from '@/lib/ui';
 import { BotonAjustes } from '@/components/BotonAjustes';
+import { BloqueTemas } from '@/components/BloqueTemas';
 import { MasFalladas } from '@/components/MasFalladas';
 import { PalabraEn } from '@/components/PalabraEn';
 import { FilaListas } from '@/components/FilaListas';
@@ -223,6 +224,8 @@ export default function Inicio() {
         </div>
         <p className="muted sm">Cada acierto sube la palabra una caja: 1, 2, 4, 8 y 16 días.</p>
       </div>
+
+      <BloqueTemas />
 
       <MasFalladas />
 

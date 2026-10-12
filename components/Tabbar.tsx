@@ -13,6 +13,8 @@ const PESTANAS = [
 
 export function Tabbar() {
   const ruta = usePathname();
+  // Los temas son una vista aparte, a pantalla completa: se sale con «← Inicio».
+  if (ruta.startsWith('/temas')) return null;
   return (
     <nav className="tabbar" aria-label="Secciones">
       {PESTANAS.map(({ href, label, Icono }) => (
