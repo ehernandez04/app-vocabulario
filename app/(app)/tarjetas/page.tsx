@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { BotonAjustes } from '@/components/BotonAjustes';
+import { ListaVacia } from '@/components/ListaVacia';
 import { Sticker } from '@/components/Sticker';
 import { IconAltavoz, IconComillas, IconDespacio } from '@/components/icons';
 import * as audio from '@/lib/audio';
@@ -12,6 +13,8 @@ export default function Tarjetas() {
   const {
     listo,
     deck,
+    mazo,
+    listaElegida,
     cola,
     indice,
     aciertos,
@@ -33,6 +36,8 @@ export default function Tarjetas() {
   }, [deshacer]);
 
   if (!listo) return <section className="view" aria-busy="true" />;
+
+  if (listaElegida && !mazo.length) return <ListaVacia titulo="Tarjetas" />;
 
   if (indice >= cola.length) {
     return (

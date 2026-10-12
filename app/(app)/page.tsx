@@ -16,13 +16,14 @@ import { isDue } from '@/lib/srs';
 import { noteColor, peekColor, saludo } from '@/lib/ui';
 import { BotonAjustes } from '@/components/BotonAjustes';
 import { MasFalladas } from '@/components/MasFalladas';
+import { FilaListas } from '@/components/FilaListas';
 import { HojaNuevaPalabra } from '@/components/HojaNuevaPalabra';
 import { useEstado } from '../estado';
 
 const COLORES_CAJA = ['#FFE066', '#FFB4A2', '#B8E1FF', '#C8F0A8', '#FFE066'];
 
 export default function Inicio() {
-  const { listo, deck, cola, indice, progresoDe, ajuste, alternarTema, recargarMazo, rearmarCola, avisar, usuario } =
+  const { listo, deck, mazo, cola, indice, progresoDe, ajuste, alternarTema, recargarMazo, rearmarCola, avisar, usuario } =
     useEstado();
   const [hoja, setHoja] = useState<'nueva' | null>(null);
 
@@ -39,12 +40,14 @@ export default function Inicio() {
   if (!listo) return <section className="view" aria-busy="true" />;
 
   const vencidas = deck.filter((w) => isDue(progresoDe(w.en))).length;
+  // El titular habla de lo que vas a repasar (la lista elegida); el anillo y las cajas, de todo el mazo.
+  const porRepasar = mazo.filter((w) => isDue(progresoDe(w.en))).length;
   const total = deck.length;
   const alDia = total - vencidas;
   const pct = total ? Math.round((alDia / total) * 100) : 0;
   const C = 2 * Math.PI * 19;
 
-  const siguiente = cola[indice] || deck[0];
+  const siguiente = cola[indice] || mazo[0];
   const cuentas = store.boxCounts(deck);
   const max = Math.max(...cuentas, 1);
   const oscuro = ajuste('theme') === 'dark';
@@ -57,13 +60,13 @@ export default function Inicio() {
           <p className="eyebrow">{saludo()}{primerNombre ? `, ${primerNombre}` : ''}</p>
           {/* Concordancia a mano: el helper plural() no sirve con verbo. */}
           <h1 className="h1">
-            {!vencidas ? (
+            {!porRepasar ? (
               <>
                 Todo
                 <br />
                 al día
               </>
-            ) : vencidas === 1 ? (
+            ) : porRepasar === 1 ? (
               <>
                 1 palabra
                 <br />
@@ -71,7 +74,7 @@ export default function Inicio() {
               </>
             ) : (
               <>
-                {vencidas} palabras
+                {porRepasar} palabras
                 <br />
                 te esperan
               </>
@@ -125,6 +128,9 @@ export default function Inicio() {
         </div>
       </div>
 
+      <FilaListas />
+
+      {siguiente && (
       <Link
         href="/tarjetas"
         className="stack"
@@ -150,6 +156,7 @@ export default function Inicio() {
           </div>
         </div>
       </Link>
+      )}
 
       <div className="block">
         <p className="eyebrow">Cómo quieres repasar</p>

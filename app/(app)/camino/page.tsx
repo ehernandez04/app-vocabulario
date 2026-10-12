@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BotonAjustes } from '@/components/BotonAjustes';
+import { ListaVacia } from '@/components/ListaVacia';
 import { Sticker } from '@/components/Sticker';
 import { IconAdelante, IconAtras, IconPausa, IconPlay } from '@/components/icons';
 import * as audio from '@/lib/audio';
@@ -28,7 +29,8 @@ const PASOS: [Fase, string, string][] = [
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export default function Camino() {
-  const { listo, deck, ajuste, guardarAjuste } = useEstado();
+  // Se recorre la lista elegida (o todo el mazo); el color de cada nota sale del mazo completo.
+  const { listo, deck: mazoCompleto, mazo: deck, listaElegida, ajuste, guardarAjuste } = useEstado();
 
   const [indice, setIndice] = useState(0);
   const [fase, setFase] = useState<Fase>('idle');
@@ -138,6 +140,7 @@ export default function Camino() {
   // desde una pantalla que ya no está.
   useEffect(() => parar, [parar]);
 
+  if (listo && listaElegida && !deck.length) return <ListaVacia titulo="Modo camino" />;
   if (!listo || !deck.length) return <section className="view camino" aria-busy="true" />;
 
   const w = deck[indice] ?? deck[0];
@@ -161,7 +164,7 @@ export default function Camino() {
         llega la respuesta en español.
       </p>
 
-      <div className="note roadcard" style={{ '--note': noteColor(deck, w) } as React.CSSProperties}>
+      <div className="note roadcard" style={{ '--note': noteColor(mazoCompleto, w) } as React.CSSProperties}>
         <div className="n-top">
           <span className="n-tag">{ETIQUETAS[fase]}</span>
           <Sticker word={w} size="sm" />
