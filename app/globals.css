@@ -90,6 +90,15 @@
   --shadow-drop: var(--drop);
 }
 
+/* Los nombres cortos con los que app.css pide las tipografías. Vivían en el CSS de
+   legacy/ y no se portaron: sin ellos cada `font-family: var(--display)` quedaba
+   vacío y heredaba DM Sans (#47). */
+:root {
+  --display: var(--font-display);
+  --ui: var(--font-ui);
+  --hand: var(--font-hand);
+}
+
 * {
   box-sizing: border-box;
 }
