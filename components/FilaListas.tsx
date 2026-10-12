@@ -70,10 +70,10 @@ export function FilaListas() {
         <HojaNuevaPalabra
           listaInicial={hoja.id}
           alCerrar={() => setHoja({ tipo: 'lista', id: hoja.id })}
-          alGuardar={(w) => {
+          alGuardar={(_w, mensaje) => {
             recargarMazo();
             rearmarCola();
-            avisar(`“${w.en}” entra en la caja 1`);
+            avisar(mensaje);
             setHoja({ tipo: 'lista', id: hoja.id });
           }}
         />

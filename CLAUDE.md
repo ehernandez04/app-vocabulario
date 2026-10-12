@@ -271,6 +271,19 @@ noche en México `toISOString()` ya devuelve el día siguiente, lo que adelantar
 rompería la racha. Y `daysBetween` compara días de calendario, no bloques de 24 h, para
 sobrevivir al cambio de horario.
 
+## Asistente para agregar palabras (#50)
+
+`POST /api/palabra/buscar` (login obligatorio; `ANTHROPIC_API_KEY` solo en el servidor)
+pide a `claude-haiku-5-5` los significados de una palabra, separados por tipo, y corrige la
+pronunciación con un diccionario real cuando responde. **Tope de 30 búsquedas por persona y
+día** (`ai_usage`, día UTC); una búsqueda que falla por culpa nuestra no cuenta. Sin clave,
+la ruta devuelve 503 y el formulario manual sigue igual.
+
+**Varios significados = varias tarjetas, y la distinción va en la clave** (opción A, decidida):
+«run (sustantivo)», «to run (verbo: dirigir)». No cambia la clave ni el modelo; lo que se
+muestra y se pronuncia pasa por `textoEn()` / `<PalabraEn>`, que quitan la etiqueta. Un
+solo significado se guarda a secas, como una palabra de siempre.
+
 ## Los tres modos
 
 1. **Tarjetas** — post-it con palabra, fonética, pegatina y audio. Se arrastra a la izquierda
@@ -333,6 +346,8 @@ lib/local-store.ts      IndexedDB
 lib/sync-copia.ts       qué se manda y cómo se aplica la respuesta (puro, con tests)
 components/MasFalladas.tsx  bloque de Inicio y hoja con las palabras más falladas (#15)
 components/IndicadorSync.tsx  insignia del avatar y fila de estado en Ajustes
+lib/palabra.ts          etiqueta de significados («run (verbo)»), claves y «ya la tienes» (con tests)
+lib/diccionario.ts      pronunciación desde dictionaryapi.dev, con respaldo en el modelo
 lib/listas.ts           listas de palabras: siembra, filtro del mazo (con tests)
 lib/sync.ts             une la copia con la red; una petición a la vez
 lib/fusion.ts           las dos reglas de conflicto (primera subida / día a día)

@@ -16,6 +16,7 @@ import { isDue } from '@/lib/srs';
 import { noteColor, peekColor, saludo } from '@/lib/ui';
 import { BotonAjustes } from '@/components/BotonAjustes';
 import { MasFalladas } from '@/components/MasFalladas';
+import { PalabraEn } from '@/components/PalabraEn';
 import { FilaListas } from '@/components/FilaListas';
 import { HojaNuevaPalabra } from '@/components/HojaNuevaPalabra';
 import { useEstado } from '../estado';
@@ -151,7 +152,9 @@ export default function Inicio() {
               <span className="n-tag">Siguiente palabra</span>
               <Sticker word={siguiente} size="sm" />
             </div>
-            <span className="en sm">{siguiente.en}</span>
+            <span className="en sm">
+              <PalabraEn en={siguiente.en} />
+            </span>
             <span className="hand">toca para practicar →</span>
           </div>
         </div>
@@ -232,7 +235,7 @@ export default function Inicio() {
       {hoja === 'nueva' && (
         <HojaNuevaPalabra
           alCerrar={() => setHoja(null)}
-          alGuardar={(w) => trasCambiarElMazo(`“${w.en}” entra en la caja 1`)}
+          alGuardar={(_w, mensaje) => trasCambiarElMazo(mensaje)}
         />
       )}
     </section>

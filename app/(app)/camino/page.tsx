@@ -7,6 +7,8 @@ import { Sticker } from '@/components/Sticker';
 import { IconAdelante, IconAtras, IconPausa, IconPlay } from '@/components/icons';
 import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
+import { PalabraEn } from '@/components/PalabraEn';
+import { textoEn } from '@/lib/palabra';
 import { noteColor } from '@/lib/ui';
 import { useEstado } from '../../estado';
 
@@ -105,7 +107,7 @@ export default function Camino() {
           });
           audio.setPlaybackState('playing');
 
-          await audio.say(w.en, 'en', { rate: 0.9, word: w.en, part: 'en' });
+          await audio.say(textoEn(w.en), 'en', { rate: 0.9, word: w.en, part: 'en' });
           if (!vivo()) return;
 
           setFase('think');
@@ -169,7 +171,9 @@ export default function Camino() {
           <span className="n-tag">{ETIQUETAS[fase]}</span>
           <Sticker word={w} size="sm" />
         </div>
-        <p className="en md">{w.en}</p>
+        <p className="en md">
+          <PalabraEn en={w.en} />
+        </p>
         <p className={`es ${mostrarEs ? '' : 'veiled'}`}>{mostrarEs ? w.es : '¿ … ?'}</p>
       </div>
 
