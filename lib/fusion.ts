@@ -75,3 +75,33 @@ export function resolverProgreso(
 
 export const igualProgreso = (a: Progress, b: Progress): boolean =>
   a.box === b.box && a.due === b.due && a.seen === b.seen && a.miss === b.miss;
+
+export type ListaEstado = { name: string; words: string[] };
+
+/**
+ * La regla del día a día para una lista, la misma idea que `resolverProgreso`.
+ *
+ * - Si la lista estaba borrada en el servidor y alguien la edita, manda quien la
+ *   edita (igual que una palabra que se vuelve a agregar).
+ * - Si el servidor no cambió desde la `base` que el teléfono vio, el cambio entra
+ *   tal cual, incluidas las palabras quitadas.
+ * - Si cambió, dos dispositivos la tocaron sin verse: se unen las palabras (no se
+ *   pierde ninguna) y se queda el nombre del servidor.
+ */
+export function resolverLista(
+  servidor: { lista: ListaEstado; actualizado: Date; borrada: boolean } | null,
+  cliente: ListaEstado,
+  base: Date | null
+): { lista: ListaEstado; choque: boolean } {
+  if (!servidor || servidor.borrada) return { lista: cliente, choque: false };
+  if (base && servidor.actualizado.getTime() <= base.getTime()) {
+    return { lista: cliente, choque: false };
+  }
+  return {
+    lista: { name: servidor.lista.name, words: [...new Set([...servidor.lista.words, ...cliente.words])] },
+    choque: true,
+  };
+}
+
+export const igualLista = (a: ListaEstado, b: ListaEstado): boolean =>
+  a.name === b.name && a.words.length === b.words.length && a.words.every((w) => b.words.includes(w));

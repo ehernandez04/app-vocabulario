@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { aplicarRespuesta, construirPeticion, type Copia, type Respuesta } from './sync-copia';
+import type { Lista } from './listas';
 import type { Progress } from './srs';
 
 const p = (box: number, due = '2026-10-12', seen = 0, miss = 0): Progress => ({ box, due, seen, miss });
@@ -12,6 +13,10 @@ const copia = (c: Partial<Copia> = {}): Copia => ({
   sucios: {},
   pendientes: {},
   cursor: '2026-10-12T10:00:00.000Z', // ya sincronizada, salvo que el caso diga otra cosa
+  listas: {},
+  listasVersiones: {},
+  listasSucias: {},
+  listasBorradas: {},
   ...c,
 });
 
@@ -19,6 +24,7 @@ const resp = (r: Partial<Respuesta> = {}): Respuesta => ({
   cursor: '2026-10-12T11:00:00.000Z',
   words: [],
   progress: [],
+  lists: [],
   streak: 0,
   lastDay: null,
   ...r,
@@ -174,5 +180,88 @@ describe('aplicarRespuesta', () => {
     const c = copia({ racha: { streak: 2, lastDay: '2026-10-10' } });
     aplicarRespuesta(c, construirPeticion(c).enviado, resp({ streak: 6, lastDay: '2026-10-12' }));
     expect(c.racha).toEqual({ streak: 6, lastDay: '2026-10-12' });
+  });
+});
+
+describe('listas', () => {
+  const L = (id: string, name: string, words: string[]): Lista => ({ id, name, words, createdAt: '2026-10-12T09:00:00.000Z' });
+  const rl = (id: string, name: string, words: string[], version: string, borrada = false) => ({
+    id, name, words, createdAt: '2026-10-12T09:00:00.000Z', version, borrada,
+  });
+
+  it('manda las sucias con su base y las borradas con borrada', () => {
+    const c = copia({
+      listas: { a: L('a', 'Trabajo', ['x']), b: L('b', 'Viajes', ['y']) },
+      listasSucias: { a: true },
+      listasVersiones: { a: 'V1', b: 'V2' },
+      listasBorradas: { z: true },
+    });
+    const { cuerpo } = construirPeticion(c);
+    expect(cuerpo.lists).toEqual([
+      { id: 'a', name: 'Trabajo', words: ['x'], base: 'V1' },
+      { id: 'z', name: '', words: [], base: null, borrada: true },
+    ]);
+  });
+
+  it('la primera sincronización marca todas las listas locales, sin versión', () => {
+    const c = copia({ cursor: null, listas: { a: L('a', 'Trabajo', []) } });
+    expect(construirPeticion(c).cuerpo.lists).toEqual([{ id: 'a', name: 'Trabajo', words: [], base: null }]);
+  });
+
+  it('una lista que nunca llegó al servidor se sube aunque el teléfono ya se haya sincronizado', () => {
+    const c = copia({ listas: { a: L('a', 'Trabajo', ['x']) } }); // cursor presente, sin versión
+    expect(construirPeticion(c).cuerpo.lists.map((l) => l.id)).toEqual(['a']);
+  });
+
+  it('lo confirmado deja de estar sucio y guarda su versión', () => {
+    const c = copia({ listas: { a: L('a', 'Trabajo', ['x']) }, listasSucias: { a: true } });
+    const { enviado } = construirPeticion(c);
+    aplicarRespuesta(c, enviado, resp({ lists: [rl('a', 'Trabajo', ['x'], 'V3')] }));
+    expect(c.listasSucias).toEqual({});
+    expect(c.listasVersiones.a).toBe('V3');
+  });
+
+  it('una edición hecha mientras viajaba la petición NO se pisa', () => {
+    const c = copia({ listas: { a: L('a', 'Trabajo', ['x']) }, listasSucias: { a: true } });
+    const { enviado } = construirPeticion(c);
+    c.listas.a = L('a', 'Trabajo', ['x', 'y']); // el usuario agrega otra en vuelo
+    aplicarRespuesta(c, enviado, resp({ lists: [rl('a', 'Trabajo', ['x'], 'V3')] }));
+    expect(c.listas.a.words).toEqual(['x', 'y']);
+    expect(c.listasSucias.a).toBe(true);
+    expect(c.listasVersiones.a).toBe('V3');
+  });
+
+  it('una lista creada en otro dispositivo entra, y una borrada allí se quita', () => {
+    const c = copia({ listas: { v: L('v', 'Vieja', ['x']) }, listasVersiones: { v: 'V1' } });
+    aplicarRespuesta(c, construirPeticion(c).enviado, resp({ lists: [rl('n', 'Nueva', ['y'], 'V2'), rl('v', 'Vieja', [], 'V2', true)] }));
+    expect(c.listas.n.words).toEqual(['y']);
+    expect(c.listas.v).toBeUndefined();
+  });
+
+  it('una lista que acabas de borrar no revive con lo que baja', () => {
+    const c = copia({ listasBorradas: { a: true } });
+    aplicarRespuesta(c, construirPeticion(c).enviado, resp({ lists: [rl('a', 'Trabajo', ['x'], 'V2')] }));
+    expect(c.listas.a).toBeUndefined();
+  });
+
+  it('una baja confirmada deja de estar pendiente', () => {
+    const c = copia({ listasBorradas: { a: true }, listasVersiones: { a: 'V1' } });
+    const { enviado } = construirPeticion(c);
+    aplicarRespuesta(c, enviado, resp({ lists: [rl('a', 'Trabajo', [], 'V2', true)] }));
+    expect(c.listasBorradas).toEqual({});
+    expect(c.listasVersiones).toEqual({});
+  });
+
+  it('el servidor funde una lista nueva con otra del mismo nombre y la local adopta su id', () => {
+    const c = copia({ listas: { local: L('local', 'Básicas', ['x']) }, listasSucias: { local: true } });
+    const { enviado } = construirPeticion(c);
+    aplicarRespuesta(
+      c,
+      enviado,
+      resp({ lists: [rl('remota', 'Básicas', ['x', 'y'], 'V5')], reasignadas: { local: 'remota' } })
+    );
+    expect(c.listas.local).toBeUndefined();
+    expect(c.listas.remota.words).toEqual(['x', 'y']);
+    expect(c.listasSucias).toEqual({});
   });
 });

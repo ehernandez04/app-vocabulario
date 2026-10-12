@@ -33,6 +33,7 @@ model User {
 
   words    Word[]
   progress Progress[]
+  lists    List[]
 
   @@map("users")
 }
@@ -74,6 +75,7 @@ model Word {
   user     User?      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   progress Progress[]
   audio    Audio[]
+  lists    ListWord[]
 
   /// Nadie puede tener la misma palabra dos veces. En Postgres los nulos no
   /// chocan entre sí, así que esto no impide que dos personas tengan cada una
@@ -139,4 +141,42 @@ model Audio {
 
   @@unique([wordId, voz, parte])
   @@map("audio")
+}
+
+/// Una lista de palabras de una persona (#13): Básicas, Trabajo, Viajes…
+///
+/// El `id` lo genera el teléfono (UUID), no la base: así una lista creada sin
+/// señal ya tiene su identidad y subirla dos veces es la misma operación.
+/// `updatedAt` hace de versión para la sincronización, igual que en `Progress`, y
+/// cualquier cambio de nombre o de miembros la sube. Borrado con marca
+/// (`deletedAt`) por la misma razón que las palabras: un teléfono sin señal solo
+/// se entera de que la quitaste si la fila sigue ahí diciéndolo.
+model List {
+  id     String @id @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  name   String
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  words ListWord[]
+
+  @@index([userId, updatedAt])
+  @@map("lists")
+}
+
+/// Qué palabras están en qué lista. Una palabra puede estar en varias listas,
+/// de fábrica o propia, y una lista en cuantas quieras: de ahí la tabla aparte.
+model ListWord {
+  listId String @map("list_id") @db.Uuid
+  wordId String @map("word_id") @db.Uuid
+
+  list List @relation(fields: [listId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  word Word @relation(fields: [wordId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([listId, wordId])
+  @@index([wordId])
+  @@map("list_words")
 }

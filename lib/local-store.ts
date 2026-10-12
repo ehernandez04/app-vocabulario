@@ -67,6 +67,9 @@ let subidoA: string | null = null;
 let versiones: Record<string, string> = {};
 let sucios: Record<string, true> = {};
 let pendientes: Record<string, Pendiente> = {};
+let listasVersiones: Record<string, string> = {};
+let listasSucias: Record<string, true> = {};
+let listasBorradas: Record<string, true> = {};
 let cursor: string | null = null;
 let alCambiar: (() => void) | null = null;
 
@@ -201,6 +204,9 @@ export function deleteWord(en: string) {
 function guardarLista(l: Lista) {
   lists[l.id] = l;
   put('lists', l.id, l);
+  listasSucias[l.id] = true;
+  put('sync', `ld:${l.id}`, true);
+  alCambiar?.();
 }
 
 export const allLists = (): Lista[] =>
@@ -224,6 +230,11 @@ export function renameList(id: string, name: string) {
 export function deleteList(id: string) {
   delete lists[id];
   del('lists', id);
+  delete listasSucias[id];
+  del('sync', `ld:${id}`);
+  listasBorradas[id] = true;
+  put('sync', `lb:${id}`, true);
+  alCambiar?.();
   if (settings.lista === id) set('lista', null);
 }
 
@@ -286,11 +297,17 @@ function cargarSync(guardado: Record<string, unknown>) {
   versiones = {};
   sucios = {};
   pendientes = {};
+  listasVersiones = {};
+  listasSucias = {};
+  listasBorradas = {};
   cursor = typeof guardado.cursor === 'string' ? guardado.cursor : null;
   for (const [k, v] of Object.entries(guardado)) {
     if (k.startsWith('v:') && typeof v === 'string') versiones[k.slice(2)] = v;
     else if (k.startsWith('p:')) sucios[k.slice(2)] = true;
     else if (k.startsWith('w:')) pendientes[k.slice(2)] = v as Pendiente;
+    else if (k.startsWith('lv:') && typeof v === 'string') listasVersiones[k.slice(3)] = v;
+    else if (k.startsWith('ld:')) listasSucias[k.slice(3)] = true;
+    else if (k.startsWith('lb:')) listasBorradas[k.slice(3)] = true;
   }
 }
 
@@ -338,6 +355,10 @@ export function copiaSync(): Copia {
     sucios,
     pendientes,
     cursor,
+    listas: lists,
+    listasVersiones,
+    listasSucias,
+    listasBorradas,
   };
 }
 
@@ -345,7 +366,12 @@ export const haySincronizacionPendiente = (): boolean => contarPendientes() > 0;
 
 /** Cuántos cambios guardados esperan subir (avances y palabras altas o bajas). */
 export const contarPendientes = (): number =>
-  new Set([...Object.keys(sucios), ...Object.keys(pendientes)]).size;
+  new Set([
+    ...Object.keys(sucios),
+    ...Object.keys(pendientes),
+    ...Object.keys(listasSucias).map((id) => `lista:${id}`),
+    ...Object.keys(listasBorradas).map((id) => `lista:${id}`),
+  ]).size;
 
 /** Persiste lo que `aplicarRespuesta` cambió en la copia. */
 export function guardarSync(c: Copia, tocado: Tocado) {
@@ -362,6 +388,14 @@ export function guardarSync(c: Copia, tocado: Tocado) {
     else del('words', en);
   }
 
+  for (const id of tocado.listas) {
+    if (lists[id]) put('lists', id, lists[id]);
+    else del('lists', id);
+  }
+  // Si la lista que se estaba repasando ya no existe (borrada desde otro
+  // dispositivo, o fundida con otra), se vuelve a «todas».
+  if (settings.lista && !lists[settings.lista]) set('lista', null);
+
   // Los marcadores se reescriben enteros, en una sola transacción: son pocos y
   // así no pueden quedar a medias entre sí.
   if (!db) return;
@@ -373,6 +407,9 @@ export function guardarSync(c: Copia, tocado: Tocado) {
     for (const [en, v] of Object.entries(versiones)) o.put(v, `v:${en}`);
     for (const en of Object.keys(sucios)) o.put(true, `p:${en}`);
     for (const [en, pend] of Object.entries(pendientes)) o.put(pend, `w:${en}`);
+    for (const [id, v] of Object.entries(listasVersiones)) o.put(v, `lv:${id}`);
+    for (const id of Object.keys(listasSucias)) o.put(true, `ld:${id}`);
+    for (const id of Object.keys(listasBorradas)) o.put(true, `lb:${id}`);
   } catch {
     /* la copia en memoria está bien; en el peor caso se vuelve a mandar */
   }

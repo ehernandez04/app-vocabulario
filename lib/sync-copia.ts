@@ -16,7 +16,8 @@
  *  - Las palabras propias altas y bajas esperan en `pendientes`.
  */
 
-import { fusionarRacha, igualProgreso, type Racha } from './fusion';
+import { fusionarRacha, igualLista, igualProgreso, type Racha } from './fusion';
+import type { Lista } from './listas';
 import type { Progress, Word } from './srs';
 
 export type Pendiente = { tipo: 'alta' | 'baja'; word: Word };
@@ -32,6 +33,14 @@ export type Copia = {
   pendientes: Record<string, Pendiente>;
   /** null = nunca se sincronizó. */
   cursor: string | null;
+  /** Las listas, por id. */
+  listas: Record<string, Lista>;
+  /** Versión del servidor vista por última vez, por lista. */
+  listasVersiones: Record<string, string>;
+  /** Listas creadas o editadas que el servidor aún no confirmó. */
+  listasSucias: Record<string, true>;
+  /** Listas borradas que el servidor aún no confirmó. */
+  listasBorradas: Record<string, true>;
 };
 
 export type Peticion = {
@@ -40,6 +49,7 @@ export type Peticion = {
     borrada?: true;
   })[];
   progress: (Progress & { en: string; base: string | null })[];
+  lists: { id: string; name: string; words: string[]; base: string | null; borrada?: true }[];
   streak: number;
   lastDay: string | null;
 };
@@ -48,6 +58,8 @@ export type Peticion = {
 export type Enviado = {
   progress: Record<string, Progress>;
   pendientes: Record<string, Pendiente['tipo']>;
+  listas: Record<string, Lista>;
+  listasBorradas: Record<string, true>;
 };
 
 export type Respuesta = {
@@ -57,12 +69,15 @@ export type Respuesta = {
     createdAt?: string;
   })[];
   progress: (Progress & { en: string; version: string })[];
+  lists?: { id: string; name: string; words: string[]; createdAt: string; version: string; borrada: boolean }[];
+  /** Listas nuevas que el servidor fundió con otra del mismo nombre: id del teléfono → id definitivo. */
+  reasignadas?: Record<string, string>;
   streak: number;
   lastDay: string | null;
 };
 
 /** Qué tocó la respuesta, para persistir solo eso. */
-export type Tocado = { progress: string[]; words: string[] };
+export type Tocado = { progress: string[]; words: string[]; listas: string[] };
 
 const intacto = (p: Progress) => p.seen > 0 || p.box > 1;
 
@@ -84,6 +99,11 @@ function marcarLoPrevio(c: Copia) {
 
 export function construirPeticion(c: Copia): { cuerpo: Peticion; enviado: Enviado } {
   if (c.cursor === null) marcarLoPrevio(c);
+  // Una lista sin versión nunca llegó al servidor, aunque el teléfono ya se haya
+  // sincronizado antes (las listas se estrenaron después que el resto).
+  for (const id of Object.keys(c.listas)) {
+    if (!c.listasVersiones[id] && !c.listasBorradas[id]) c.listasSucias[id] = true;
+  }
 
   const progress = Object.keys(c.sucios)
     .filter((en) => c.progress[en])
@@ -99,8 +119,26 @@ export function construirPeticion(c: Copia): { cuerpo: Peticion; enviado: Enviad
     ...(tipo === 'baja' ? { borrada: true as const } : {}),
   }));
 
+  const lists: Peticion['lists'] = [
+    ...Object.keys(c.listasSucias)
+      .filter((id) => c.listas[id] && !c.listasBorradas[id])
+      .map((id) => ({
+        id,
+        name: c.listas[id].name,
+        words: c.listas[id].words,
+        base: c.listasVersiones[id] ?? null,
+      })),
+    ...Object.keys(c.listasBorradas).map((id) => ({
+      id,
+      name: c.listas[id]?.name ?? '',
+      words: [],
+      base: c.listasVersiones[id] ?? null,
+      borrada: true as const,
+    })),
+  ];
+
   return {
-    cuerpo: { desde: c.cursor, words, progress, streak: c.racha.streak, lastDay: c.racha.lastDay },
+    cuerpo: { desde: c.cursor, words, progress, lists, streak: c.racha.streak, lastDay: c.racha.lastDay },
     enviado: {
       progress: Object.fromEntries(
         Object.keys(c.sucios)
@@ -108,6 +146,12 @@ export function construirPeticion(c: Copia): { cuerpo: Peticion; enviado: Enviad
           .map((en) => [en, { ...c.progress[en] }])
       ),
       pendientes: Object.fromEntries(Object.entries(c.pendientes).map(([en, p]) => [en, p.tipo])),
+      listas: Object.fromEntries(
+        Object.keys(c.listasSucias)
+          .filter((id) => c.listas[id])
+          .map((id) => [id, { ...c.listas[id], words: [...c.listas[id].words] }])
+      ),
+      listasBorradas: { ...c.listasBorradas },
     },
   };
 }
@@ -122,7 +166,7 @@ export function construirPeticion(c: Copia): { cuerpo: Peticion; enviado: Enviad
  * actualiza su versión base.
  */
 export function aplicarRespuesta(c: Copia, enviado: Enviado, r: Respuesta): Tocado {
-  const tocado: Tocado = { progress: [], words: [] };
+  const tocado: Tocado = { progress: [], words: [], listas: [] };
 
   // Palabras primero: un avance puede referirse a una palabra recién llegada.
   for (const w of r.words) {
@@ -178,6 +222,54 @@ export function aplicarRespuesta(c: Copia, enviado: Enviado, r: Respuesta): Toca
       delete c.sucios[en];
       tocado.progress.push(en);
     }
+  }
+
+  // Listas. Primero los id reasignados: el servidor fundió una lista nueva con otra
+  // del mismo nombre, y la local pasa a llamarse como la definitiva.
+  for (const [viejo, nuevo] of Object.entries(r.reasignadas ?? {})) {
+    const local = c.listas[viejo];
+    if (!local || viejo === nuevo) continue;
+    if (!c.listas[nuevo]) c.listas[nuevo] = { ...local, id: nuevo };
+    else c.listas[nuevo] = { ...c.listas[nuevo], words: [...new Set([...c.listas[nuevo].words, ...local.words])] };
+    delete c.listas[viejo];
+    delete c.listasSucias[viejo];
+    delete c.listasVersiones[viejo];
+    tocado.listas.push(viejo, nuevo);
+  }
+  for (const l of r.lists ?? []) {
+    const local = c.listas[l.id];
+    const mandada = enviado.listas[l.id];
+    if (l.borrada) {
+      if (!local) continue;
+      // Si la editaste mientras tanto, manda lo tuyo (y se vuelve a subir).
+      if (c.listasSucias[l.id] && (!mandada || !igualLista(local, mandada))) {
+        c.listasVersiones[l.id] = l.version;
+        continue;
+      }
+      delete c.listas[l.id];
+      delete c.listasSucias[l.id];
+      delete c.listasVersiones[l.id];
+      tocado.listas.push(l.id);
+      continue;
+    }
+    if (c.listasBorradas[l.id]) continue; // la acabas de borrar: no revive por esto
+    const cambioEnVuelo = c.listasSucias[l.id] && local && (!mandada || !igualLista(local, mandada));
+    c.listasVersiones[l.id] = l.version;
+    tocado.listas.push(l.id);
+    if (cambioEnVuelo) continue; // lo del teléfono es más nuevo: se queda y se vuelve a subir
+    c.listas[l.id] = { id: l.id, name: l.name, words: l.words, createdAt: l.createdAt };
+    delete c.listasSucias[l.id];
+  }
+  for (const id of Object.keys(enviado.listasBorradas)) {
+    // Confirmadas: la baja ya está en el servidor.
+    delete c.listasBorradas[id];
+    delete c.listasVersiones[id];
+  }
+  // Lo que se mandó y el servidor no devolvió (id ajeno o descartado): seguir
+  // marcándolo solo lo reenviaría para siempre.
+  for (const id of Object.keys(enviado.listas)) {
+    if (!c.listasSucias[id] || (r.lists ?? []).some((l) => l.id === id)) continue;
+    if (c.listas[id] && igualLista(c.listas[id], enviado.listas[id])) delete c.listasSucias[id];
   }
 
   for (const [en, tipo] of Object.entries(enviado.pendientes)) {

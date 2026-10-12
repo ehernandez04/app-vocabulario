@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fusionarProgreso, fusionarRacha, resolverProgreso } from './fusion';
+import { igualLista, resolverLista, fusionarProgreso, fusionarRacha, resolverProgreso } from './fusion';
 
 const p = (box: number, due = '2026-10-12', seen = 0, miss = 0) => ({ box, due, seen, miss });
 
@@ -95,5 +95,54 @@ describe('resolverProgreso', () => {
   it('el mismo milisegundo cuenta como sin cambios', () => {
     const servidor = { progreso: p(4), actualizado: antes };
     expect(resolverProgreso(servidor, p(1), new Date(antes.getTime())).choque).toBe(false);
+  });
+});
+
+describe('resolverLista', () => {
+  const l = (name: string, words: string[]) => ({ name, words });
+  const T = (iso: string) => new Date(iso);
+
+  it('una lista que el servidor no conoce entra tal cual', () => {
+    expect(resolverLista(null, l('A', ['x']), null)).toEqual({ lista: l('A', ['x']), choque: false });
+  });
+
+  it('si el servidor no cambió desde la base, entra lo del teléfono, quitados incluidos', () => {
+    const r = resolverLista(
+      { lista: l('A', ['x', 'y']), actualizado: T('2026-10-12T10:00:00Z'), borrada: false },
+      l('A', ['x']),
+      T('2026-10-12T10:00:00Z')
+    );
+    expect(r).toEqual({ lista: l('A', ['x']), choque: false });
+  });
+
+  it('si el servidor cambió, se unen las palabras y se queda su nombre', () => {
+    const r = resolverLista(
+      { lista: l('Trabajo', ['x', 'y']), actualizado: T('2026-10-12T11:00:00Z'), borrada: false },
+      l('Oficina', ['x', 'z']),
+      T('2026-10-12T10:00:00Z')
+    );
+    expect(r.choque).toBe(true);
+    expect(r.lista.name).toBe('Trabajo');
+    expect([...r.lista.words].sort()).toEqual(['x', 'y', 'z']);
+  });
+
+  it('una lista borrada en el servidor y editada en el teléfono resucita con lo del teléfono', () => {
+    const r = resolverLista(
+      { lista: l('A', ['x']), actualizado: T('2026-10-12T11:00:00Z'), borrada: true },
+      l('A', ['z']),
+      null
+    );
+    expect(r).toEqual({ lista: l('A', ['z']), choque: false });
+  });
+
+  it('sin base (el teléfono nunca la vio) y existiendo en el servidor, es choque', () => {
+    expect(
+      resolverLista({ lista: l('A', ['x']), actualizado: T('2026-10-12T11:00:00Z'), borrada: false }, l('A', ['y']), null).choque
+    ).toBe(true);
+  });
+
+  it('igualLista ignora el orden', () => {
+    expect(igualLista(l('A', ['x', 'y']), l('A', ['y', 'x']))).toBe(true);
+    expect(igualLista(l('A', ['x']), l('B', ['x']))).toBe(false);
   });
 });

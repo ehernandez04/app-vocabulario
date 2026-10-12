@@ -19,6 +19,7 @@ export type PalabraEntrada = {
   xe: string;
   xs: string;
 };
+export type ListaEntrada = { id: string; name: string; words: string[]; base: Date | null; borrada: boolean };
 export type ProgresoEntrada = { box: number; due: string; seen: number; miss: number };
 
 export const texto = (v: unknown, max: number): string | null =>
@@ -65,3 +66,19 @@ export const racha = (streak: unknown, lastDay: unknown) => ({
   streak: entero(streak, 0, 100_000) ?? 0,
   lastDay: typeof lastDay === 'string' && FECHA.test(lastDay) ? lastDay : null,
 });
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Una lista que sube el teléfono. El id lo pone el teléfono, así que se valida. */
+export function lista(v: unknown): ListaEntrada | null {
+  if (!v || typeof v !== 'object') return null;
+  const l = v as Record<string, unknown>;
+  if (typeof l.id !== 'string' || !UUID.test(l.id)) return null;
+  const name = typeof l.name === 'string' ? l.name.trim().replace(/\s+/g, ' ').slice(0, 40) : '';
+  const borrada = l.borrada === true;
+  if (!name && !borrada) return null;
+  const words = Array.isArray(l.words)
+    ? [...new Set(l.words.map((w) => texto(w, 200)).filter((w): w is string => !!w))].slice(0, 5000)
+    : [];
+  return { id: l.id.toLowerCase(), name, words, base: instante(l.base), borrada };
+}
