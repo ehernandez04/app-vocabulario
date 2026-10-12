@@ -51,6 +51,10 @@ let db: IDBDatabase | null = null;
 let progress: Record<string, Progress> = {};
 let settings: Settings = { ...DEFAULTS };
 let words: Record<string, Word> = {};
+/** A qué cuenta ya se subió este teléfono. Va aparte de `settings`: no es un ajuste, y no debe viajar en un export. */
+let subidoA: string | null = null;
+
+const CLAVE_SUBIDO = '_subidoA';
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -109,7 +113,10 @@ export async function init() {
   try {
     db = await open();
     progress = await readAll<Progress>('progress');
-    settings = { ...DEFAULTS, ...(await readAll<never>('settings') as Partial<Settings>) };
+    const guardados = (await readAll<unknown>('settings')) as Record<string, unknown>;
+    subidoA = typeof guardados[CLAVE_SUBIDO] === 'string' ? (guardados[CLAVE_SUBIDO] as string) : null;
+    delete guardados[CLAVE_SUBIDO];
+    settings = { ...DEFAULTS, ...(guardados as Partial<Settings>) };
     words = await readAll<Word>('words');
   } catch {
     db = null; // seguimos solo en memoria
@@ -187,6 +194,43 @@ export function boxCounts(deck: Word[]): number[] {
   const counts = new Array(5).fill(0);
   deck.forEach((w) => counts[progressOf(w.en).box - 1]++);
   return counts;
+}
+
+/* ── subir a la cuenta ────────────────────────────────────────────────────── */
+
+export type Subida = {
+  words: Word[];
+  progress: Record<string, Progress>;
+  streak: number;
+  lastDay: string | null;
+};
+
+/**
+ * Lo que este teléfono tiene y la cuenta quizá no. El progreso de una palabra
+ * intacta no se sube: `progressOf` lo crea vacío en memoria al leerlo, y subir
+ * miles de cajas 1 sin tocar solo ensucia la base.
+ */
+export function datosParaSubir(): Subida {
+  const avance: Record<string, Progress> = {};
+  for (const [en, p] of Object.entries(progress)) {
+    if (p.seen > 0 || p.box > 1) avance[en] = p;
+  }
+  return {
+    words: Object.values(words),
+    progress: avance,
+    streak: settings.streak,
+    lastDay: settings.lastDay,
+  };
+}
+
+export const haySubida = (d: Subida): boolean =>
+  d.words.length > 0 || Object.keys(d.progress).length > 0 || d.streak > 0;
+
+export const yaSubidoA = (cuenta: string): boolean => subidoA === cuenta;
+
+export function marcarSubido(cuenta: string) {
+  subidoA = cuenta;
+  put('settings', CLAVE_SUBIDO, cuenta);
 }
 
 /* ── exportar e importar ──────────────────────────────────────────────────── */
