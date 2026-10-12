@@ -15,6 +15,7 @@ import * as store from '@/lib/local-store';
 import { isDue } from '@/lib/srs';
 import { noteColor, peekColor, saludo } from '@/lib/ui';
 import { BotonAjustes } from '@/components/BotonAjustes';
+import { MasFalladas } from '@/components/MasFalladas';
 import { HojaNuevaPalabra } from '@/components/HojaNuevaPalabra';
 import { useEstado } from '../estado';
 
@@ -212,6 +213,8 @@ export default function Inicio() {
         </div>
         <p className="muted sm">Cada acierto sube la palabra una caja: 1, 2, 4, 8 y 16 días.</p>
       </div>
+
+      <MasFalladas />
 
       <div className="block">
         <button className="btn solid wide" onClick={() => setHoja('nueva')}>

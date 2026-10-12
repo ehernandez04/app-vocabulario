@@ -319,6 +319,7 @@ components/             piezas compartidas: tarjeta, hoja, aviso, iconos
 lib/srs.ts              cajas Leitner, fechas locales, racha — con tests
 lib/local-store.ts      IndexedDB
 lib/sync-copia.ts       qué se manda y cómo se aplica la respuesta (puro, con tests)
+components/MasFalladas.tsx  bloque de Inicio y hoja con las palabras más falladas (#15)
 components/IndicadorSync.tsx  insignia del avatar y fila de estado en Ajustes
 lib/sync.ts             une la copia con la red; una petición a la vez
 lib/fusion.ts           las dos reglas de conflicto (primera subida / día a día)
