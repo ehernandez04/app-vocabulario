@@ -489,3 +489,32 @@
 .btn.borrar{background:var(--no);color:#fff;border-color:var(--no)}
 .mf-link.peligro{color:var(--no)}
 .hint .mf-link{align-self:auto}
+
+/* la etiqueta que distingue dos significados de la misma palabra */
+.etq{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:99px;vertical-align:middle;
+  font:700 .7rem var(--ui);letter-spacing:.04em;text-transform:uppercase;letter-spacing:0;
+  background:rgba(28,27,25,.12);color:inherit;white-space:nowrap}
+
+/* ── asistente de palabras ───────────────────────────────────────────────── */
+.btn.ia{width:100%}
+.btn:disabled{opacity:.5;cursor:default}
+.sentidos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.sentido{display:flex;gap:10px;padding:10px 12px;border-radius:14px;cursor:pointer;
+  background:var(--card);border:1.5px solid var(--rule)}
+.sentido.on{border-color:var(--ink)}
+.sentido.repetida{opacity:.55;cursor:default}
+.sentido input{position:absolute;opacity:0;pointer-events:none}
+.sentido:focus-within{outline:2.5px solid var(--ink);outline-offset:2px}
+.sentido .chkbox{width:20px;height:20px;border:1.5px solid var(--ink);border-radius:6px;flex:none;display:grid;
+  place-items:center;font:800 .75rem var(--ui);margin-top:2px}
+.sentido.on .chkbox{background:var(--ink);color:var(--paper)}
+.sentido-txt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.sentido-cab{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sentido-cab b{font:800 .98rem var(--display);letter-spacing:-.01em}
+.sentido-cab .glyph{margin-left:auto;font-size:1.3rem}
+.sentido .tag{font:700 .62rem var(--ui);letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;
+  border-radius:99px;background:var(--paper-2);color:var(--ink-soft)}
+.sentido-es{font:700 1.15rem var(--hand);line-height:1.15}
+.sentido-ipa,.sentido-ej,.sentido-ya{font-size:.78rem;color:var(--ink-soft)}
+.sentido-ej{font-style:italic}
+.sentido-ya{color:var(--ink);font-weight:700}

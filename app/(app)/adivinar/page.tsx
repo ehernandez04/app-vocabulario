@@ -8,6 +8,8 @@ import { IconAltavoz, IconCruz, IconTick } from '@/components/icons';
 import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
 import { session, shuffle, type Word } from '@/lib/srs';
+import { PalabraEn } from '@/components/PalabraEn';
+import { textoEn } from '@/lib/palabra';
 import { noteColor } from '@/lib/ui';
 import { useEstado } from '../../estado';
 
@@ -55,7 +57,7 @@ export default function Adivinar() {
       if (acerto) {
         audio.say(pregunta.word.es, 'es', { word: pregunta.word.en, part: 'es' });
       } else {
-        audio.say(pregunta.word.en, 'en', { rate: 0.6, word: pregunta.word.en, part: 'en' });
+        audio.say(textoEn(pregunta.word.en), 'en', { rate: 0.6, word: pregunta.word.en, part: 'en' });
       }
     },
     [pregunta, elegida, calificar]
@@ -115,7 +117,9 @@ export default function Adivinar() {
               <p className="es listen-cue">Escucha y adivina…</p>
             ) : (
               <>
-                <p className="en md">{w.en}</p>
+                <p className="en md">
+                  <PalabraEn en={w.en} />
+                </p>
                 <p className="ipa">{w.ipa}</p>
               </>
             )}
@@ -123,7 +127,7 @@ export default function Adivinar() {
           {respondida && <Sticker word={w} />}
           <button
             className="spk lg"
-            onClick={() => audio.say(w.en, 'en', { word: w.en, part: 'en' })}
+            onClick={() => audio.say(textoEn(w.en), 'en', { word: w.en, part: 'en' })}
             aria-label="Escuchar la palabra"
           >
             <IconAltavoz />

@@ -6,6 +6,8 @@ import { ListaVacia } from '@/components/ListaVacia';
 import { Sticker } from '@/components/Sticker';
 import { IconAltavoz, IconComillas, IconDespacio } from '@/components/icons';
 import * as audio from '@/lib/audio';
+import { PalabraEn } from '@/components/PalabraEn';
+import { textoEn } from '@/lib/palabra';
 import { noteColor, peekColor } from '@/lib/ui';
 import { useEstado } from '../../estado';
 
@@ -138,14 +140,16 @@ export default function Tarjetas() {
               <span className="n-tag">Inglés · caja {p.box}</span>
               <button
                 className="spk"
-                onClick={() => audio.say(w.en, 'en', { rate: 0.95, word: w.en, part: 'en' })}
+                onClick={() => audio.say(textoEn(w.en), 'en', { rate: 0.95, word: w.en, part: 'en' })}
                 aria-label="Escuchar en inglés"
               >
                 <IconAltavoz />
               </button>
             </div>
 
-            <p className="en">{w.en}</p>
+            <p className="en">
+              <PalabraEn en={w.en} />
+            </p>
             <p className="ipa">{w.ipa}</p>
 
             <div className="exrow">
@@ -210,7 +214,7 @@ export default function Tarjetas() {
         <>
           <button
             className="btn wide"
-            onClick={() => audio.say(w.en, 'en', { rate: 0.55, word: w.en, part: 'en' })}
+            onClick={() => audio.say(textoEn(w.en), 'en', { rate: 0.55, word: w.en, part: 'en' })}
           >
             <IconDespacio /> Despacio
           </button>
