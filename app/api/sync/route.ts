@@ -189,7 +189,7 @@ export async function POST(req: Request) {
       // La primera vez no hace falta avisar de lo ya borrado.
       ...(ventana ? { updatedAt: { gte: ventana } } : { deletedAt: null }),
     },
-    select: { en: true, es: true, ipa: true, emoji: true, xe: true, xs: true, deletedAt: true },
+    select: { en: true, es: true, ipa: true, emoji: true, xe: true, xs: true, createdAt: true, deletedAt: true },
   });
   const avance = await prisma.progress.findMany({
     where: {
@@ -202,7 +202,11 @@ export async function POST(req: Request) {
 
   return Response.json({
     cursor: cursor.toISOString(),
-    words: palabrasNuevas.map(({ deletedAt, ...w }) => ({ ...w, borrada: deletedAt !== null })),
+    words: palabrasNuevas.map(({ deletedAt, createdAt, ...w }) => ({
+      ...w,
+      createdAt: createdAt.toISOString(),
+      borrada: deletedAt !== null,
+    })),
     progress: avance.map(({ word, updatedAt, ...p }) => ({
       en: word.en,
       ...p,

@@ -16,9 +16,10 @@
  */
 
 import { emptyProgress, today, type Progress, type Word } from './srs';
+import type { Copia, Pendiente, Tocado } from './sync-copia';
 
 const DB = 'vocabulario';
-const VERSION = 2;
+const VERSION = 3;
 
 export type Settings = {
   streak: number;
@@ -45,7 +46,7 @@ export const DEFAULTS: Settings = {
   theme: 'light',
 };
 
-type Almacen = 'progress' | 'settings' | 'words';
+type Almacen = 'progress' | 'settings' | 'words' | 'sync';
 
 let db: IDBDatabase | null = null;
 let progress: Record<string, Progress> = {};
@@ -53,6 +54,14 @@ let settings: Settings = { ...DEFAULTS };
 let words: Record<string, Word> = {};
 /** A qué cuenta ya se subió este teléfono. Va aparte de `settings`: no es un ajuste, y no debe viajar en un export. */
 let subidoA: string | null = null;
+
+// Lo que la sincronización necesita recordar (ver lib/sync-copia.ts). Va en su
+// propio almacén para no mezclarse con lo que se exporta.
+let versiones: Record<string, string> = {};
+let sucios: Record<string, true> = {};
+let pendientes: Record<string, Pendiente> = {};
+let cursor: string | null = null;
+let alCambiar: (() => void) | null = null;
 
 const CLAVE_SUBIDO = '_subidoA';
 
@@ -65,6 +74,7 @@ function open(): Promise<IDBDatabase> {
       if (!d.objectStoreNames.contains('progress')) d.createObjectStore('progress');
       if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings');
       if (!d.objectStoreNames.contains('words')) d.createObjectStore('words');
+      if (!d.objectStoreNames.contains('sync')) d.createObjectStore('sync');
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -118,6 +128,7 @@ export async function init() {
     delete guardados[CLAVE_SUBIDO];
     settings = { ...DEFAULTS, ...(guardados as Partial<Settings>) };
     words = await readAll<Word>('words');
+    cargarSync(await readAll<unknown>('sync'));
   } catch {
     db = null; // seguimos solo en memoria
   }
@@ -157,14 +168,17 @@ export function addWord(w: Word): Word {
   };
   words[word.en] = word;
   put('words', word.en, word);
+  marcarAlta(word);
   return word;
 }
 
 export function deleteWord(en: string) {
+  const w = words[en];
   delete words[en];
   del('words', en);
   delete progress[en];
   del('progress', en);
+  marcarBaja(w ?? { en, es: en });
 }
 
 /* ── ajustes y progreso ───────────────────────────────────────────────────── */
@@ -185,6 +199,7 @@ export function progressOf(word: string): Progress {
 export function saveProgress(word: string, p: Progress) {
   progress[word] = p;
   put('progress', word, p);
+  marcarSucio(word);
 }
 
 export const allProgress = (): Record<string, Progress> => progress;
@@ -194,6 +209,101 @@ export function boxCounts(deck: Word[]): number[] {
   const counts = new Array(5).fill(0);
   deck.forEach((w) => counts[progressOf(w.en).box - 1]++);
   return counts;
+}
+
+/* ── sincronización ───────────────────────────────────────────────────────── */
+
+function cargarSync(guardado: Record<string, unknown>) {
+  versiones = {};
+  sucios = {};
+  pendientes = {};
+  cursor = typeof guardado.cursor === 'string' ? guardado.cursor : null;
+  for (const [k, v] of Object.entries(guardado)) {
+    if (k.startsWith('v:') && typeof v === 'string') versiones[k.slice(2)] = v;
+    else if (k.startsWith('p:')) sucios[k.slice(2)] = true;
+    else if (k.startsWith('w:')) pendientes[k.slice(2)] = v as Pendiente;
+  }
+}
+
+function marcarSucio(en: string) {
+  sucios[en] = true;
+  put('sync', `p:${en}`, true);
+  alCambiar?.();
+}
+
+function marcarAlta(word: Word) {
+  pendientes[word.en] = { tipo: 'alta', word };
+  put('sync', `w:${word.en}`, pendientes[word.en]);
+  alCambiar?.();
+}
+
+function marcarBaja(word: Pick<Word, 'en' | 'es'>) {
+  delete sucios[word.en];
+  delete versiones[word.en];
+  del('sync', `p:${word.en}`);
+  del('sync', `v:${word.en}`);
+  pendientes[word.en] = { tipo: 'baja', word: { en: word.en, es: word.es } };
+  put('sync', `w:${word.en}`, pendientes[word.en]);
+  alCambiar?.();
+}
+
+/** Para que quien orquesta la sincronización se entere de que hay algo que subir. */
+export function suscribirCambios(fn: () => void): () => void {
+  alCambiar = fn;
+  return () => {
+    if (alCambiar === fn) alCambiar = null;
+  };
+}
+
+/**
+ * La copia, por referencia: lo que la sincronización muta es el estado vivo del
+ * almacén. Las únicas copias son los escalares (racha y cursor), que
+ * `guardarSync` devuelve a su sitio.
+ */
+export function copiaSync(): Copia {
+  return {
+    words,
+    progress,
+    racha: { streak: settings.streak, lastDay: settings.lastDay },
+    versiones,
+    sucios,
+    pendientes,
+    cursor,
+  };
+}
+
+export const haySincronizacionPendiente = (): boolean =>
+  Object.keys(sucios).length > 0 || Object.keys(pendientes).length > 0;
+
+/** Persiste lo que `aplicarRespuesta` cambió en la copia. */
+export function guardarSync(c: Copia, tocado: Tocado) {
+  cursor = c.cursor;
+  if (c.racha.streak !== settings.streak) set('streak', c.racha.streak);
+  if (c.racha.lastDay !== settings.lastDay) set('lastDay', c.racha.lastDay);
+
+  for (const en of tocado.progress) {
+    if (progress[en]) put('progress', en, progress[en]);
+    else del('progress', en);
+  }
+  for (const en of tocado.words) {
+    if (words[en]) put('words', en, words[en]);
+    else del('words', en);
+  }
+
+  // Los marcadores se reescriben enteros, en una sola transacción: son pocos y
+  // así no pueden quedar a medias entre sí.
+  if (!db) return;
+  try {
+    const tx = db.transaction('sync', 'readwrite');
+    const o = tx.objectStore('sync');
+    o.clear();
+    if (cursor) o.put(cursor, 'cursor');
+    for (const [en, v] of Object.entries(versiones)) o.put(v, `v:${en}`);
+    for (const en of Object.keys(sucios)) o.put(true, `p:${en}`);
+    for (const [en, pend] of Object.entries(pendientes)) o.put(pend, `w:${en}`);
+  } catch {
+    /* la copia en memoria está bien; en el peor caso se vuelve a mandar */
+  }
 }
 
 /* ── subir a la cuenta ────────────────────────────────────────────────────── */
@@ -255,10 +365,15 @@ export function importAll(text: string, modo: 'merge' | 'replace' = 'merge') {
   }
 
   if (modo === 'replace') {
-    for (const k of Object.keys(words)) del('words', k);
+    for (const k of Object.keys(words)) {
+      del('words', k);
+      marcarBaja(words[k]);
+    }
     for (const k of Object.keys(progress)) del('progress', k);
-    words = {};
-    progress = {};
+    // En el sitio, no reasignando: una sincronización en vuelo tiene
+    // referencias a estos objetos y mutaría unos huérfanos.
+    for (const k of Object.keys(words)) delete words[k];
+    for (const k of Object.keys(progress)) delete progress[k];
   }
 
   let palabras = 0;
@@ -268,6 +383,7 @@ export function importAll(text: string, modo: 'merge' | 'replace' = 'merge') {
     if (modo === 'merge' && words[w.en]) continue;
     words[w.en] = w;
     put('words', w.en, w);
+    if (w.mine) marcarAlta(w);
     palabras++;
   }
   for (const [key, p] of Object.entries((data.progress || {}) as Record<string, Progress>)) {
@@ -275,6 +391,7 @@ export function importAll(text: string, modo: 'merge' | 'replace' = 'merge') {
     if (modo === 'merge' && progress[key] && progress[key].box >= p.box) continue;
     progress[key] = p;
     put('progress', key, p);
+    marcarSucio(key);
     avances++;
   }
   for (const [k, v] of Object.entries((data.settings || {}) as Partial<Settings>)) {

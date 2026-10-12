@@ -59,8 +59,9 @@ La app corre sobre **Next 16 + Tailwind 4**, con la API prevista en el mismo pro
 cerrada: los tres modos, agregar palabras, exportar e importar, el audio y la PWA
 funcionan, y `legacy/` ya se borró. La etapa 2 también: se entra con Google, hay lista
 blanca, el esquema existe y lo que había en el teléfono se sube la primera vez. Lo que
-falta es la sincronización continua (etapa 3): el servidor (`/api/sync`) y luego la cola
-local y el indicador de estado.
+falta de la etapa 3 es el indicador de estado de sincronización (#31). La sincronización
+ya funciona: cada cambio queda marcado como sucio en IndexedDB y sube sola a los 5 s, al
+abrir, al volver la señal y al volver a primer plano.
 
 ## Cómo se corre
 
@@ -316,6 +317,9 @@ app/manifest.ts         el manifiesto que la hace instalable
 components/             piezas compartidas: tarjeta, hoja, aviso, iconos
 lib/srs.ts              cajas Leitner, fechas locales, racha — con tests
 lib/local-store.ts      IndexedDB
+lib/sync-copia.ts       qué se manda y cómo se aplica la respuesta (puro, con tests)
+lib/sync.ts             une la copia con la red; una petición a la vez
+lib/fusion.ts           las dos reglas de conflicto (primera subida / día a día)
 lib/audio.ts            elección de voz, MP3 con respaldo a síntesis, MediaSession
 data/deck.json          el mazo de fábrica
 scripts/                iconos y generación de audio
