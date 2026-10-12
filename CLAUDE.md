@@ -99,6 +99,13 @@ for (const k of await caches.keys()) await caches.delete(k); location.reload()`
 - **Postgres en Neon con Prisma**, igual que `mi-presupuesto`: rama de desarrollo y rama
   de producción, y el `.env` local **siempre** a desarrollo.
 
+  **Todo en Fráncfort, a propósito.** El proyecto de Neon es `app-vocabulario-eu`
+  (`jolly-night-49761553`, `aws-eu-central-1`) y las funciones de Vercel corren en `fra1`.
+  Erick está en España. Lo que importa no es dónde está él sino que **la base y las
+  funciones estén juntas**: si una cruza el Atlántico, cada consulta paga el viaje de ida
+  y vuelta. Mismo emparejamiento que en `mi-presupuesto`. Si alguna de las dos se mueve
+  alguna vez, hay que mover la otra.
+
   **Prisma 7 ya no se conecta por su cuenta: hay que darle un adaptador.** Usamos
   `@prisma/adapter-neon`, que habla por HTTP en vez de abrir una conexión TCP; en rutas
   de Next sobre Vercel eso evita que la primera petición tras un rato sin uso cargue con
