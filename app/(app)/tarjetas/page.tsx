@@ -4,10 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import { BotonAjustes } from '@/components/BotonAjustes';
 import { ListaVacia } from '@/components/ListaVacia';
 import { Sticker } from '@/components/Sticker';
-import { IconAltavoz, IconComillas, IconDespacio } from '@/components/icons';
+import { FilaVoz, TiraVoz } from '@/components/ControlesVoz';
+import { IconAltavoz, IconComillas } from '@/components/icons';
 import * as audio from '@/lib/audio';
 import { PalabraEn } from '@/components/PalabraEn';
 import { textoEn } from '@/lib/palabra';
+import { useGrabadora } from '@/lib/grabadora';
 import { noteColor, peekColor } from '@/lib/ui';
 import { useEstado } from '../../estado';
 
@@ -36,6 +38,12 @@ export default function Tarjetas() {
   useEffect(() => {
     deshacerRef.current = deshacer;
   }, [deshacer]);
+
+  const actual = listo ? cola[indice] : undefined;
+  const voz = useGrabadora(actual?.en ?? '', {
+    texto: actual ? textoEn(actual.en) : '',
+    word: actual?.en ?? '',
+  });
 
   if (!listo) return <section className="view" aria-busy="true" />;
 
@@ -138,13 +146,6 @@ export default function Tarjetas() {
 
             <div className="n-top">
               <span className="n-tag">Inglés · caja {p.box}</span>
-              <button
-                className="spk"
-                onClick={() => audio.say(textoEn(w.en), 'en', { rate: 0.95, word: w.en, part: 'en' })}
-                aria-label="Escuchar en inglés"
-              >
-                <IconAltavoz />
-              </button>
             </div>
 
             <p className="en">
@@ -162,6 +163,8 @@ export default function Tarjetas() {
                 <span>{w.xe}</span>
               </button>
             </div>
+
+            <TiraVoz w={w} g={voz} />
 
             {revelada ? (
               <>
@@ -198,6 +201,8 @@ export default function Tarjetas() {
         </Arrastrable>
       </div>
 
+      <FilaVoz w={w} g={voz} />
+
       {revelada ? (
         <>
           <div className="row2">
@@ -211,15 +216,7 @@ export default function Tarjetas() {
           <p className="hint">O arrastra la tarjeta: ← otra vez · lo sabía →</p>
         </>
       ) : (
-        <>
-          <button
-            className="btn wide"
-            onClick={() => audio.say(textoEn(w.en), 'en', { rate: 0.55, word: w.en, part: 'en' })}
-          >
-            <IconDespacio /> Despacio
-          </button>
-          <p className="hint">Piénsalo en español antes de descubrirla</p>
-        </>
+        <p className="hint">Piénsalo en español antes de descubrirla</p>
       )}
     </section>
   );
