@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fusionarProgreso, fusionarRacha } from './fusion';
+import { fusionarProgreso, fusionarRacha, resolverProgreso } from './fusion';
 
 const p = (box: number, due = '2026-10-12', seen = 0, miss = 0) => ({ box, due, seen, miss });
 
@@ -48,5 +48,52 @@ describe('fusionarRacha', () => {
   it('una cuenta sin racha recibe la del teléfono', () => {
     const nueva = { streak: 4, lastDay: '2026-10-12' };
     expect(fusionarRacha({ streak: 0, lastDay: null }, nueva)).toEqual(nueva);
+  });
+});
+
+describe('resolverProgreso', () => {
+  const antes = new Date('2026-10-12T10:00:00.000Z');
+  const despues = new Date('2026-10-12T11:00:00.000Z');
+
+  it('sin fila en el servidor, entra lo del teléfono', () => {
+    const r = resolverProgreso(null, p(2), null);
+    expect(r).toEqual({ progreso: p(2), choque: false });
+  });
+
+  it('un fallo normal baja la caja: el servidor no cambió desde la base', () => {
+    const servidor = { progreso: p(4, '2026-10-20'), actualizado: antes };
+    const r = resolverProgreso(servidor, p(1, '2026-10-13', 7, 2), antes);
+    expect(r.progreso.box).toBe(1);
+    expect(r.choque).toBe(false);
+  });
+
+  it('un acierto normal sube la caja', () => {
+    const servidor = { progreso: p(2), actualizado: antes };
+    expect(resolverProgreso(servidor, p(3), antes).progreso.box).toBe(3);
+  });
+
+  it('dos dispositivos tocaron la misma palabra: gana la caja más alta', () => {
+    const servidor = { progreso: p(4, '2026-10-20', 6), actualizado: despues };
+    const r = resolverProgreso(servidor, p(1, '2026-10-13', 3), antes);
+    expect(r.progreso.box).toBe(4);
+    expect(r.progreso.due).toBe('2026-10-20');
+    expect(r.choque).toBe(true);
+  });
+
+  it('en un choque, la caja del teléfono gana si es más alta', () => {
+    const servidor = { progreso: p(2), actualizado: despues };
+    expect(resolverProgreso(servidor, p(5, '2026-10-28'), antes).progreso.box).toBe(5);
+  });
+
+  it('un teléfono que nunca vio la fila (sin base) cuenta como choque', () => {
+    const servidor = { progreso: p(3), actualizado: antes };
+    const r = resolverProgreso(servidor, p(1), null);
+    expect(r.progreso.box).toBe(3);
+    expect(r.choque).toBe(true);
+  });
+
+  it('el mismo milisegundo cuenta como sin cambios', () => {
+    const servidor = { progreso: p(4), actualizado: antes };
+    expect(resolverProgreso(servidor, p(1), new Date(antes.getTime())).choque).toBe(false);
   });
 });

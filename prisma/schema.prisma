@@ -61,7 +61,15 @@ model Word {
   /// pesa menos de un kilobyte. Si está, se usa en lugar del emoji.
   svg   String?
 
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Lo que permite bajar «lo que cambió desde la última vez» (#30): cualquier
+  /// edición o borrado sube esta fecha.
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  /// Borrado con marca, no real. Un teléfono que estuvo sin señal solo se entera
+  /// de que quitaste una palabra si la fila sigue ahí diciéndolo; si se borrara
+  /// de verdad, ese teléfono la resucitaría al sincronizar. Solo aplica a las
+  /// palabras propias: las de fábrica no se borran.
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   user     User?      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   progress Progress[]
@@ -72,6 +80,7 @@ model Word {
   /// su "to commute": solo impide que una la tenga repetida.
   @@unique([userId, en])
   @@index([userId])
+  @@index([userId, updatedAt])
   @@map("words")
 }
 
@@ -99,6 +108,7 @@ model Progress {
 
   @@id([userId, wordId])
   @@index([userId, due])
+  @@index([userId, updatedAt])
   @@map("progress")
 }
 

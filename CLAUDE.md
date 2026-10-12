@@ -57,7 +57,10 @@ Etapa 2 · Cuentas, Etapa 3 · Sincronización. Verificar siempre contra los iss
 La app corre sobre **Next 16 + Tailwind 4**, con la API prevista en el mismo proyecto
 (Route Handlers), Postgres en Neon vía Prisma y Auth.js con Google. La etapa 1 está
 cerrada: los tres modos, agregar palabras, exportar e importar, el audio y la PWA
-funcionan, y `legacy/` ya se borró. Lo que falta son las cuentas y la sincronización.
+funcionan, y `legacy/` ya se borró. La etapa 2 también: se entra con Google, hay lista
+blanca, el esquema existe y lo que había en el teléfono se sube la primera vez. Lo que
+falta es la sincronización continua (etapa 3): el servidor (`/api/sync`) y luego la cola
+local y el indicador de estado.
 
 ## Cómo se corre
 
@@ -134,9 +137,17 @@ for (const k of await caches.keys()) await caches.delete(k); location.reload()`
   de fábrica ya está y lo suyo se cachea al usarse.
 - **Local-first, no solo servidor.** Postgres es la fuente de verdad; el teléfono
   mantiene una copia en IndexedDB. El caso de uso principal es repasar en el metro sin
-  señal: si la app exige red, deja de servir justo donde se usa. Los conflictos se
-  resuelven como ya lo hacía el import: **gana la caja más alta, nunca se retrocede lo
-  aprendido.**
+  señal: si la app exige red, deja de servir justo donde se usa.
+- **Conflictos: dos reglas, según haya o no historia.** «Gana la caja más alta, nunca se
+  retrocede lo aprendido» es la regla de **la primera subida y del import**
+  (`fusionarProgreso`), donde no hay historia que respetar. **No sirve para el día a
+  día**: si fallas una palabra en caja 4 y baja a 1, el servidor la seguiría teniendo en
+  4 y el fallo se perdería siempre, incluso con un solo dispositivo. Para sincronizar se
+  decide por versión (`resolverProgreso`): si el servidor no cambió desde la `base` que el
+  teléfono vio, el cambio entra tal cual, fallos incluidos; solo si dos dispositivos
+  tocaron la misma palabra sin verse gana la caja más alta. El borrado de palabras
+  propias es con marca (`words.deleted_at`), no real: sin ella, un teléfono que estuvo sin
+  señal las resucitaría al sincronizar.
 - **Auth.js con Google y lista blanca de correos.** Sin contraseñas, sin registro, sin
   recuperación, sin proveedor de correo. El motivo de que haya login no es la privacidad
   del vocabulario: es que **las rutas que llaman a Claude y al TTS gastan dinero** y la
