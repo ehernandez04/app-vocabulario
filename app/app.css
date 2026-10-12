@@ -450,6 +450,32 @@
 .filasync-txt span{font-size:.78rem;color:var(--ink-faint)}
 .filasync .pill{min-height:36px;padding:0 12px;font-size:.8rem}
 
+/* ── recordatorio diario (#14) ───────────────────────────────────────────── */
+.recordatorio{display:flex;flex-direction:column;gap:12px;background:var(--card);
+  border:2px solid var(--edge);border-radius:16px;padding:14px;box-shadow:var(--lift)}
+.rec-fila,.rec-hora{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.rec-txt,.rec-hora label{display:flex;flex-direction:column;min-width:0}
+.rec-txt b,.rec-hora b{font-size:.92rem}
+.rec-txt span,.rec-hora label span{font-size:.78rem;color:var(--ink-faint);margin-top:2px}
+.rec-txt span.ok{color:var(--ok);font-weight:700}
+.rec-hora{border-top:1.5px dashed var(--rule);padding-top:12px}
+.rec-hora input{font:700 1.1rem var(--ui);font-variant-numeric:tabular-nums;color:var(--ink);
+  background:var(--paper);border:1.5px solid var(--edge);border-radius:10px;padding:6px 10px;min-height:44px}
+.rec-prueba{align-self:flex-start}
+.rec-aviso{display:flex;flex-direction:column;gap:6px;background:var(--note-1);color:var(--on-note);
+  border:1.5px solid var(--edge);border-radius:12px;padding:12px;font-size:.85rem;line-height:1.4}
+.rec-aviso.mal{background:var(--note-2)}
+.rec-aviso ol{margin:0;padding-left:18px}
+.sw{position:relative;flex:none;width:50px;height:30px;border-radius:99px;border:1.5px solid var(--edge);
+  background:var(--paper-2);cursor:pointer;padding:0}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:23px;height:23px;border-radius:50%;
+  background:var(--ink);transition:transform .15s}
+.sw[aria-checked="true"]{background:var(--note-1)}
+.sw[aria-checked="true"]::after{transform:translateX(20px);background:var(--on-note)}
+.sw:disabled{opacity:.5;cursor:default}
+.sw:focus-visible,.rec-hora input:focus-visible{outline:3px solid var(--ok);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.sw::after{transition:none}}
+
 .ajustes{display:flex;flex-direction:column;gap:14px}
 .ajustes .eyebrow{margin:6px 0 -6px}
 .cuenta{display:flex;align-items:center;gap:12px;background:var(--card);
