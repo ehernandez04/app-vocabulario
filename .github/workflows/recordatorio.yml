@@ -1,0 +1,22 @@
+# El cron del recordatorio diario (#14). Vercel Hobby solo permite un cron al día
+# y el aviso necesita revisarse cada pocos minutos, así que lo dispara GitHub.
+# GitHub puede retrasar un cron programado varios minutos en horas de mucha
+# carga; por eso el servidor acepta el aviso hasta una hora después de la elegida.
+name: Recordatorio diario
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  avisar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al servidor
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail --silent --show-error --max-time 60 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            https://app-vocabulario.vercel.app/api/recordatorio/enviar
