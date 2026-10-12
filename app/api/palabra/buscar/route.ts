@@ -12,12 +12,9 @@
 import { auth } from '@/auth';
 import { pronunciacion } from '@/lib/diccionario';
 import { POS, sanearSentidos, type Sentido } from '@/lib/palabra';
-import { prisma } from '@/lib/prisma';
+import { COSTE_BUSQUEDA, devolver, hoy, LIMITE_DIARIO, reservar, restantes } from '@/lib/uso-ia';
 
 export const maxDuration = 30;
-
-/** Búsquedas por persona y día. Ver CLAUDE.md. */
-export const LIMITE_DIARIO = 30;
 
 const MODELO = 'claude-haiku-5-5';
 
@@ -38,22 +35,6 @@ Rules:
 
 const mala = (mensaje: string, status = 400) => Response.json({ error: mensaje }, { status });
 
-/** Reserva una búsqueda del día. false = ya se acabaron. */
-async function reservar(userId: string, dia: string): Promise<boolean> {
-  const tomada = await prisma.aiUsage.updateMany({
-    where: { userId, day: dia, count: { lt: LIMITE_DIARIO } },
-    data: { count: { increment: 1 } },
-  });
-  if (tomada.count > 0) return true;
-  const fila = await prisma.aiUsage.findUnique({ where: { userId_day: { userId, day: dia } } });
-  if (fila) return false; // existe y no cabe más
-  await prisma.aiUsage.createMany({ data: [{ userId, day: dia, count: 1 }], skipDuplicates: true });
-  return true;
-}
-
-const devolver = (userId: string, dia: string) =>
-  prisma.aiUsage.updateMany({ where: { userId, day: dia, count: { gt: 0 } }, data: { count: { decrement: 1 } } });
-
 export async function POST(req: Request) {
   const session = await auth();
   const userId = session?.user?.id;
@@ -71,10 +52,10 @@ export async function POST(req: Request) {
   }
   if (!texto || texto.length > 60) return mala('Escribe una palabra o frase corta en inglés');
 
-  const dia = new Date().toISOString().slice(0, 10);
-  if (!(await reservar(userId, dia))) {
+  const dia = hoy();
+  if (!(await reservar(userId, dia, COSTE_BUSQUEDA))) {
     return Response.json(
-      { error: `Hoy ya usaste tus ${LIMITE_DIARIO} búsquedas; mañana vuelves a tener. Puedes agregar a mano.`, restantes: 0 },
+      { error: `Hoy ya usaste tus ${LIMITE_DIARIO} puntos de IA; mañana vuelves a tener. Puedes agregar a mano.`, restantes: 0 },
       { status: 429 }
     );
   }
@@ -100,7 +81,7 @@ export async function POST(req: Request) {
     const json = salida.slice(salida.indexOf('{'), salida.lastIndexOf('}') + 1);
     sentidos = sanearSentidos(JSON.parse(json));
   } catch (e) {
-    await devolver(userId, dia); // una búsqueda que falla por culpa nuestra no cuenta
+    await devolver(userId, dia, COSTE_BUSQUEDA); // una búsqueda que falla por culpa nuestra no cuenta
     console.error('palabra/buscar', e instanceof Error ? e.message : e);
     return mala('No se pudo consultar al asistente. Inténtalo de nuevo o agrega a mano.', 502);
   }
@@ -117,10 +98,9 @@ export async function POST(req: Request) {
     }
   }
 
-  const gastadas = await prisma.aiUsage.findUnique({ where: { userId_day: { userId, day: dia } } });
   return Response.json({
     sentidos,
-    restantes: Math.max(0, LIMITE_DIARIO - (gastadas?.count ?? 0)),
+    restantes: await restantes(userId, dia),
     pronunciacionDeDiccionario: delDiccionario,
   });
 }

@@ -275,7 +275,7 @@ sobrevivir al cambio de horario.
 
 `POST /api/palabra/buscar` (login obligatorio; `ANTHROPIC_API_KEY` solo en el servidor)
 pide a `claude-haiku-5-5` los significados de una palabra, separados por tipo, y corrige la
-pronunciación con un diccionario real cuando responde. **Tope de 30 búsquedas por persona y
+pronunciación con un diccionario real cuando responde. **Tope de 30 puntos por persona y
 día** (`ai_usage`, día UTC); una búsqueda que falla por culpa nuestra no cuenta. Sin clave,
 la ruta devuelve 503 y el formulario manual sigue igual.
 
@@ -283,6 +283,14 @@ la ruta devuelve 503 y el formulario manual sigue igual.
 «run (sustantivo)», «to run (verbo: dirigir)». No cambia la clave ni el modelo; lo que se
 muestra y se pronuncia pasa por `textoEn()` / `<PalabraEn>`, que quitan la etiqueta. Un
 solo significado se guarda a secas, como una palabra de siempre.
+
+**Dibujo con IA (#53).** `POST /api/palabra/dibujo` pide un SVG a Haiku, Sonnet u Opus, **a
+elección de quien lo pide** (por defecto Haiku; la preferencia se guarda en el teléfono).
+Comparados con 8 palabras: los tres bien en cosas concretas, Opus claramente mejor en las
+abstractas. **El tope diario es de 30 «puntos»: una búsqueda vale 1 y un dibujo 2** (`lib/uso-ia.ts`).
+El SVG del modelo nunca se usa tal cual: `lib/svg.ts` lo reconstruye con una lista corta de
+etiquetas y atributos (si algo no encaja, se descarta) y se muestra solo como `<img src="data:…">`.
+Viaja con la palabra (`Word.svg`, columna que ya existía) y al bajar se vuelve `Word.img`.
 
 ## Los tres modos
 
@@ -347,6 +355,8 @@ lib/sync-copia.ts       qué se manda y cómo se aplica la respuesta (puro, con 
 components/MasFalladas.tsx  bloque de Inicio y hoja con las palabras más falladas (#15)
 components/IndicadorSync.tsx  insignia del avatar y fila de estado en Ajustes
 lib/palabra.ts          etiqueta de significados («run (verbo)»), claves y «ya la tienes» (con tests)
+lib/svg.ts              saneado del SVG que dibuja el modelo (con tests)
+lib/uso-ia.ts           el tope diario de IA, compartido por la búsqueda y el dibujo
 lib/diccionario.ts      pronunciación desde dictionaryapi.dev, con respaldo en el modelo
 lib/listas.ts           listas de palabras: siembra, filtro del mazo (con tests)
 lib/sync.ts             une la copia con la red; una petición a la vez

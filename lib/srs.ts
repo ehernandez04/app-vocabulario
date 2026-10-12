@@ -25,6 +25,8 @@ export type Word = {
   ipa?: string;
   emoji?: string;
   img?: string;
+  /** El dibujo hecho con IA, en SVG limpio (ver lib/svg.ts). `img` es lo mismo como imagen de datos. */
+  svg?: string;
   xe?: string;
   xs?: string;
   mine?: boolean;

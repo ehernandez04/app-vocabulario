@@ -8,6 +8,7 @@
  */
 
 import { BOXES } from './srs';
+import { sanearSvg } from './svg';
 
 export const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -18,6 +19,8 @@ export type PalabraEntrada = {
   emoji: string;
   xe: string;
   xs: string;
+  /** El dibujo, ya saneado, o null. */
+  svg: string | null;
 };
 export type ListaEntrada = { id: string; name: string; words: string[]; base: Date | null; borrada: boolean };
 export type ProgresoEntrada = { box: number; due: string; seen: number; miss: number };
@@ -41,6 +44,7 @@ export function palabra(v: unknown): PalabraEntrada | null {
     emoji: texto(w.emoji, 16) || '📝',
     xe: texto(w.xe, 500) ?? '',
     xs: texto(w.xs, 500) ?? '',
+    svg: sanearSvg(w.svg),
   };
 }
 
