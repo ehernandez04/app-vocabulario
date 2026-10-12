@@ -4,6 +4,7 @@ import { salir } from '@/app/acciones';
 import { useEstado } from '@/app/estado';
 import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
+import { Avatar } from './Avatar';
 import { IconAltavoz } from './icons';
 import { Hoja } from './Hoja';
 
@@ -25,7 +26,6 @@ export function HojaAjustes({
   const { usuario, deck, ajuste, guardarAjuste, recargarMazo, rearmarCola, avisar } = useEstado();
   const mias = store.userWords();
   const grabadas = audio.recordedVoices();
-  const inicial = (usuario.nombre ?? usuario.correo ?? '?').trim().charAt(0).toUpperCase();
 
   async function exportar() {
     try {
@@ -40,12 +40,13 @@ export function HojaAjustes({
     <Hoja titulo="Ajustes" alCerrar={alCerrar}>
       <div className="ajustes">
         <div className="cuenta">
-          {usuario.foto ? (
-            // eslint-disable-next-line @next/next/no-img-element -- la sirve Google desde su dominio; next/image no aporta acá
-            <img className="avatar" src={usuario.foto} alt="" width={42} height={42} />
-          ) : (
-            <span className="avatar">{inicial}</span>
-          )}
+          <Avatar
+            className="avatar"
+            foto={usuario.foto}
+            nombre={usuario.nombre}
+            correo={usuario.correo}
+            size={42}
+          />
           <span className="cuenta-txt">
             <b>{usuario.nombre ?? 'Tu cuenta'}</b>
             <span>{usuario.correo}</span>

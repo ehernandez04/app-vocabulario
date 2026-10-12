@@ -14,6 +14,7 @@ import {
 import * as store from '@/lib/local-store';
 import { isDue } from '@/lib/srs';
 import { noteColor, peekColor, saludo } from '@/lib/ui';
+import { Avatar } from '@/components/Avatar';
 import { HojaAjustes } from '@/components/HojaAjustes';
 import { HojaImportar } from '@/components/HojaImportar';
 import { HojaNuevaPalabra } from '@/components/HojaNuevaPalabra';
@@ -49,7 +50,6 @@ export default function Inicio() {
   const max = Math.max(...cuentas, 1);
   const oscuro = ajuste('theme') === 'dark';
   const primerNombre = usuario.nombre?.trim().split(/\s+/)[0] ?? null;
-  const inicial = (usuario.nombre ?? usuario.correo ?? '?').trim().charAt(0).toUpperCase();
 
   return (
     <section className="view">
@@ -95,12 +95,12 @@ export default function Inicio() {
             onClick={() => setHoja('ajustes')}
             aria-label="Tu cuenta y ajustes"
           >
-            {usuario.foto ? (
-              // eslint-disable-next-line @next/next/no-img-element -- la sirve Google; next/image no aporta acá
-              <img src={usuario.foto} alt="" width={36} height={36} />
-            ) : (
-              inicial
-            )}
+            <Avatar
+              foto={usuario.foto}
+              nombre={usuario.nombre}
+              correo={usuario.correo}
+              size={36}
+            />
           </button>
         </div>
       </div>
