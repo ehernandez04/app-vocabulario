@@ -64,12 +64,24 @@ está completa: la sincronización funciona y el estado se ve como una insignia 
 funciona así: cada cambio queda marcado como sucio en IndexedDB y sube sola a los 5 s, al
 abrir, al volver la señal y al volver a primer plano.
 
+**Recordatorio diario (#14): Web Push, no notificación local.** Una PWA no puede despertarse
+sola a una hora fija, así que lo manda el servidor. Cada aparato es una fila de `push_subs` con
+su hora (HH:MM) y su zona horaria; `lib/recordatorio.ts` decide si toca avisar (pasó la hora,
+dentro de una hora de holgura, no avisado hoy y sin repaso hoy). El cron es un workflow de
+GitHub Actions cada 15 min (`.github/workflows/recordatorio.yml`) que llama a
+`/api/recordatorio/enviar` con `CRON_SECRET`: Vercel Hobby solo permite un cron al día. Las
+claves VAPID de producción viven en Vercel y son distintas de las del `.env` local. **En
+iPhone solo llega con la app instalada en la pantalla de inicio.** Si en local el aviso no
+llega aunque el servidor responda 200, no es el código: Chrome puede no estar recibiendo push
+(red, VPN, perfil) o macOS tener apagadas las notificaciones de Chrome.
+
 ## Cómo se corre
 
 ```
 pnpm install && pnpm dev          # http://localhost:3000
 pnpm build                        # build de producción, incluido el service worker
 pnpm start                        # sirve el build; el SW solo se registra acá
+                                  # (en local hace falta AUTH_TRUST_HOST=true para entrar con Google)
 pnpm test                         # tests de la repetición espaciada
 pnpm icons                        # regenera los iconos de la PWA
 pnpm audio                        # genera los MP3 (requiere clave, ver docs/audio.md)
