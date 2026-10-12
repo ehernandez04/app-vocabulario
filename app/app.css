@@ -372,8 +372,8 @@
 .toast{position:absolute;left:50%;top:calc(14px + var(--safe-t));z-index:30;
   display:flex;align-items:center;gap:12px;
   transform:translateX(-50%) translateY(-80px);background:var(--ink);color:var(--paper);
-  padding:9px 16px;border-radius:99px;font:700 .84rem var(--ui);opacity:0;pointer-events:none;
-  white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis;
+  padding:9px 16px;border-radius:22px;font:700 .84rem/1.3 var(--ui);opacity:0;pointer-events:none;
+  width:max-content;max-width:calc(100% - 32px);
   transition:transform .32s cubic-bezier(.25,1.4,.5,1),opacity .25s}
 /* El botón de deshacer necesita recibir el clic, así que cuando el aviso trae
    acción el toast deja de ser transparente a los punteros (ver .toast.show). */
