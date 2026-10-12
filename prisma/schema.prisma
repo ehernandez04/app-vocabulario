@@ -35,6 +35,7 @@ model User {
   progress Progress[]
   lists    List[]
   aiUsage  AiUsage[]
+  push     PushSub[]
 
   @@map("users")
 }
@@ -194,4 +195,29 @@ model AiUsage {
 
   @@id([userId, day])
   @@map("ai_usage")
+}
+
+/// Un aparato suscrito al recordatorio diario (#14). Una persona puede tener
+/// varios (teléfono y tablet), cada uno con su `endpoint`, que es la dirección
+/// del servicio de push del navegador y por eso es única.
+///
+/// La hora se guarda como la eligió la persona (HH:MM) junto con su zona
+/// horaria, y el cron la compara en esa zona: así sobrevive al cambio de horario
+/// sin que nadie la toque. `lastSentDay` (fecha local) evita avisar dos veces el
+/// mismo día aunque el cron corra varias veces dentro de la ventana.
+model PushSub {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId   String @map("user_id") @db.Uuid
+  endpoint String @unique
+  p256dh   String
+  auth     String
+  hour     String @db.VarChar(5)
+  tz       String
+  lastSentDay String? @map("last_sent_day") @db.VarChar(10)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId])
+  @@map("push_subs")
 }

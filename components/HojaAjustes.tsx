@@ -7,6 +7,7 @@ import * as store from '@/lib/local-store';
 import { Avatar } from './Avatar';
 import { IconAltavoz } from './icons';
 import { Hoja } from './Hoja';
+import { FilaRecordatorio } from './FilaRecordatorio';
 import { FilaSync } from './IndicadorSync';
 
 /**
@@ -58,6 +59,8 @@ export function HojaAjustes({
         </div>
 
         <FilaSync />
+
+        <FilaRecordatorio />
 
         <p className="eyebrow">Voz</p>
         <div className="voicebox">
