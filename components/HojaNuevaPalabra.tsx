@@ -88,7 +88,7 @@ export function HojaNuevaPalabra({
         ultima,
         elegidos.length === 1
           ? `“${textoEn(ultima.en)}” entra en la caja 1`
-          : `${plural(elegidos.length, 'tarjeta')} de “${textoEn(ultima.en)}” entran en la caja 1`
+          : `${plural(elegidos.length, 'tarjeta')} de “${textoEn(campos.en)}” entran en la caja 1`
       );
     }
   }
