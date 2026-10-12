@@ -29,7 +29,7 @@ Rules:
 - List the most common DISTINCT senses, grouped by part of speech, at most 4 in total. If the word has one main sense, return one.
 - "en": the base form as it should be studied. Verbs in the infinitive with "to " ("to run"); nouns, adjectives and adverbs without articles ("run", "reliable"). Never add parentheses.
 - "pos": exactly one of: ${POS.join(', ')}.
-- "matiz": 1-3 Spanish words that tell apart two senses of the SAME part of speech (e.g. "correr" vs "dirigir"); otherwise leave empty.
+- "matiz": 1-2 Spanish words naming THIS sense, only when another sense has the same part of speech (e.g. "correr" for one, "dirigir" for the other). Never compare ("X vs Y"), never list alternatives; otherwise leave empty.
 - "es": the Spanish translation, short and natural (neutral Spanish). Verbs in the infinitive.
 - "ipa": American English IPA between slashes, e.g. "/rʌn/".
 - "xe": one natural example sentence in English (about B1 level) that uses that sense. "xs": its Spanish translation.

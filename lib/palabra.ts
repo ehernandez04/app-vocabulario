@@ -108,7 +108,8 @@ export function sanearSentidos(crudo: unknown, max = 6): Sentido[] {
     out.push({
       en,
       pos,
-      matiz: txt(o.matiz, 40),
+      // Un matiz nombra ESTE sentido: si el modelo lo escribe como comparación («a vs b»), vale el primero.
+      matiz: txt(o.matiz, 60).split(/\s+vs\.?\s+|\s*[/,;]\s*/i)[0].trim(),
       es,
       ipa: txt(o.ipa, 80),
       xe: txt(o.xe, 300),

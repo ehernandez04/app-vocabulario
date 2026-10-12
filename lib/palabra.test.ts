@@ -78,6 +78,11 @@ describe('sanearSentidos', () => {
     expect(r[0]).toMatchObject({ en: 'run', es: 'correr', emoji: '📝' });
   });
 
+  it('un matiz escrito como comparación se queda con el primer término', () => {
+    const r = sanearSentidos({ sentidos: [{ en: 'to run', es: 'correr', pos: 'verbo', matiz: 'correr vs dirigir' }, { en: 'to run', es: 'dirigir', pos: 'verbo', matiz: 'dirigir, gestionar' }] });
+    expect(r.map((x) => x.matiz)).toEqual(['correr', 'dirigir']);
+  });
+
   it('una respuesta sin forma devuelve vacío', () => {
     expect(sanearSentidos(null)).toEqual([]);
     expect(sanearSentidos({ sentidos: 3 })).toEqual([]);
