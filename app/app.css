@@ -593,3 +593,38 @@
 .modelo small{display:block;font-size:.72rem;color:var(--ink-soft)}
 .modelo .rd{width:14px;height:14px;border:1.5px solid var(--ink);border-radius:99px;flex:none;display:grid;place-items:center}
 .modelo.on .rd::after{content:"";width:6px;height:6px;border-radius:99px;background:var(--ink)}
+
+/* ── Aprender por tema (#39) ─────────────────────────────────────────────── */
+.back{appearance:none;background:none;border:0;padding:0;cursor:pointer;align-self:flex-start;
+  font:700 .85rem var(--ui);color:var(--ink-soft);text-decoration:none}
+.tema-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:15px;
+  border:2px solid var(--edge);background:var(--note-3,#B8E1FF);color:var(--on-note);
+  box-shadow:var(--lift);text-decoration:none;transition:transform .12s,box-shadow .12s}
+.tema-card:active{transform:translateY(2px);box-shadow:none}
+.tema-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.tema-w{font:800 1.9rem var(--display);letter-spacing:-.03em;line-height:1}
+.tema-txt small{font:700 .8rem var(--ui);opacity:.75;margin-top:3px}
+.tema-go{flex:none;font-weight:700;font-size:.9rem}
+.tema-dots{display:flex;gap:3px;margin-top:7px}
+.tema-dots i{width:14px;height:6px;border-radius:2px;background:rgba(28,27,25,.18)}
+.tema-dots i.on{background:var(--on-note)}
+.tema-racha{font:700 .8rem var(--ui);opacity:.7}
+.tema-prog{height:8px;border-radius:99px;background:var(--rule);overflow:hidden}
+.note .tema-prog{background:rgba(28,27,25,.18)}
+.tema-prog i{display:block;height:100%;background:var(--on-note);transition:width .25s}
+.tema-niveles{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.lv{display:flex;gap:12px;align-items:center;padding:12px;border:2px solid var(--edge);
+  border-radius:14px;background:var(--card);box-shadow:var(--lift)}
+.lv.lock{opacity:.5;box-shadow:none;border-color:var(--rule)}
+.lv-n{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  font:800 .9rem var(--display);background:var(--note-4);color:var(--on-note);border:1.5px solid var(--edge)}
+.lv.lock .lv-n{background:var(--paper-2);color:var(--ink-faint);border-color:var(--rule)}
+.lv-n.cur{background:var(--note-1)}
+.lv-txt{min-width:0;display:flex;flex-direction:column}
+.lv-txt b{font-size:.92rem}
+.lv-txt span{color:var(--ink-soft);font-size:.8rem}
+.tema-frase{margin:0;font:800 1.45rem var(--display);letter-spacing:-.02em;line-height:1.25}
+.hueco{display:inline-block;min-width:3.2ch;border-bottom:3px solid var(--ink);text-align:center;padding-inline:4px}
+.hueco.ok{color:var(--ok);border-color:var(--ok)}
+.hueco.no{color:var(--no);border-color:var(--no)}
+a.btn{display:flex;align-items:center;justify-content:center;text-decoration:none}
