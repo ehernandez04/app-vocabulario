@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { BotonAjustes } from '@/components/BotonAjustes';
 import { Sticker } from '@/components/Sticker';
 import { IconAltavoz, IconComillas, IconDespacio } from '@/components/icons';
 import * as audio from '@/lib/audio';
@@ -37,8 +38,11 @@ export default function Tarjetas() {
       <section className="view">
         <div className="topbar">
           <span className="h2">Tarjetas</span>
-          <span className="count">
-            {cola.length}/{cola.length}
+          <span className="lado">
+            <span className="count">
+              {cola.length}/{cola.length}
+            </span>
+            <BotonAjustes />
           </span>
         </div>
         <div className="done-card">
@@ -90,8 +94,11 @@ export default function Tarjetas() {
     <section className="view">
       <div className="topbar">
         <span className="h2">Tarjetas</span>
-        <span className="count">
-          {indice + 1} / {cola.length}
+        <span className="lado">
+          <span className="count">
+            {indice + 1} / {cola.length}
+          </span>
+          <BotonAjustes />
         </span>
       </div>
       <div className="bar">

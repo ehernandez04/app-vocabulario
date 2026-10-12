@@ -185,6 +185,7 @@
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .count{padding:5px 12px;border-radius:14px;background:var(--paper-2);font:700 .8rem var(--ui);
   font-variant-numeric:tabular-nums}
+.topbar .lado{display:flex;align-items:center;gap:8px;flex:none}
 .bar{height:7px;border-radius:4px;background:var(--paper-2);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--ink);border-radius:4px;
   transition:width .45s cubic-bezier(.3,1.2,.5,1)}
@@ -259,6 +260,7 @@
 .view.camino{background:#1C1B19;color:#F3EFE6}
 .camino .eyebrow,.camino .muted{color:#CFC8B8}
 .camino .count{background:#34322E;color:#F3EFE6}
+.camino .avatarbtn{border-color:#6B6457}
 .camino .pill{border-color:#6B6457;color:#F3EFE6}
 .camino .pill.on{background:#F3EFE6;color:#1C1B19;border-color:#F3EFE6}
 .camino .toggle.onroad{background:#2A2926;border-color:#6B6457;color:#F3EFE6;box-shadow:none}

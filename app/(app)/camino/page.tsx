@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { BotonAjustes } from '@/components/BotonAjustes';
 import { Sticker } from '@/components/Sticker';
 import { IconAdelante, IconAtras, IconPausa, IconPlay } from '@/components/icons';
 import * as audio from '@/lib/audio';
@@ -148,8 +149,11 @@ export default function Camino() {
     <section className={`view camino ${sonando ? 'playing' : ''}`}>
       <div className="topbar">
         <span className="h2">Modo camino</span>
-        <span className="count">
-          {indice + 1} de {deck.length}
+        <span className="lado">
+          <span className="count">
+            {indice + 1} de {deck.length}
+          </span>
+          <BotonAjustes />
         </span>
       </div>
       <p className="muted">
