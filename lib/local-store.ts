@@ -272,8 +272,11 @@ export function copiaSync(): Copia {
   };
 }
 
-export const haySincronizacionPendiente = (): boolean =>
-  Object.keys(sucios).length > 0 || Object.keys(pendientes).length > 0;
+export const haySincronizacionPendiente = (): boolean => contarPendientes() > 0;
+
+/** Cuántos cambios guardados esperan subir (avances y palabras altas o bajas). */
+export const contarPendientes = (): number =>
+  new Set([...Object.keys(sucios), ...Object.keys(pendientes)]).size;
 
 /** Persiste lo que `aplicarRespuesta` cambió en la copia. */
 export function guardarSync(c: Copia, tocado: Tocado) {
