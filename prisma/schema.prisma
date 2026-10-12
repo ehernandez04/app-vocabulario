@@ -24,6 +24,13 @@ model User {
   image     String?
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
+  /// La racha es parte del avance: perderla al cambiar de teléfono es lo que
+  /// más duele. `lastDay` es fecha local YYYY-MM-DD, por la misma razón que
+  /// `Progress.due`. Las preferencias del aparato (voz, tema, pausa) NO viajan:
+  /// el tema del teléfono no tiene por qué pisar el de la tablet.
+  streak  Int     @default(0)
+  lastDay String? @map("last_day") @db.VarChar(10)
+
   words    Word[]
   progress Progress[]
 

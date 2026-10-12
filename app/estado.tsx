@@ -12,11 +12,12 @@
  * sincronizarlos; por eso toda escritura pasa por acá y no por los componentes.
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import BASE from '@/data/deck.json';
 import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
 import { grade, nextStreak, session, today, type Progress, type Word } from '@/lib/srs';
+import { plural } from '@/lib/ui';
 
 export type Usuario = { nombre: string | null; correo: string | null; foto: string | null };
 
@@ -29,7 +30,7 @@ type Estado = {
   aciertos: number;
   fallos: number;
   aviso: Aviso | null;
-  avisar: (texto: string, accion?: AccionAviso) => void;
+  avisar: (texto: string, accion?: AccionAviso, duracion?: number) => void;
   progresoDe: (en: string) => Progress;
   ajuste: <K extends keyof store.Settings>(k: K) => store.Settings[K];
   guardarAjuste: <K extends keyof store.Settings>(k: K, v: store.Settings[K]) => void;
@@ -79,13 +80,74 @@ export function ProveedorEstado({
 
   const repintar = useCallback(() => setVersion((v) => v + 1), []);
 
-  const avisar = useCallback((texto: string, accion?: AccionAviso) => {
+  const avisar = useCallback((texto: string, accion?: AccionAviso, duracion?: number) => {
     setAviso({ texto, accion });
     clearTimeout(temporizadorAviso);
     // Con algo que pulsar hace falta más tiempo: 1,8 s no alcanza para leer,
     // decidir y llegar al botón.
-    temporizadorAviso = window.setTimeout(() => setAviso(null), accion ? 6000 : 1800);
+    temporizadorAviso = window.setTimeout(() => setAviso(null), duracion ?? (accion ? 6000 : 1800));
   }, []);
+
+  /**
+   * La primera vez que entras con cuenta, lo que ya había en este teléfono se
+   * sube. Quien venía usando la app sin cuenta no puede perder su avance, y no
+   * se borra nada local en ningún caso: si falla, todo sigue acá y se reintenta.
+   *
+   * Una sola vez por cuenta (`yaSubidoA`). Lo que se cree después de esa subida
+   * lo recoge la sincronización de la etapa 3, no esto.
+   */
+  const subiendo = useRef(false);
+  // El aviso de «Reintentar» llama a la versión de entonces, no a la de ahora.
+  const subirRef = useRef<() => void>(() => {});
+  const subir = useCallback(async () => {
+    const cuenta = usuario.correo;
+    if (!cuenta || subiendo.current || store.yaSubidoA(cuenta)) return;
+    const datos = store.datosParaSubir();
+    if (!store.haySubida(datos)) {
+      store.marcarSubido(cuenta); // teléfono nuevo: no hay nada que subir
+      return;
+    }
+    subiendo.current = true;
+    try {
+      const r = await fetch('/api/subir', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(datos),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const { palabras, avances } = (await r.json()) as { palabras: number; avances: number };
+      store.marcarSubido(cuenta);
+      const partes = [
+        palabras > 0 && plural(palabras, 'palabra'),
+        avances > 0 && plural(avances, 'avance'),
+      ].filter(Boolean);
+      // Si la cuenta ya lo tenía todo (una subida anterior que murió a medias),
+      // no hay nada que contar.
+      if (partes.length) avisar(`Subimos ${partes.join(' y ')} a tu cuenta`, undefined, 4500);
+    } catch {
+      avisar(
+        'No se pudo subir tu avance a la cuenta',
+        { etiqueta: 'Reintentar', alPulsar: () => subirRef.current() },
+        10000
+      );
+    } finally {
+      subiendo.current = false;
+    }
+  }, [usuario.correo, avisar]);
+
+  useEffect(() => {
+    subirRef.current = subir;
+  }, [subir]);
+
+  useEffect(() => {
+    if (!listo) return;
+    // Sin señal no se intenta: en el metro un aviso de error cada vez que abres
+    // la app sería ruido. Se sube en cuanto vuelva la conexión.
+    const intentar = () => subirRef.current();
+    if (navigator.onLine) intentar();
+    window.addEventListener('online', intentar);
+    return () => window.removeEventListener('online', intentar);
+  }, [listo]);
 
   useEffect(() => {
     let vivo = true;
