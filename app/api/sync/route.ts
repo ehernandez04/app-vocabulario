@@ -11,6 +11,8 @@
  *   words     palabras propias nuevas o borradas desde entonces
  *   progress  avance cambiado; `base` es la versión del servidor que el teléfono
  *             vio por última vez para esa palabra (null si nunca la vio)
+ *   lists     listas cambiadas: `{id, name, words (textos en inglés), base, borrada?}`.
+ *             El id lo genera el teléfono. Se sube la lista entera, no el cambio.
  *   streak, lastDay
  *
  * Respuesta: lo que cambió en el servidor desde `desde`, más el estado final de
@@ -24,8 +26,8 @@
  */
 
 import { auth } from '@/auth';
-import { instante, palabra, progreso, racha as sanearRacha, texto, type PalabraEntrada, type ProgresoEntrada } from '@/lib/entrada';
-import { fusionarRacha, igualProgreso, resolverProgreso } from '@/lib/fusion';
+import { instante, lista as sanearLista, palabra, progreso, racha as sanearRacha, texto, type ListaEntrada, type PalabraEntrada, type ProgresoEntrada } from '@/lib/entrada';
+import { fusionarRacha, igualLista, igualProgreso, resolverLista, resolverProgreso } from '@/lib/fusion';
 import { prisma } from '@/lib/prisma';
 
 const MAX = 5000;
@@ -65,7 +67,8 @@ export async function POST(req: Request) {
 
   const crudasPalabras = Array.isArray(cuerpo.words) ? cuerpo.words : [];
   const crudoProgreso = Array.isArray(cuerpo.progress) ? cuerpo.progress : [];
-  if (crudasPalabras.length > MAX || crudoProgreso.length > MAX) {
+  const crudasListas = Array.isArray(cuerpo.lists) ? cuerpo.lists : [];
+  if (crudasPalabras.length > MAX || crudoProgreso.length > MAX || crudasListas.length > MAX) {
     return mala('Demasiados cambios para una sola sincronización');
   }
 
@@ -172,6 +175,109 @@ export async function POST(req: Request) {
     }
   }
 
+  // ── listas ──────────────────────────────────────────────────────────────
+  // Se resuelven con el mismo criterio que el avance (ver lib/fusion.resolverLista).
+  // Una lista nueva cuyo nombre ya existe en la cuenta se funde con ella en vez de
+  // duplicarse: así dos teléfonos que sembraron «Básicas» cada uno acaban con una.
+  type Guardada = { name: string; words: string[]; updatedAt: Date; deletedAt: Date | null };
+  const entrantesListas = new Map<string, ListaEntrada>();
+  for (const c of crudasListas) {
+    const l = sanearLista(c);
+    if (!l) omitidos++;
+    else entrantesListas.set(l.id, l);
+  }
+
+  const guardadas = new Map<string, Guardada>();
+  const reasignadas: Record<string, string> = {};
+  const opsListas = [];
+  const tocadas = new Set<string>();
+  if (entrantesListas.size) {
+    const filas = await prisma.list.findMany({
+      where: { userId },
+      select: { id: true, name: true, updatedAt: true, deletedAt: true, words: { select: { word: { select: { en: true } } } } },
+    });
+    for (const f of filas) {
+      guardadas.set(f.id, { name: f.name, words: f.words.map((x) => x.word.en), updatedAt: f.updatedAt, deletedAt: f.deletedAt });
+    }
+    // Un id que ya pertenece a otra cuenta no se toca.
+    const ajenos = new Set(
+      (
+        await prisma.list.findMany({
+          where: { id: { in: [...entrantesListas.keys()].filter((id) => !guardadas.has(id)) }, NOT: { userId } },
+          select: { id: true },
+        })
+      ).map((x) => x.id)
+    );
+
+    // También las palabras que la lista ya tiene: al unir dos versiones hay que
+    // poder volver a escribirlas, no solo las que llegan.
+    const nombres = [
+      ...new Set([
+        ...[...entrantesListas.values()].flatMap((l) => l.words),
+        ...[...guardadas.values()].flatMap((g) => g.words),
+      ]),
+    ];
+    const idPalabra = new Map<string, string>();
+    if (nombres.length) {
+      const palabras = await prisma.word.findMany({
+        where: { en: { in: nombres }, deletedAt: null, OR: [{ userId: null }, { userId }] },
+        select: { id: true, en: true, userId: true },
+      });
+      for (const f of palabras) if (f.userId === null || !idPalabra.has(f.en)) idPalabra.set(f.en, f.id);
+    }
+
+    for (const l of entrantesListas.values()) {
+      if (ajenos.has(l.id)) {
+        omitidos++;
+        continue;
+      }
+      if (l.borrada) {
+        const g = guardadas.get(l.id);
+        if (g && !g.deletedAt) {
+          opsListas.push(prisma.list.update({ where: { id: l.id }, data: { deletedAt: new Date() } }));
+          tocadas.add(l.id);
+        }
+        continue;
+      }
+      // ¿A cuál fila corresponde? Por id; si es nueva, por nombre entre las vivas.
+      let destino = l.id;
+      let previa = guardadas.get(l.id);
+      if (!previa) {
+        const igualNombre = [...guardadas.entries()].find(
+          ([, g]) => !g.deletedAt && g.name.toLowerCase() === l.name.toLowerCase()
+        );
+        if (igualNombre) {
+          destino = igualNombre[0];
+          previa = igualNombre[1];
+          reasignadas[l.id] = destino;
+        }
+      }
+      const { lista: final } = resolverLista(
+        previa ? { lista: { name: previa.name, words: previa.words }, actualizado: previa.updatedAt, borrada: !!previa.deletedAt } : null,
+        { name: l.name, words: l.words.filter((en) => idPalabra.has(en)) },
+        previa && destino === l.id ? l.base : null
+      );
+      tocadas.add(destino);
+      if (previa && !previa.deletedAt && igualLista(previa, final)) continue; // nada cambia: no se sube la versión
+
+      const ids = final.words.map((en) => idPalabra.get(en)).filter((x): x is string => !!x);
+      if (!previa) {
+        opsListas.push(
+          prisma.list.create({
+            data: { id: destino, userId, name: final.name, words: { create: ids.map((wordId) => ({ wordId })) } },
+          })
+        );
+      } else {
+        opsListas.push(
+          prisma.list.update({ where: { id: destino }, data: { name: final.name, deletedAt: null } }),
+          prisma.listWord.deleteMany({ where: { listId: destino } }),
+          ...(ids.length ? [prisma.listWord.createMany({ data: ids.map((wordId) => ({ listId: destino, wordId })) })] : [])
+        );
+      }
+      guardadas.set(destino, { name: final.name, words: final.words, updatedAt: new Date(), deletedAt: null });
+    }
+  }
+
   const sanea = sanearRacha(cuerpo.streak, cuerpo.lastDay);
   const fusionada = fusionarRacha({ streak: usuario.streak, lastDay: usuario.lastDay }, sanea);
 
@@ -179,6 +285,7 @@ export async function POST(req: Request) {
     ...(crear.length ? [prisma.progress.createMany({ data: crear, skipDuplicates: true })] : []),
     ...actualizar,
     prisma.user.update({ where: { id: userId }, data: fusionada }),
+    ...opsListas,
   ]);
 
   // ── lo que bajo ─────────────────────────────────────────────────────────
@@ -200,6 +307,24 @@ export async function POST(req: Request) {
     select: { box: true, due: true, seen: true, miss: true, updatedAt: true, word: { select: { en: true } } },
   });
 
+  const listasNuevas = await prisma.list.findMany({
+    where: {
+      userId,
+      OR: [
+        ventana ? { updatedAt: { gte: ventana } } : { deletedAt: null },
+        { id: { in: [...tocadas] } },
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      createdAt: true,
+      updatedAt: true,
+      deletedAt: true,
+      words: { select: { word: { select: { en: true } } } },
+    },
+  });
+
   return Response.json({
     cursor: cursor.toISOString(),
     words: palabrasNuevas.map(({ deletedAt, createdAt, ...w }) => ({
@@ -212,6 +337,15 @@ export async function POST(req: Request) {
       ...p,
       version: updatedAt.toISOString(),
     })),
+    lists: listasNuevas.map((l) => ({
+      id: l.id,
+      name: l.name,
+      words: l.words.map((x) => x.word.en),
+      createdAt: l.createdAt.toISOString(),
+      version: l.updatedAt.toISOString(),
+      borrada: l.deletedAt !== null,
+    })),
+    reasignadas,
     streak: fusionada.streak,
     lastDay: fusionada.lastDay,
     choques,

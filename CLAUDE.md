@@ -251,9 +251,13 @@ cuentas, como único almacén):
 el almacén `lists` de IndexedDB; una palabra puede estar en varias, de fábrica o propia.
 `settings.lista` guarda cuál se repasa (null = todas) y filtra la sesión de Tarjetas,
 Adivinar y Camino, pero no el anillo ni las cajas de Inicio. Las tres de partida (Básicas,
-Trabajo, Viajes) se siembran una vez por teléfono (`_listasSembradas`). **Por ahora solo
-viven en el teléfono**: falta llevarlas a la cuenta (parte 2 del #13), y al hacerlo la
-siembra no debe repetirse en un segundo dispositivo.
+Trabajo, Viajes) se siembran una vez por teléfono (`_listasSembradas`). Viajan a la cuenta
+(tablas `lists` y `list_words`): el `id` lo genera el teléfono, se sincronizan enteras (no por
+operación) y se borran con marca. Mismo criterio que el avance: si el servidor no cambió desde
+la `base` que el teléfono vio, entra lo del teléfono; si cambió, se unen las palabras y se queda
+el nombre del servidor (`resolverLista`). Una lista nueva cuyo nombre ya existe se funde con
+esa (lo que evita que dos teléfonos con la siembra dupliquen «Básicas»); el servidor contesta
+`reasignadas` y el teléfono adopta el id definitivo.
 
 El color de post-it **no** se guarda: sale de la posición en el mazo (`noteColor`).
 Si una palabra trae `img`, se usa esa imagen en lugar del emoji.
