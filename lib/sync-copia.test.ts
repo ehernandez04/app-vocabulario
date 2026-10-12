@@ -140,6 +140,21 @@ describe('aplicarRespuesta', () => {
     expect(c.words.commute).toMatchObject({ es: 'desplazarse', mine: true, addedAt: '2026-10-11T00:00:00.000Z' });
   });
 
+  it('el dibujo de una palabra viaja con ella y al bajar vuelve a ser imagen', () => {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><g/></svg>';
+    const c = copia({ pendientes: { d: { tipo: 'alta', word: { en: 'd', es: 'd', mine: true, svg } } } });
+    expect(construirPeticion(c).cuerpo.words[0].svg).toBe(svg);
+
+    const otro = copia();
+    aplicarRespuesta(
+      otro,
+      construirPeticion(otro).enviado,
+      resp({ words: [{ en: 'd', es: 'd', ipa: '', emoji: '📝', xe: '', xs: '', svg, borrada: false }] })
+    );
+    expect(otro.words.d.svg).toBe(svg);
+    expect(otro.words.d.img).toMatch(/^data:image\/svg\+xml/);
+  });
+
   it('una baja que llega de otro dispositivo quita la palabra y su avance', () => {
     const c = copia({
       words: { vieja: { en: 'vieja', es: 'vieja', mine: true } },

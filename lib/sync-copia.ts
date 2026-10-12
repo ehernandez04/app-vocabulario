@@ -19,6 +19,7 @@
 import { fusionarRacha, igualLista, igualProgreso, type Racha } from './fusion';
 import type { Lista } from './listas';
 import type { Progress, Word } from './srs';
+import { svgAImagen } from './svg';
 
 export type Pendiente = { tipo: 'alta' | 'baja'; word: Word };
 
@@ -45,7 +46,7 @@ export type Copia = {
 
 export type Peticion = {
   desde: string | null;
-  words: ({ en: string; es: string; ipa?: string; emoji?: string; xe?: string; xs?: string } & {
+  words: ({ en: string; es: string; ipa?: string; emoji?: string; xe?: string; xs?: string; svg?: string } & {
     borrada?: true;
   })[];
   progress: (Progress & { en: string; base: string | null })[];
@@ -65,6 +66,7 @@ export type Enviado = {
 export type Respuesta = {
   cursor: string;
   words: (Pick<Word, 'en' | 'es' | 'ipa' | 'emoji' | 'xe' | 'xs'> & {
+    svg?: string | null;
     borrada: boolean;
     createdAt?: string;
   })[];
@@ -116,6 +118,7 @@ export function construirPeticion(c: Copia): { cuerpo: Peticion; enviado: Enviad
     emoji: word.emoji,
     xe: word.xe,
     xs: word.xs,
+    svg: word.svg,
     ...(tipo === 'baja' ? { borrada: true as const } : {}),
   }));
 
@@ -190,6 +193,8 @@ export function aplicarRespuesta(c: Copia, enviado: Enviado, r: Respuesta): Toca
       emoji: w.emoji,
       xe: w.xe,
       xs: w.xs,
+      // El dibujo viaja como SVG limpio y aquí se vuelve imagen, que es lo que pinta la pegatina.
+      ...(w.svg ? { svg: w.svg, img: svgAImagen(w.svg) } : {}),
       mine: true,
       addedAt: w.createdAt ?? new Date().toISOString(),
     };

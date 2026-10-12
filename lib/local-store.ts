@@ -32,6 +32,8 @@ export type Settings = {
   voiceEs: string | null;
   /** Cuál de las voces grabadas usar. null = la de por defecto del índice. */
   voiceMp3: string | null;
+  /** Con qué modelo dibujar las palabras nuevas (#53). */
+  modeloDibujo: 'haiku' | 'sonnet' | 'opus';
   theme: 'light' | 'dark';
   /** La lista que se está repasando. null = todas. */
   lista: string | null;
@@ -46,6 +48,7 @@ export const DEFAULTS: Settings = {
   voiceEn: null,
   voiceEs: null,
   voiceMp3: null,
+  modeloDibujo: 'haiku',
   theme: 'light',
   lista: null,
 };
@@ -178,6 +181,7 @@ export function addWord(w: Word): Word {
     // img se conserva: es lo que permite que una palabra traiga ilustración
     // propia en vez de emoji. En legacy el formulario lo descartaba.
     ...(w.img ? { img: w.img } : {}),
+    ...(w.svg ? { svg: w.svg } : {}),
     mine: true,
     addedAt: new Date().toISOString(),
   };
