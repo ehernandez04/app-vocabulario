@@ -20,6 +20,9 @@ import { sincronizar } from '@/lib/sync';
 import { grade, nextStreak, session, today, type Progress, type Word } from '@/lib/srs';
 import { plural } from '@/lib/ui';
 
+export type FaseSync = 'dia' | 'pendiente' | 'subiendo' | 'sin-conexion' | 'fallo';
+export type EstadoSync = { fase: FaseSync; pendientes: number; ultima: number | null };
+
 export type Usuario = { nombre: string | null; correo: string | null; foto: string | null };
 
 type Estado = {
@@ -42,6 +45,8 @@ type Estado = {
   rearmarCola: () => void;
   recargarMazo: () => void;
   alternarTema: () => void;
+  sync: EstadoSync;
+  sincronizarAhora: () => Promise<void>;
 };
 
 export type AccionAviso = { etiqueta: string; alPulsar: () => void };
@@ -80,6 +85,22 @@ export function ProveedorEstado({
   const [revertible, setRevertible] = useState<Revertible | null>(null);
 
   const repintar = useCallback(() => setVersion((v) => v + 1), []);
+
+  // Solo informa: nada del repaso espera a esto.
+  const [sincronizando, setSincronizando] = useState(false);
+  const [fallo, setFallo] = useState(false);
+  const [enLinea, setEnLinea] = useState(true);
+  const [ultima, setUltima] = useState<number | null>(null);
+  useEffect(() => {
+    const poner = () => setEnLinea(navigator.onLine);
+    poner();
+    window.addEventListener('online', poner);
+    window.addEventListener('offline', poner);
+    return () => {
+      window.removeEventListener('online', poner);
+      window.removeEventListener('offline', poner);
+    };
+  }, []);
 
   const avisar = useCallback((texto: string, accion?: AccionAviso, duracion?: number) => {
     setAviso({ texto, accion });
@@ -147,7 +168,11 @@ export function ProveedorEstado({
    */
   const sincronizarRef = useRef<() => Promise<void>>(async () => {});
   const sincronizarAhora = useCallback(async () => {
+    setSincronizando(true);
     const r = await sincronizar();
+    setSincronizando(false);
+    setFallo(!r.ok);
+    if (r.ok) setUltima(Date.now());
     if (r.ok && r.cambios) {
       setDeck(store.fullDeck(BASE_DECK));
       repintar();
@@ -173,6 +198,7 @@ export function ProveedorEstado({
     // repaso, reiniciarlo lo dejaría esperando hasta el primer descanso.
     let pendiente: number | undefined;
     const programar = () => {
+      repintar(); // el contador de pendientes cambió
       if (pendiente !== undefined) return;
       pendiente = window.setTimeout(() => {
         pendiente = undefined;
@@ -193,7 +219,7 @@ export function ProveedorEstado({
       window.removeEventListener('online', arrancar);
       document.removeEventListener('visibilitychange', alVolver);
     };
-  }, [listo]);
+  }, [listo, repintar]);
 
   useEffect(() => {
     let vivo = true;
@@ -289,8 +315,22 @@ export function ProveedorEstado({
     repintar();
   }, [repintar]);
 
+  const pendientes = store.contarPendientes();
+  const fase: FaseSync = sincronizando
+    ? 'subiendo'
+    : !enLinea
+      ? 'sin-conexion'
+      : fallo
+        ? 'fallo'
+        : pendientes > 0
+          ? 'pendiente'
+          : 'dia';
+  const sync = useMemo<EstadoSync>(() => ({ fase, pendientes, ultima }), [fase, pendientes, ultima]);
+
   const valor = useMemo<Estado>(
     () => ({
+      sync,
+      sincronizarAhora,
       usuario,
       listo,
       deck,
@@ -317,6 +357,8 @@ export function ProveedorEstado({
       // esto, `children` llega con la misma referencia y el árbol no se vuelve
       // a renderizar — por eso el selector de voz se quedaba en la voz vieja.
       version,
+      sync,
+      sincronizarAhora,
       usuario,
       listo,
       deck,

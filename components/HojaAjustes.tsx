@@ -7,6 +7,7 @@ import * as store from '@/lib/local-store';
 import { Avatar } from './Avatar';
 import { IconAltavoz } from './icons';
 import { Hoja } from './Hoja';
+import { FilaSync } from './IndicadorSync';
 
 /**
  * Ajustes: tu cuenta, la voz y el mazo.
@@ -55,6 +56,8 @@ export function HojaAjustes({
             Salir
           </button>
         </div>
+
+        <FilaSync />
 
         <p className="eyebrow">Voz</p>
         <div className="voicebox">

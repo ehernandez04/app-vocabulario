@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useEstado } from '@/app/estado';
 import { Avatar } from './Avatar';
+import { InsigniaSync } from './IndicadorSync';
 import { HojaAjustes } from './HojaAjustes';
 import { HojaImportar } from './HojaImportar';
 
@@ -24,9 +25,12 @@ export function BotonAjustes() {
 
   return (
     <>
-      <button className="avatarbtn" onClick={() => setHoja('ajustes')} aria-label="Tu cuenta y ajustes">
-        <Avatar foto={usuario.foto} nombre={usuario.nombre} correo={usuario.correo} size={36} />
-      </button>
+      <span className="avatarwrap">
+        <button className="avatarbtn" onClick={() => setHoja('ajustes')} aria-label="Tu cuenta y ajustes">
+          <Avatar foto={usuario.foto} nombre={usuario.nombre} correo={usuario.correo} size={36} />
+        </button>
+        <InsigniaSync />
+      </span>
       {hoja &&
         createPortal(
           hoja === 'ajustes' ? (
