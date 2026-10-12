@@ -16,6 +16,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import BASE from '@/data/deck.json';
 import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
+import { sincronizar } from '@/lib/sync';
 import { grade, nextStreak, session, today, type Progress, type Word } from '@/lib/srs';
 import { plural } from '@/lib/ui';
 
@@ -98,7 +99,7 @@ export function ProveedorEstado({
    */
   const subiendo = useRef(false);
   // El aviso de «Reintentar» llama a la versión de entonces, no a la de ahora.
-  const subirRef = useRef<() => void>(() => {});
+  const subirRef = useRef<() => Promise<void>>(async () => {});
   const subir = useCallback(async () => {
     const cuenta = usuario.correo;
     if (!cuenta || subiendo.current || store.yaSubidoA(cuenta)) return;
@@ -127,7 +128,7 @@ export function ProveedorEstado({
     } catch {
       avisar(
         'No se pudo subir tu avance a la cuenta',
-        { etiqueta: 'Reintentar', alPulsar: () => subirRef.current() },
+        { etiqueta: 'Reintentar', alPulsar: () => void subirRef.current() },
         10000
       );
     } finally {
@@ -139,14 +140,59 @@ export function ProveedorEstado({
     subirRef.current = subir;
   }, [subir]);
 
+  /**
+   * Lo que cambió en otro dispositivo llega acá. No se rearma la cola: reiniciar
+   * una sesión en curso porque otro teléfono agregó una palabra sería peor que
+   * esperar a la próxima ronda.
+   */
+  const sincronizarRef = useRef<() => Promise<void>>(async () => {});
+  const sincronizarAhora = useCallback(async () => {
+    const r = await sincronizar();
+    if (r.ok && r.cambios) {
+      setDeck(store.fullDeck(BASE_DECK));
+      repintar();
+    }
+  }, [repintar]);
+  useEffect(() => {
+    sincronizarRef.current = sincronizarAhora;
+  }, [sincronizarAhora]);
+
   useEffect(() => {
     if (!listo) return;
     // Sin señal no se intenta: en el metro un aviso de error cada vez que abres
-    // la app sería ruido. Se sube en cuanto vuelva la conexión.
-    const intentar = () => subirRef.current();
-    if (navigator.onLine) intentar();
-    window.addEventListener('online', intentar);
-    return () => window.removeEventListener('online', intentar);
+    // la app sería ruido, y la sincronización simplemente espera. La subida
+    // inicial va antes que la sincronización continua.
+    const arrancar = async () => {
+      if (!navigator.onLine) return;
+      await subirRef.current();
+      await sincronizarRef.current();
+    };
+
+    // Tras un cambio se espera un poco y se sube. El plazo corre desde el
+    // primer cambio y NO se reinicia con los siguientes: en una sesión larga de
+    // repaso, reiniciarlo lo dejaría esperando hasta el primer descanso.
+    let pendiente: number | undefined;
+    const programar = () => {
+      if (pendiente !== undefined) return;
+      pendiente = window.setTimeout(() => {
+        pendiente = undefined;
+        if (navigator.onLine) void sincronizarRef.current();
+      }, 5000);
+    };
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') void arrancar();
+    };
+
+    const soltar = store.suscribirCambios(programar);
+    window.addEventListener('online', arrancar);
+    document.addEventListener('visibilitychange', alVolver);
+    void arrancar();
+    return () => {
+      soltar();
+      clearTimeout(pendiente);
+      window.removeEventListener('online', arrancar);
+      document.removeEventListener('visibilitychange', alVolver);
+    };
   }, [listo]);
 
   useEffect(() => {
