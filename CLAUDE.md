@@ -247,6 +247,14 @@ cuentas, como único almacén):
 { box: 1..5, due: "2026-10-10", seen: 0, miss: 0 }
 ```
 
+**Listas (#13).** Una lista es `{ id, name, words: string[] (textos en inglés), createdAt }`, en
+el almacén `lists` de IndexedDB; una palabra puede estar en varias, de fábrica o propia.
+`settings.lista` guarda cuál se repasa (null = todas) y filtra la sesión de Tarjetas,
+Adivinar y Camino, pero no el anillo ni las cajas de Inicio. Las tres de partida (Básicas,
+Trabajo, Viajes) se siembran una vez por teléfono (`_listasSembradas`). **Por ahora solo
+viven en el teléfono**: falta llevarlas a la cuenta (parte 2 del #13), y al hacerlo la
+siembra no debe repetirse en un segundo dispositivo.
+
 El color de post-it **no** se guarda: sale de la posición en el mazo (`noteColor`).
 Si una palabra trae `img`, se usa esa imagen en lugar del emoji.
 
@@ -321,6 +329,7 @@ lib/local-store.ts      IndexedDB
 lib/sync-copia.ts       qué se manda y cómo se aplica la respuesta (puro, con tests)
 components/MasFalladas.tsx  bloque de Inicio y hoja con las palabras más falladas (#15)
 components/IndicadorSync.tsx  insignia del avatar y fila de estado en Ajustes
+lib/listas.ts           listas de palabras: siembra, filtro del mazo (con tests)
 lib/sync.ts             une la copia con la red; una petición a la vez
 lib/fusion.ts           las dos reglas de conflicto (primera subida / día a día)
 lib/audio.ts            elección de voz, MP3 con respaldo a síntesis, MediaSession

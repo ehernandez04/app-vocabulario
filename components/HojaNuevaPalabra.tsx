@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import BASE from '@/data/deck.json';
 import * as store from '@/lib/local-store';
+import { useEstado } from '@/app/estado';
 import { today, type Word } from '@/lib/srs';
 import { Hoja } from './Hoja';
 
@@ -13,10 +14,17 @@ const EMOJIS = ['📝','🛣️','🏆','💡','⏰','💰','🤝','🔔','🚆'
 export function HojaNuevaPalabra({
   alCerrar,
   alGuardar,
+  listaInicial = null,
 }: {
   alCerrar: () => void;
   alGuardar: (w: Word) => void;
+  /** Lista que viene marcada de entrada (la elegida en Inicio, o la que se está editando). */
+  listaInicial?: string | null;
 }) {
+  const { listas, alCambiarListas } = useEstado();
+  const [enListas, setEnListas] = useState<string[]>(
+    listaInicial && listas.some((l) => l.id === listaInicial) ? [listaInicial] : []
+  );
   const [campos, setCampos] = useState({ en: '', es: '', ipa: '', xe: '', xs: '' });
   const [emoji, setEmoji] = useState('📝');
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +46,8 @@ export function HojaNuevaPalabra({
     }
     const w = store.addWord({ ...campos, en, es, emoji });
     store.saveProgress(w.en, { box: 1, due: today(), seen: 0, miss: 0 });
+    for (const id of enListas) store.setWordInList(id, w.en, true);
+    if (enListas.length) alCambiarListas();
     alGuardar(w);
   }
 
@@ -137,6 +147,32 @@ export function HojaNuevaPalabra({
             />
           </label>
         </details>
+
+        {listas.length > 0 && (
+          <fieldset className="field">
+            <legend>
+              Listas <b className="opt-tag">opcional</b>
+            </legend>
+            <div className="chips">
+              {listas.map((l) => {
+                const on = enListas.includes(l.id);
+                return (
+                  <button
+                    type="button"
+                    key={l.id}
+                    className={`pill${on ? ' on' : ''}`}
+                    aria-pressed={on}
+                    onClick={() =>
+                      setEnListas((xs) => (on ? xs.filter((x) => x !== l.id) : [...xs, l.id]))
+                    }
+                  >
+                    {l.name}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
 
         <p className="muted sm">
           Entra en la caja 1, así que la verás hoy mismo. El audio de las palabras que agregues

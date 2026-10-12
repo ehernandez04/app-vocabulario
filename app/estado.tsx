@@ -17,6 +17,7 @@ import BASE from '@/data/deck.json';
 import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
 import { sincronizar } from '@/lib/sync';
+import { mazoActivo, type Lista } from '@/lib/listas';
 import { grade, nextStreak, session, today, type Progress, type Word } from '@/lib/srs';
 import { plural } from '@/lib/ui';
 
@@ -29,6 +30,14 @@ type Estado = {
   usuario: Usuario;
   listo: boolean;
   deck: Word[];
+  /** Lo que se repasa ahora: todo el mazo o solo la lista elegida. */
+  mazo: Word[];
+  listas: Lista[];
+  /** null = todas. */
+  listaElegida: string | null;
+  elegirLista: (id: string | null) => void;
+  /** Hay que llamarla tras crear, borrar o editar listas. */
+  alCambiarListas: () => void;
   cola: Word[];
   indice: number;
   aciertos: number;
@@ -70,6 +79,9 @@ let temporizadorAviso: number | undefined;
 
 const BASE_DECK = BASE as Word[];
 
+/** El mazo que se repasa ahora, leído del almacén (no del estado de React). */
+const activo = () => mazoActivo(store.fullDeck(BASE_DECK), store.allLists(), store.get('lista'));
+
 export function ProveedorEstado({
   children,
   usuario,
@@ -87,6 +99,12 @@ export function ProveedorEstado({
   const [aviso, setAviso] = useState<Aviso | null>(null);
   const [dirigida, setDirigida] = useState(false);
   const [revertible, setRevertible] = useState<Revertible | null>(null);
+
+  const listaElegida = store.get('lista');
+  // `version` es el disparador: el almacén vive fuera de React.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const listas = useMemo(() => store.allLists(), [version]);
+  const mazo = useMemo(() => mazoActivo(deck, listas, listaElegida), [deck, listas, listaElegida]);
 
   const repintar = useCallback(() => setVersion((v) => v + 1), []);
 
@@ -229,9 +247,9 @@ export function ProveedorEstado({
     let vivo = true;
     store.init().then(() => {
       if (!vivo) return;
-      const mazo = store.fullDeck(BASE_DECK);
-      setDeck(mazo);
-      setCola(session(mazo, store.progressOf, 20));
+      setDeck(store.fullDeck(BASE_DECK));
+      store.sembrarListas(BASE_DECK);
+      setCola(session(activo(), store.progressOf, 20));
       aplicarTema(store.get('theme'));
       setListo(true);
       // Las voces no están disponibles de inmediato: initVoices engancha
@@ -254,12 +272,26 @@ export function ProveedorEstado({
   }, [repintar]);
 
   const rearmarCola = useCallback(() => {
-    setCola(session(store.fullDeck(BASE_DECK), store.progressOf, 20));
+    setCola(session(activo(), store.progressOf, 20));
     setDirigida(false);
     setIndice(0);
     setAciertos(0);
     setFallos(0);
   }, []);
+
+  const elegirLista = useCallback(
+    (id: string | null) => {
+      store.set('lista', id);
+      rearmarCola();
+      repintar();
+    },
+    [rearmarCola, repintar]
+  );
+
+  const alCambiarListas = useCallback(() => {
+    rearmarCola();
+    repintar();
+  }, [rearmarCola, repintar]);
 
   /** Una sesión con solo estas palabras, sin mirar si están vencidas. */
   const repasarLista = useCallback((palabras: Word[]) => {
@@ -348,6 +380,11 @@ export function ProveedorEstado({
       usuario,
       listo,
       deck,
+      mazo,
+      listas,
+      listaElegida,
+      elegirLista,
+      alCambiarListas,
       cola,
       indice,
       aciertos,
@@ -378,6 +415,11 @@ export function ProveedorEstado({
       usuario,
       listo,
       deck,
+      mazo,
+      listas,
+      listaElegida,
+      elegirLista,
+      alCambiarListas,
       cola,
       indice,
       aciertos,

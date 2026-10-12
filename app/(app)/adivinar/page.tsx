@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { BotonAjustes } from '@/components/BotonAjustes';
+import { ListaVacia } from '@/components/ListaVacia';
 import { Sticker } from '@/components/Sticker';
 import { IconAltavoz, IconCruz, IconTick } from '@/components/icons';
 import * as audio from '@/lib/audio';
@@ -12,31 +13,32 @@ import { useEstado } from '../../estado';
 
 type Pregunta = { word: Word; opciones: string[] };
 
-function armarPregunta(deck: Word[]): Pregunta | null {
-  if (!deck.length) return null;
-  const pool = session(deck, store.progressOf, 20);
-  const word = pool[0] || deck[0];
+/** La pregunta sale de `mazo` (la lista elegida); las opciones falsas, de todo el `deck`. */
+function armarPregunta(mazo: Word[], deck: Word[]): Pregunta | null {
+  if (!mazo.length) return null;
+  const pool = session(mazo, store.progressOf, 20);
+  const word = pool[0] || mazo[0];
   const otras = shuffle(deck.filter((x) => x.en !== word.en)).slice(0, 3);
   return { word, opciones: shuffle([word, ...otras]).map((x) => x.es) };
 }
 
 export default function Adivinar() {
-  const { listo, deck, aciertos, fallos, calificar, ajuste, guardarAjuste } = useEstado();
+  const { listo, deck, mazo, listaElegida, aciertos, fallos, calificar, ajuste, guardarAjuste } = useEstado();
   const [pregunta, setPregunta] = useState<Pregunta | null>(null);
   const [elegida, setElegida] = useState<string | null>(null);
   const [mazoUsado, setMazoUsado] = useState<Word[] | null>(null);
 
   const siguientePregunta = useCallback(() => {
-    setPregunta(armarPregunta(deck));
+    setPregunta(armarPregunta(mazo, deck));
     setElegida(null);
-  }, [deck]);
+  }, [mazo, deck]);
 
   // La primera pregunta no puede armarse hasta que el mazo esté cargado, y
   // hacerlo en un efecto encadena un render de más. Ajustar el estado durante
   // el render es el patrón que React recomienda para esto.
-  if (listo && deck !== mazoUsado) {
-    setMazoUsado(deck);
-    setPregunta(armarPregunta(deck));
+  if (listo && mazo !== mazoUsado) {
+    setMazoUsado(mazo);
+    setPregunta(armarPregunta(mazo, deck));
     setElegida(null);
   }
 
@@ -70,6 +72,7 @@ export default function Adivinar() {
     return () => window.removeEventListener('keydown', alTeclear);
   }, [pregunta, elegida, elegir]);
 
+  if (listo && listaElegida && !mazo.length) return <ListaVacia titulo="Adivinar" />;
   if (!listo || !pregunta) return <section className="view" aria-busy="true" />;
 
   const w = pregunta.word;

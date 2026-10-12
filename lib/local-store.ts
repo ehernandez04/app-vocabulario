@@ -15,11 +15,12 @@
  * muerto desde el primer día.
  */
 
+import { limpiarNombre, SIEMBRA, type Lista } from './listas';
 import { emptyProgress, today, type Progress, type Word } from './srs';
 import type { Copia, Pendiente, Tocado } from './sync-copia';
 
 const DB = 'vocabulario';
-const VERSION = 3;
+const VERSION = 4;
 
 export type Settings = {
   streak: number;
@@ -32,6 +33,8 @@ export type Settings = {
   /** Cuál de las voces grabadas usar. null = la de por defecto del índice. */
   voiceMp3: string | null;
   theme: 'light' | 'dark';
+  /** La lista que se está repasando. null = todas. */
+  lista: string | null;
 };
 
 export const DEFAULTS: Settings = {
@@ -44,14 +47,18 @@ export const DEFAULTS: Settings = {
   voiceEs: null,
   voiceMp3: null,
   theme: 'light',
+  lista: null,
 };
 
-type Almacen = 'progress' | 'settings' | 'words' | 'sync';
+type Almacen = 'progress' | 'settings' | 'words' | 'sync' | 'lists';
 
 let db: IDBDatabase | null = null;
 let progress: Record<string, Progress> = {};
 let settings: Settings = { ...DEFAULTS };
 let words: Record<string, Word> = {};
+let lists: Record<string, Lista> = {};
+/** Si ya se crearon las listas de partida. Aparte de `settings`, como `subidoA`. */
+let listasSembradas = false;
 /** A qué cuenta ya se subió este teléfono. Va aparte de `settings`: no es un ajuste, y no debe viajar en un export. */
 let subidoA: string | null = null;
 
@@ -64,6 +71,7 @@ let cursor: string | null = null;
 let alCambiar: (() => void) | null = null;
 
 const CLAVE_SUBIDO = '_subidoA';
+const CLAVE_SEMBRADAS = '_listasSembradas';
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -75,6 +83,7 @@ function open(): Promise<IDBDatabase> {
       if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings');
       if (!d.objectStoreNames.contains('words')) d.createObjectStore('words');
       if (!d.objectStoreNames.contains('sync')) d.createObjectStore('sync');
+      if (!d.objectStoreNames.contains('lists')) d.createObjectStore('lists');
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -126,8 +135,11 @@ export async function init() {
     const guardados = (await readAll<unknown>('settings')) as Record<string, unknown>;
     subidoA = typeof guardados[CLAVE_SUBIDO] === 'string' ? (guardados[CLAVE_SUBIDO] as string) : null;
     delete guardados[CLAVE_SUBIDO];
+    listasSembradas = guardados[CLAVE_SEMBRADAS] === true;
+    delete guardados[CLAVE_SEMBRADAS];
     settings = { ...DEFAULTS, ...(guardados as Partial<Settings>) };
     words = await readAll<Word>('words');
+    lists = await readAll<Lista>('lists');
     cargarSync(await readAll<unknown>('sync'));
   } catch {
     db = null; // seguimos solo en memoria
@@ -178,7 +190,64 @@ export function deleteWord(en: string) {
   del('words', en);
   delete progress[en];
   del('progress', en);
+  for (const l of Object.values(lists)) {
+    if (l.words.includes(en)) guardarLista({ ...l, words: l.words.filter((x) => x !== en) });
+  }
   marcarBaja(w ?? { en, es: en });
+}
+
+/* ── listas ───────────────────────────────────────────────────────────────── */
+
+function guardarLista(l: Lista) {
+  lists[l.id] = l;
+  put('lists', l.id, l);
+}
+
+export const allLists = (): Lista[] =>
+  Object.values(lists).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.name.localeCompare(b.name));
+
+export function createList(name: string, words: string[] = []): Lista {
+  const l: Lista = {
+    id: crypto.randomUUID(),
+    name: limpiarNombre(name),
+    words,
+    createdAt: new Date().toISOString(),
+  };
+  guardarLista(l);
+  return l;
+}
+
+export function renameList(id: string, name: string) {
+  if (lists[id]) guardarLista({ ...lists[id], name: limpiarNombre(name) });
+}
+
+export function deleteList(id: string) {
+  delete lists[id];
+  del('lists', id);
+  if (settings.lista === id) set('lista', null);
+}
+
+/** Pone o quita una palabra de una lista. */
+export function setWordInList(id: string, en: string, dentro: boolean) {
+  const l = lists[id];
+  if (!l || l.words.includes(en) === dentro) return;
+  guardarLista({ ...l, words: dentro ? [...l.words, en] : l.words.filter((x) => x !== en) });
+}
+
+/**
+ * Crea las tres listas de partida, una sola vez. Quien ya tiene listas (por
+ * ejemplo porque importó un archivo) no las recibe, y quien las borra no las ve
+ * volver: la marca de «ya sembradas» no depende de que sigan existiendo.
+ */
+export function sembrarListas(base: Word[]) {
+  if (listasSembradas) return;
+  listasSembradas = true;
+  put('settings', CLAVE_SEMBRADAS, true);
+  if (Object.keys(lists).length) return;
+  const existentes = new Set(base.map((w) => w.en));
+  for (const { name, words: ws } of SIEMBRA) {
+    createList(name, ws.filter((en) => existentes.has(en)));
+  }
 }
 
 /* ── ajustes y progreso ───────────────────────────────────────────────────── */
@@ -350,7 +419,7 @@ export function marcarSubido(cuenta: string) {
 
 export function exportAll(): string {
   return JSON.stringify(
-    { version: 2, exportedAt: today(), words: Object.values(words), progress, settings },
+    { version: 3, exportedAt: today(), words: Object.values(words), progress, settings, lists: allLists() },
     null,
     2
   );
@@ -373,6 +442,8 @@ export function importAll(text: string, modo: 'merge' | 'replace' = 'merge') {
       marcarBaja(words[k]);
     }
     for (const k of Object.keys(progress)) del('progress', k);
+    for (const k of Object.keys(lists)) del('lists', k);
+    for (const k of Object.keys(lists)) delete lists[k];
     // En el sitio, no reasignando: una sincronización en vuelo tiene
     // referencias a estos objetos y mutaría unos huérfanos.
     for (const k of Object.keys(words)) delete words[k];
@@ -396,6 +467,18 @@ export function importAll(text: string, modo: 'merge' | 'replace' = 'merge') {
     put('progress', key, p);
     marcarSucio(key);
     avances++;
+  }
+  for (const l of (data.lists || []) as Lista[]) {
+    if (!l?.id || typeof l.name !== 'string' || !Array.isArray(l.words)) continue;
+    const mismoNombre = Object.values(lists).find((x) => x.name.toLowerCase() === l.name.toLowerCase());
+    if (lists[l.id] || mismoNombre) {
+      // Ya la hay (por id o por nombre): se suman las palabras que le faltan.
+      const destino = lists[l.id] ?? mismoNombre!;
+      const nuevas = l.words.filter((en) => !destino.words.includes(en));
+      if (nuevas.length) guardarLista({ ...destino, words: [...destino.words, ...nuevas] });
+    } else {
+      guardarLista({ id: l.id, name: limpiarNombre(l.name), words: l.words.map(String), createdAt: l.createdAt || new Date().toISOString() });
+    }
   }
   for (const [k, v] of Object.entries((data.settings || {}) as Partial<Settings>)) {
     if (k in DEFAULTS) set(k as keyof Settings, v as never);
