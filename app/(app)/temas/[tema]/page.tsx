@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { notFound, useParams } from 'next/navigation';
-import { ACIERTOS_PARA_SUBIR, cargarProgreso, nivelesDisponibles, temaPorId } from '@/lib/temas';
+import { ACIERTOS_PARA_SUBIR, cargarProgreso, temaPorId } from '@/lib/temas';
 import { useEstado } from '../../../estado';
 
 /** La vista de un tema: dónde vas, la escalera de niveles y el botón para practicar. */
@@ -15,9 +15,8 @@ export default function VistaTema() {
 
   const { nivel, racha } = cargarProgreso(tema.id);
   const actual = tema.niveles[nivel - 1];
-  const disponibles = nivelesDisponibles(tema);
-  const ultimo = nivel >= disponibles;
-  const completo = ultimo && racha >= ACIERTOS_PARA_SUBIR;
+  // La racha solo se queda llena cuando el siguiente nivel aún no tiene ejercicios.
+  const completo = racha >= ACIERTOS_PARA_SUBIR;
 
   return (
     <section className="view">
@@ -37,7 +36,7 @@ export default function VistaTema() {
         <span className="es">{actual.ejemplo}</span>
         <span className="tema-racha">
           {completo
-            ? 'Nivel completo. Los siguientes llegan pronto.'
+            ? 'Nivel completo. El siguiente se abre cuando tenga ejercicios.'
             : `Aciertos seguidos: ${racha} de ${ACIERTOS_PARA_SUBIR} para subir`}
         </span>
         <div className="tema-prog" aria-hidden="true">

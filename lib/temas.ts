@@ -9,6 +9,8 @@
 
 /** Ejercicio de «elegir la forma correcta»: una frase en español y un hueco en la inglesa. */
 export type Ejercicio = {
+  /** Solo los generados lo traen: es el de la cuenta, para quitarlos (#72). */
+  id?: string;
   es: string;
   /** Lo que va antes y después del hueco. */
   antes: string;
@@ -224,9 +226,6 @@ export function opcionesDe(e: Ejercicio, azar: () => number = Math.random): stri
   }
   return todas;
 }
-
-/** Cuántos niveles tienen ejercicios, es decir, hasta dónde se puede llegar hoy. */
-export const nivelesDisponibles = (t: Tema) => t.niveles.filter((n) => n.ejercicios.length).length;
 
 export type Progreso = { nivel: number; racha: number };
 
