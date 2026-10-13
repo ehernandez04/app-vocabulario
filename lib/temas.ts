@@ -57,7 +57,9 @@ export type Practica =
   | ({ tipo: 'escribir' } & EjercicioEscrito)
   | ({ tipo: 'traducir' } & EjercicioEscrito)
   /** Dictado (#67): se oye `aceptadas[0]` y se escribe. Es un traducir presentado de otra forma. */
-  | ({ tipo: 'escuchar' } & EjercicioEscrito);
+  | ({ tipo: 'escuchar' } & EjercicioEscrito)
+  /** Escucha y repite (#68): se oye `aceptadas[0]`, se dice en voz alta y se evalúa la pronunciación. */
+  | ({ tipo: 'repetir' } & EjercicioEscrito);
 
 export type Nivel = {
   nombre: string;
@@ -335,12 +337,20 @@ export function calificarDictado(e: EjercicioEscrito, escrito: string): Veredict
 }
 
 /**
- * Una de cada dos traducciones de la tanda se vuelve dictado (#67). Es solo la
- * presentación: el ejercicio es el mismo, así que no se genera ni se guarda nada.
+ * Las traducciones de la tanda se reparten entre traducir, dictado (#67) y repetir
+ * en voz alta (#68), de tres en tres. Es solo la presentación: el ejercicio es el
+ * mismo, así que no se genera ni se guarda nada. Repetir exige conexión (la
+ * evaluación es en el servidor): sin ella, ese turno se queda en traducir.
  */
-export function conDictados(lista: Practica[]): Practica[] {
+export function conDictados(lista: Practica[], conVoz = true): Practica[] {
   let n = 0;
-  return lista.map((e) => (e.tipo === 'traducir' && n++ % 2 === 1 ? { ...e, tipo: 'escuchar' as const } : e));
+  return lista.map((e) => {
+    if (e.tipo !== 'traducir') return e;
+    const turno = n++ % 3;
+    if (turno === 1) return { ...e, tipo: 'escuchar' as const };
+    if (turno === 2 && conVoz) return { ...e, tipo: 'repetir' as const };
+    return e;
+  });
 }
 
 export type Progreso = { nivel: number; racha: number };

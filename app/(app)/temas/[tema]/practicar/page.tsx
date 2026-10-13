@@ -5,6 +5,7 @@ import { notFound, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { IconAltavoz, IconBombilla, IconCruz, IconDespacio, IconPapelera, IconPlay, IconTick } from '@/components/icons';
 import { MasEjercicios } from '@/components/MasEjercicios';
+import { Repetir } from '@/components/Repetir';
 import * as audio from '@/lib/audio';
 import { descargar, devolver, guardados, quitar } from '@/lib/ejercicios-local';
 import { guardarProgresoTema, progresoTema } from '@/lib/local-store';
@@ -40,6 +41,7 @@ const CONSIGNA = {
   escribir: 'Escribe la palabra que falta',
   traducir: 'Tradúcelo al inglés',
   escuchar: 'Escucha y escribe',
+  repetir: 'Escucha y repite',
 } as const;
 
 /** Una tanda con los ejercicios del nivel en que vas, en orden mezclado. */
@@ -106,7 +108,7 @@ export default function Practicar() {
       ];
       // Se puede subir solo a un nivel que tenga ejercicios.
       const disponibles = t.niveles.reduce((hasta, _, i) => (delNivel(i + 1).length ? i + 1 : hasta), 0);
-      const ejercicios = conDictados(shuffle(delNivel(progreso.nivel)).slice(0, POR_TANDA));
+      const ejercicios = conDictados(shuffle(delNivel(progreso.nivel)).slice(0, POR_TANDA), navigator.onLine);
       setSesion({ tema: idTema, nivel: progreso.nivel, progreso, ejercicios, disponibles });
       setOpciones(ejercicios[0]?.tipo === 'elegir' ? opcionesDe(ejercicios[0]) : []);
     })();
@@ -292,6 +294,10 @@ export default function Practicar() {
         </span>
       </div>
 
+      {e.tipo === 'repetir' ? (
+        <Repetir ejercicio={e} clave={e.id ?? String(indice)} alSiguiente={siguiente} avisar={avisar} />
+      ) : (
+        <>
       <div className="note" style={{ '--note': '#FFE066' } as React.CSSProperties}>
         <span className="n-tag">{CONSIGNA[e.tipo]}</span>
         {e.tipo === 'escuchar' ? (
@@ -478,6 +484,8 @@ export default function Practicar() {
           )}
           <p className="hint">Este ejercicio se califica sin conexión.</p>
         </div>
+      )}
+        </>
       )}
     </section>
   );

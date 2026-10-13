@@ -710,3 +710,22 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .repaso .lab{display:flex;flex-direction:column;min-width:0}
 .repaso .lab b{font-size:.92rem}
 .repaso .lab span{font-size:.78rem;color:var(--ink-soft)}
+
+/* escucha y repite (#68) */
+.note.rep{align-items:center;gap:12px;text-align:center}
+.note.rep .n-tag{align-self:flex-start}
+.sello{position:absolute;right:10px;top:8px;transform:rotate(4deg);background:var(--card);
+  border:2px solid var(--ok);color:var(--ok);border-radius:12px;padding:5px 12px;
+  font:800 .95rem var(--display);box-shadow:0 2px 0 var(--ok)}
+.sello.casi{border-color:var(--aviso);color:var(--aviso);box-shadow:0 2px 0 var(--aviso)}
+.sello.repite{border-color:var(--no);color:var(--no);box-shadow:0 2px 0 var(--no)}
+.en-dictado .floja{font-weight:800;border-bottom:3px solid var(--no)}
+.mic{appearance:none;cursor:pointer;width:96px;height:96px;border-radius:50%;border:2px solid var(--ink);
+  background:var(--card);color:var(--ink);display:grid;place-items:center;box-shadow:0 2px 0 var(--ink);align-self:center}
+.mic:active{transform:translateY(2px);box-shadow:none}
+.mic svg{width:38px;height:38px}
+.mic.rec{background:var(--no);border-color:var(--no);color:#fff;box-shadow:none}
+.mic-t{font-size:1.1rem}
+.onda{display:flex;align-items:center;justify-content:center;gap:3px;height:34px}
+.onda i{width:4px;border-radius:2px;background:var(--no);transition:height .07s}
+.expl .sonido{color:var(--ink);font-size:1.05rem}

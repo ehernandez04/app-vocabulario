@@ -126,9 +126,14 @@ describe('dictado', () => {
     expect(calificarDictado(frase, 'tomorrow help us will she').estado).toBe('fallo');
   });
 
-  it('convierte una de cada dos traducciones en dictado y deja el resto como está', () => {
+  it('reparte las traducciones entre traducir, dictado y repetir, y deja el resto como está', () => {
     const tr = (id: string): Practica => ({ ...frase, id, tipo: 'traducir' });
-    const lista: Practica[] = [tr('a'), { ...frase, tipo: 'escribir' }, tr('b'), tr('c'), tr('d')];
-    expect(conDictados(lista).map((e) => e.tipo)).toEqual(['traducir', 'escribir', 'escuchar', 'traducir', 'escuchar']);
+    const lista: Practica[] = [tr('a'), { ...frase, tipo: 'escribir' }, tr('b'), tr('c'), tr('d'), tr('e')];
+    expect(conDictados(lista).map((e) => e.tipo)).toEqual(['traducir', 'escribir', 'escuchar', 'repetir', 'traducir', 'escuchar']);
+  });
+
+  it('sin conexión no hay repetir: ese turno se queda en traducir', () => {
+    const tr = (id: string): Practica => ({ ...frase, id, tipo: 'traducir' });
+    expect(conDictados([tr('a'), tr('b'), tr('c')], false).map((e) => e.tipo)).toEqual(['traducir', 'escuchar', 'traducir']);
   });
 });

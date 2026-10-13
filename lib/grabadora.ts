@@ -16,7 +16,16 @@ export type PasoOyendo = 'modelo' | 'tu' | null;
 
 type Modelo = { texto: string; word: string };
 
-export function useGrabadora(clave: string, modelo: Modelo) {
+type Opciones = {
+  /** Cuántos segundos como máximo dura una toma. */
+  max?: number;
+  /** Si al terminar suena el modelo y luego tu toma (Tarjetas). Falso: se queda quieta. */
+  oirAlTerminar?: boolean;
+  /** Se llama cuando hay una toma lista (al parar a mano o al llegar al máximo). */
+  alTerminar?: () => void;
+};
+
+export function useGrabadora(clave: string, modelo: Modelo, { max = MAX_SEGUNDOS, oirAlTerminar = true, alTerminar }: Opciones = {}) {
   const [estado, setEstado] = useState<EstadoVoz>('reposo');
   const [paso, setPaso] = useState<PasoOyendo>(null);
   const [segundos, setSegundos] = useState(0);
@@ -26,8 +35,10 @@ export function useGrabadora(clave: string, modelo: Modelo) {
   const [error, setError] = useState<string | null>(null);
 
   const modeloRef = useRef(modelo);
+  const alTerminarRef = useRef(alTerminar);
   useEffect(() => {
     modeloRef.current = modelo;
+    alTerminarRef.current = alTerminar;
   });
 
   const grabador = useRef<MediaRecorder | null>(null);
@@ -36,6 +47,7 @@ export function useGrabadora(clave: string, modelo: Modelo) {
   const reloj = useRef<ReturnType<typeof setInterval> | null>(null);
   const pulso = useRef<ReturnType<typeof setInterval> | null>(null);
   const url = useRef<string | null>(null);
+  const blob = useRef<Blob | null>(null);
   const reproductor = useRef<HTMLAudioElement | null>(null);
   // Cada cancelación invalida una comparación en curso.
   const turno = useRef(0);
@@ -68,6 +80,7 @@ export function useGrabadora(clave: string, modelo: Modelo) {
     soltarMicro();
     if (url.current) URL.revokeObjectURL(url.current);
     url.current = null;
+    blob.current = null;
     reproductor.current = null;
     setHayToma(false);
     setEstado('reposo');
@@ -140,10 +153,13 @@ export function useGrabadora(clave: string, modelo: Modelo) {
         setEstado('reposo');
         return;
       }
-      url.current = URL.createObjectURL(new Blob(trozos, { type: g.mimeType }));
-      setDuracion(Math.min(seg, MAX_SEGUNDOS));
+      blob.current = new Blob(trozos, { type: g.mimeType });
+      url.current = URL.createObjectURL(blob.current);
+      setDuracion(Math.min(seg, max));
       setHayToma(true);
-      tocar(true);
+      if (oirAlTerminar) tocar(true);
+      else setEstado('reposo');
+      alTerminarRef.current?.();
     };
 
     // La onda sale del volumen real del micrófono.
@@ -172,9 +188,9 @@ export function useGrabadora(clave: string, modelo: Modelo) {
     reloj.current = setInterval(() => {
       const s = Math.floor((Date.now() - inicio) / 1000);
       setSegundos(s);
-      if (s >= MAX_SEGUNDOS) parar();
+      if (s >= max) parar();
     }, 200);
-  }, [estado, descartar, parar, soltarMicro, tocar]);
+  }, [estado, descartar, parar, soltarMicro, tocar, max, oirAlTerminar]);
 
   return {
     estado,
@@ -185,6 +201,8 @@ export function useGrabadora(clave: string, modelo: Modelo) {
     hayToma,
     error,
     grabar,
+    /** La toma tal como la grabó el navegador, para mandarla al servidor. */
+    toma: () => blob.current,
     comparar: () => tocar(true),
     soloTu: () => tocar(false),
     descartar,
