@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { IconCruz, IconPapelera, IconTick } from '@/components/icons';
+import { IconBombilla, IconCruz, IconPapelera, IconTick } from '@/components/icons';
 import { MasEjercicios } from '@/components/MasEjercicios';
 import { descargar, devolver, guardados, quitar } from '@/lib/ejercicios-local';
 import { guardarProgresoTema, progresoTema } from '@/lib/local-store';
@@ -55,6 +55,8 @@ export default function Practicar() {
   const [texto, setTexto] = useState('');
   const [veredicto, setVeredicto] = useState<Veredicto | null>(null);
   const [revisando, setRevisando] = useState(false);
+  // Al fallar, la explicación espera a que quien practica la pida (#85).
+  const [verExplicacion, setVerExplicacion] = useState(false);
   const [enLinea, setEnLinea] = useState(true);
   // Sube cuando se generan ejercicios nuevos, para armar la tanda otra vez.
   const [version, setVersion] = useState(0);
@@ -186,6 +188,7 @@ export default function Practicar() {
     setTexto('');
     setVeredicto(null);
     setRevisando(false);
+    setVerExplicacion(false);
     setOpciones(de?.tipo === 'elegir' ? opcionesDe(de) : []);
   };
 
@@ -360,11 +363,35 @@ export default function Practicar() {
 
       {resultado ? (
         <div className="fb">
-          <div>
-            <p className={`ttl ${resultado.acierto ? 'good' : 'bad'}`}>{resultado.acierto ? '¡Bien!' : 'Casi…'}</p>
-            <p className="sub">{resultado.mensaje}</p>
-            {resultado.alternativa && <p className="sub">También vale: «{resultado.alternativa}».</p>}
-          </div>
+          {resultado.acierto ? (
+            <div>
+              <p className="ttl good">¡Bien!</p>
+              <p className="sub">{resultado.mensaje}</p>
+              {resultado.alternativa && <p className="sub">También vale: «{resultado.alternativa}».</p>}
+            </div>
+          ) : verExplicacion ? (
+            <div className="expl">
+              {/* En elegir la correcta ya está marcada en verde; escribiendo no se ve, así que va aquí. */}
+              {e.tipo !== 'elegir' && (
+                <>
+                  <p className="lb">Una forma correcta</p>
+                  <p className="corr">
+                    {e.tipo === 'escribir' ? `${e.antes ? `${e.antes} ` : ''}${e.aceptadas[0]} ${e.despues ?? ''}`.trim() : e.aceptadas[0]}
+                  </p>
+                </>
+              )}
+              <p className="lb">Por qué</p>
+              <p>{resultado.mensaje}</p>
+            </div>
+          ) : (
+            <>
+              <p className="ttl bad">Casi…</p>
+              <button className="btn wide ver" onClick={() => setVerExplicacion(true)}>
+                <IconBombilla />
+                Ver explicación
+              </button>
+            </>
+          )}
           <button className="btn solid wide" onClick={siguiente}>
             {indice + 1 < ejercicios.length ? 'Siguiente' : 'Ver resultado'}
           </button>
