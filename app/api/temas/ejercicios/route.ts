@@ -7,6 +7,26 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Quita un ejercicio (con marca de borrado) o lo devuelve: `{ id, quitado }`. */
+export async function PATCH(req: Request) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return Response.json({ error: 'Sin sesión' }, { status: 401 });
+
+  const cuerpo = (await req.json().catch(() => null)) as { id?: unknown; quitado?: unknown } | null;
+  if (!cuerpo || typeof cuerpo.id !== 'string' || !UUID.test(cuerpo.id) || typeof cuerpo.quitado !== 'boolean') {
+    return Response.json({ error: 'Formato inesperado' }, { status: 400 });
+  }
+  // Solo los de esta cuenta. Si ya no existe, da igual: el resultado es el mismo.
+  await prisma.temaEjercicio.updateMany({
+    where: { id: cuerpo.id, userId },
+    data: { deletedAt: cuerpo.quitado ? new Date() : null },
+  });
+  return Response.json({ ok: true });
+}
+
 export async function GET(req: Request) {
   const session = await auth();
   const userId = session?.user?.id;
