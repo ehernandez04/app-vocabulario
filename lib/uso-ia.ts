@@ -10,6 +10,8 @@ import { prisma } from './prisma';
 export const LIMITE_DIARIO = 30;
 export const COSTE_BUSQUEDA = 1;
 export const COSTE_DIBUJO = 2;
+/** Una tanda de ejercicios de un tema (#64): una sola llamada, aunque traiga 40. */
+export const COSTE_EJERCICIOS = 1;
 
 /** El día UTC, YYYY-MM-DD. No hace falta que coincida con el día local de quien estudia. */
 export const hoy = (): string => new Date().toISOString().slice(0, 10);

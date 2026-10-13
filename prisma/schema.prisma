@@ -31,11 +31,12 @@ model User {
   streak  Int     @default(0)
   lastDay String? @map("last_day") @db.VarChar(10)
 
-  words    Word[]
-  progress Progress[]
-  lists    List[]
-  aiUsage  AiUsage[]
-  push     PushSub[]
+  words      Word[]
+  progress   Progress[]
+  lists      List[]
+  aiUsage    AiUsage[]
+  push       PushSub[]
+  ejercicios TemaEjercicio[]
 
   @@map("users")
 }
@@ -206,18 +207,49 @@ model AiUsage {
 /// sin que nadie la toque. `lastSentDay` (fecha local) evita avisar dos veces el
 /// mismo día aunque el cron corra varias veces dentro de la ventana.
 model PushSub {
-  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId   String @map("user_id") @db.Uuid
-  endpoint String @unique
-  p256dh   String
-  auth     String
-  hour     String @db.VarChar(5)
-  tz       String
-  lastSentDay String? @map("last_sent_day") @db.VarChar(10)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  endpoint    String   @unique
+  p256dh      String
+  auth        String
+  hour        String   @db.VarChar(5)
+  tz          String
+  lastSentDay String?  @map("last_sent_day") @db.VarChar(10)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId])
   @@map("push_subs")
+}
+
+/// Un ejercicio de «aprender por tema» (#39), generado por la IA para una persona.
+///
+/// Se genera una vez por tanda y se guarda: calificar es comparar con lo que trae
+/// `datos` (respuesta correcta, errores típicos con su explicación), así que
+/// practicar no cuesta ni exige conexión. `datos` guarda el ejercicio tal como lo
+/// usa la app (ver `Ejercicio` en lib/temas.ts); `tipo` dice de qué clase es, para
+/// que otros tipos (traducir, escuchar) entren sin tocar el esquema.
+///
+/// Borrado con marca, igual que `Word` y `List`: quitar un ejercicio malo tiene
+/// que llegar a los demás aparatos, y eso solo pasa si la fila sigue ahí diciéndolo.
+model TemaEjercicio {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  /// El tema y su nivel, tal como los nombra lib/temas.ts: `will`, nivel 1 a N.
+  tema  String
+  nivel Int
+  tipo  String @default("elegir") @db.VarChar(20)
+  datos Json
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId, tema, nivel])
+  @@index([userId, updatedAt])
+  @@map("tema_ejercicios")
 }
