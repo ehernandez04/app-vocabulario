@@ -23,6 +23,8 @@ export type Ejercicio = {
 export type Nivel = {
   nombre: string;
   ejemplo: string;
+  /** Qué practica el nivel, en inglés, para el prompt de generación (#64). */
+  foco: string;
   ejercicios: Ejercicio[];
 };
 
@@ -43,6 +45,8 @@ const WILL: Tema = {
   niveles: [
     {
       nombre: 'Afirmativo',
+      foco:
+        'Affirmative statements with will: will + base verb (no "to"), the same form for every person. Typical mistakes: "will to", "wills", "am will", "will" after the verb.',
       ejemplo: 'I will call you later.',
       ejercicios: [
         {
@@ -104,6 +108,8 @@ const WILL: Tema = {
     },
     {
       nombre: 'Negativo e interrogativo',
+      foco:
+        'Negatives and questions with will: won\u2019t / will not, and questions with will first (also after a question word). Typical mistakes: "don\u2019t will", "Do will you", "won\u2019t to".',
       ejemplo: 'Will you come? I won’t go.',
       ejercicios: [
         {
@@ -174,10 +180,25 @@ const WILL: Tema = {
         },
       ],
     },
-    // Provisionales: la escalera real se revisa en #65 y los ejercicios llegan con #64.
-    { nombre: 'Will contra going to', ejemplo: 'Decisión al momento o plan', ejercicios: [] },
-    { nombre: 'Primer condicional', ejemplo: 'If it rains, I will stay.', ejercicios: [] },
-    { nombre: 'Contracciones y uso natural', ejemplo: 'I’ll, won’t, I’ll be there', ejercicios: [] },
+    // Sin ejercicios a mano: los de estos niveles los genera la IA (#64).
+    {
+      nombre: 'Will contra going to',
+      ejemplo: 'Decisión al momento o plan',
+      foco: 'Will versus going to: will for instant decisions, promises and offers; going to for plans already made and predictions based on evidence.',
+      ejercicios: [],
+    },
+    {
+      nombre: 'Primer condicional',
+      ejemplo: 'If it rains, I will stay.',
+      foco: 'First conditional: if + present simple, will + base verb. Typical mistakes: "if it will rain", "if it rains, I stay" (when a future result is meant).',
+      ejercicios: [],
+    },
+    {
+      nombre: 'Contracciones y uso natural',
+      ejemplo: 'I’ll, won’t, I’ll be there',
+      foco: 'Natural use: I\u2019ll, we\u2019ll, won\u2019t, I\u2019ll probably, I think I\u2019ll, I\u2019ll be there. Typical mistakes: probably in the wrong place, overusing "will not" in speech.',
+      ejercicios: [],
+    },
   ],
 };
 
