@@ -124,3 +124,10 @@ export const IconParar = svg(<rect x="6.5" y="6.5" width="11" height="11" rx="2"
   fill: 'currentColor',
   stroke: 'none',
 });
+
+export const IconTemas = svg(
+  <>
+    <path d="M9 6h12M9 12h12M9 18h12" />
+    <path d="M4 6h.01M4 12h.01M4 18h.01" />
+  </>
+);

@@ -64,6 +64,21 @@ está completa: la sincronización funciona y el estado se ve como una insignia 
 funciona así: cada cambio queda marcado como sucio en IndexedDB y sube sola a los 5 s, al
 abrir, al volver la señal y al volver a primer plano.
 
+**Aprender por tema (#39) y la app como «inglés desde cero» (#76).** La app pasó de repasar
+vocabulario a una ruta de temas con niveles. La barra tiene **Inicio · Temas · Palabras**
+(«Hablar» se suma cuando exista la práctica con IA, #78). Inicio muestra el tema y nivel en que
+vas con un botón «Continuar»; el mazo, las listas y los tres modos de repaso (Tarjetas, Adivinar,
+Camino) viven en `/palabras`. Reglas ya decididas: los **temas se abren en orden**; **no se salta un
+nivel** salvo con un botón al final de ciertas lecciones (#79); para subir de nivel **solo cuenta
+Ideas** (10 aciertos seguidos, un fallo reinicia la racha) y Vocabulary, Speaking y Listening no
+bloquean (#77). Los ejercicios los genera `claude-haiku-5-5` por tandas de 40 por nivel, en dos
+peticiones paralelas de 20 (una de 40 tardaba ~53 s, al borde del límite), y se guardan en
+`tema_ejercicios` (con marca de borrado); la práctica los copia a IndexedDB (`lib/ejercicios-local.ts`)
+y califica comparando con las respuestas y errores típicos del propio ejercicio, así que funciona
+sin conexión. Cada tanda cuesta 1 punto del tope diario y deja unos 28 ejercicios válidos: el
+saneado (`lib/ejercicios-ia.ts`) descarta a propósito lo que no tiene exactamente una respuesta
+posible. El nivel de cada tema vive hoy solo en `localStorage` (#70 lo sube a la cuenta).
+
 **Recordatorio diario (#14): Web Push, no notificación local.** Una PWA no puede despertarse
 sola a una hora fija, así que lo manda el servidor. Cada aparato es una fila de `push_subs` con
 su hora (HH:MM) y su zona horaria; `lib/recordatorio.ts` decide si toca avisar (pasó la hora,
@@ -371,6 +386,9 @@ lib/svg.ts              saneado del SVG que dibuja el modelo (con tests)
 lib/uso-ia.ts           el tope diario de IA, compartido por la búsqueda y el dibujo
 lib/diccionario.ts      pronunciación desde dictionaryapi.dev, con respaldo en el modelo
 lib/listas.ts           listas de palabras: siembra, filtro del mazo (con tests)
+lib/temas.ts            los temas, su escalera de niveles, calificar y progreso (con tests)
+lib/ejercicios-ia.ts    prompt y saneado de los ejercicios que genera el modelo (con tests)
+lib/ejercicios-local.ts la copia de esos ejercicios en el teléfono (IndexedDB propia)
 lib/sync.ts             une la copia con la red; una petición a la vez
 lib/fusion.ts           las dos reglas de conflicto (primera subida / día a día)
 lib/audio.ts            elección de voz, MP3 con respaldo a síntesis, MediaSession

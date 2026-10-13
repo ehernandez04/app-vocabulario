@@ -14,9 +14,9 @@ export function ListaVacia({ titulo }: { titulo: string }) {
       </div>
       <div className="done-card">
         <p className="h2">«{nombre}» está vacía</p>
-        <p className="muted">No hay palabras que repasar. Agrégale algunas desde Inicio.</p>
-        <Link href="/" className="btn solid">
-          Ir a Inicio
+        <p className="muted">No hay palabras que repasar. Agrégale algunas desde Palabras.</p>
+        <Link href="/palabras" className="btn solid">
+          Ir a Palabras
         </Link>
         <button className="btn" onClick={() => elegirLista(null)}>
           Repasar todas

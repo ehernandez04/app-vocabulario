@@ -2,27 +2,27 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { IconAdivinar, IconAuriculares, IconInicio, IconTarjetas } from './icons';
+import { IconInicio, IconTarjetas, IconTemas } from './icons';
 
+/** `rutas` son las pantallas que cuentan como esa pestaña: los tres modos de repaso viven bajo «Palabras». */
 const PESTANAS = [
-  { href: '/', label: 'Inicio', Icono: IconInicio },
-  { href: '/tarjetas', label: 'Tarjetas', Icono: IconTarjetas },
-  { href: '/adivinar', label: 'Adivinar', Icono: IconAdivinar },
-  { href: '/camino', label: 'Camino', Icono: IconAuriculares },
+  { href: '/', label: 'Inicio', Icono: IconInicio, rutas: ['/'] },
+  { href: '/temas', label: 'Temas', Icono: IconTemas, rutas: ['/temas'] },
+  { href: '/palabras', label: 'Palabras', Icono: IconTarjetas, rutas: ['/palabras', '/tarjetas', '/adivinar', '/camino'] },
 ];
 
 export function Tabbar() {
   const ruta = usePathname();
-  // Los temas son una vista aparte, a pantalla completa: se sale con «← Inicio».
-  if (ruta.startsWith('/temas')) return null;
+  // Dentro de un tema (vista y práctica) se sale con «← Inicio»; la lista de temas sí lleva barra.
+  if (ruta.startsWith('/temas/')) return null;
   return (
     <nav className="tabbar" aria-label="Secciones">
-      {PESTANAS.map(({ href, label, Icono }) => (
+      {PESTANAS.map(({ href, label, Icono, rutas }) => (
         <Link
           key={href}
           href={href}
           className="tab"
-          aria-current={ruta === href ? 'page' : undefined}
+          aria-current={rutas.includes(ruta) ? 'page' : undefined}
         >
           <Icono />
           {label}
