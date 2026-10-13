@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { notFound, useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { IconCruz, IconTick } from '@/components/icons';
+import { descargar, guardados } from '@/lib/ejercicios-local';
 import { shuffle } from '@/lib/srs';
 import {
   cargarProgreso,
   explicar,
   guardarProgreso,
-  nivelesDisponibles,
   opcionesDe,
   registrar,
   temaPorId,
@@ -19,7 +19,13 @@ import {
 } from '@/lib/temas';
 import { useEstado } from '../../../../estado';
 
-type Sesion = { tema: string; progreso: Progreso; ejercicios: Ejercicio[] };
+/** Cuántos ejercicios trae una tanda. */
+const POR_TANDA = 10;
+
+/** Cuánto se espera a la descarga antes de practicar con lo que ya hay. */
+const ESPERA_DESCARGA_MS = 3000;
+
+type Sesion = { tema: string; progreso: Progreso; ejercicios: Ejercicio[]; disponibles: number };
 
 /** Una tanda con los ejercicios del nivel en que vas, en orden mezclado. */
 export default function Practicar() {
@@ -36,17 +42,58 @@ export default function Practicar() {
   const [aciertos, setAciertos] = useState(0);
 
   // Hasta que la app esté lista no se toca localStorage: el servidor no lo tiene
-  // y se desfasaría la hidratación. Ajustar el estado durante el render es el
-  // patrón que React recomienda para armar la primera tanda.
-  if (listo && !sesion) {
-    const progreso = cargarProgreso(tema.id);
-    const ejercicios = shuffle(tema.niveles[progreso.nivel - 1].ejercicios);
-    setSesion({ tema: tema.id, progreso, ejercicios });
-    setOpciones(ejercicios[0] ? opcionesDe(ejercicios[0]) : []);
-  }
+  // y se desfasaría la hidratación. Los ejercicios son los escritos a mano más los
+  // generados que hay en el teléfono; con señal se baja primero lo nuevo, pero sin
+  // esperar más de unos segundos: practicar sin conexión tiene que funcionar.
+  const idTema = tema.id;
+  useEffect(() => {
+    if (!listo) return;
+    let vivo = true;
+    (async () => {
+      if (navigator.onLine) {
+        await Promise.race([
+          descargar(idTema).catch(() => 0),
+          new Promise((ok) => setTimeout(ok, ESPERA_DESCARGA_MS)),
+        ]);
+      }
+      const extra = await guardados(idTema).catch(() => []);
+      if (!vivo) return;
+      const t = temaPorId(idTema)!;
+      const progreso = cargarProgreso(idTema);
+      const delNivel = (n: number) => [
+        ...t.niveles[n - 1].ejercicios,
+        ...extra.filter((g) => g.nivel === n).map((g) => ({ ...g.datos, id: g.id })),
+      ];
+      // Se puede subir solo a un nivel que tenga ejercicios.
+      const disponibles = t.niveles.reduce((hasta, _, i) => (delNivel(i + 1).length ? i + 1 : hasta), 0);
+      const ejercicios = shuffle(delNivel(progreso.nivel)).slice(0, POR_TANDA);
+      setSesion({ tema: idTema, progreso, ejercicios, disponibles });
+      setOpciones(ejercicios[0] ? opcionesDe(ejercicios[0]) : []);
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, [listo, idTema]);
+
   if (!listo || !sesion) return <section className="view" aria-busy="true" />;
 
   const { ejercicios, progreso } = sesion;
+  if (!ejercicios.length) {
+    return (
+      <section className="view">
+        <div className="block">
+          <p className="eyebrow">Sin ejercicios</p>
+          <h1 className="h1">Aún no hay ejercicios en este nivel</h1>
+          <p className="muted">Los de este nivel se generan con la IA y necesitan conexión. Pronto podrás pedirlos desde aquí.</p>
+        </div>
+        <div className="grow" />
+        <Link href={`/temas/${tema.id}`} className="btn solid wide">
+          Volver al tema
+        </Link>
+      </section>
+    );
+  }
+
   const e = ejercicios[indice];
   const terminada = indice >= ejercicios.length;
 
@@ -78,7 +125,7 @@ export default function Practicar() {
     setElegida(opcion);
     const r = explicar(e, opcion);
     if (r.acierto) setAciertos((n) => n + 1);
-    const { progreso: nuevo, subio } = registrar(progreso, r.acierto, nivelesDisponibles(tema));
+    const { progreso: nuevo, subio } = registrar(progreso, r.acierto, sesion.disponibles);
     guardarProgreso(tema.id, nuevo);
     setSesion({ ...sesion, progreso: nuevo });
     if (subio) avisar(`Subiste al nivel ${nuevo.nivel}: ${tema.niveles[nuevo.nivel - 1].nombre}`);
