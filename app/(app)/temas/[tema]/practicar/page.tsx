@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { IconCruz, IconTick } from '@/components/icons';
+import { IconCruz, IconPapelera, IconTick } from '@/components/icons';
 import { MasEjercicios } from '@/components/MasEjercicios';
-import { descargar, guardados } from '@/lib/ejercicios-local';
+import { descargar, devolver, guardados, quitar } from '@/lib/ejercicios-local';
 import { guardarProgresoTema, progresoTema } from '@/lib/local-store';
 import { shuffle } from '@/lib/srs';
 import {
@@ -142,6 +142,28 @@ export default function Practicar() {
     if (subio) avisar(`Subiste al nivel ${nuevo.nivel}: ${tema.niveles[nuevo.nivel - 1].nombre}`);
   };
 
+  // Solo los generados tienen id: los escritos a mano no están en la cuenta.
+  const quitarEste = async () => {
+    const id = e.id;
+    if (!id) return;
+    const quitado = await quitar(id).catch(() => null);
+    if (!quitado) return;
+    // Sale de la tanda y pasa al siguiente. El indice no cambia: el siguiente ocupa su sitio.
+    const restantes = ejercicios.filter((x) => x.id !== id);
+    setSesion({ ...sesion, ejercicios: restantes });
+    setElegida(null);
+    if (restantes[indice]) setOpciones(opcionesDe(restantes[indice]));
+    avisar('Ejercicio quitado', {
+      etiqueta: 'Deshacer',
+      alPulsar: async () => {
+        await devolver(quitado).catch(() => {});
+        setSesion((s) => (s ? { ...s, ejercicios: [...s.ejercicios.slice(0, indice), e, ...s.ejercicios.slice(indice)] } : s));
+        setOpciones(opcionesDe(e));
+        setElegida(null);
+      },
+    });
+  };
+
   const siguiente = () => {
     const nuevo = indice + 1;
     setIndice(nuevo);
@@ -217,6 +239,12 @@ export default function Practicar() {
           <button className="btn solid wide" onClick={siguiente}>
             {indice + 1 < ejercicios.length ? 'Siguiente' : 'Ver resultado'}
           </button>
+          {e.id && (
+            <button className="quitar" onClick={quitarEste}>
+              <IconPapelera />
+              Quitar este ejercicio
+            </button>
+          )}
         </div>
       ) : (
         <p className="hint">Este ejercicio funciona sin conexión.</p>

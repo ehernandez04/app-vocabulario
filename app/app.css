@@ -285,6 +285,11 @@
 .fb .ttl.good{color:var(--ok)}
 .fb .ttl.bad{color:var(--no)}
 .fb .sub{margin:0;text-align:center;font-size:.9rem;color:var(--ink-soft)}
+/* quitar un ejercicio malo (#72): discreto, para que no compita con «Siguiente» */
+.quitar{appearance:none;background:none;border:0;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;gap:7px;padding:8px;font:500 .86rem var(--ui);color:var(--ink-soft);
+  text-decoration:underline;text-underline-offset:3px}
+.quitar svg{width:15px;height:15px}
 
 /* ── modo camino ─────────────────────────────────────────────────────────── */
 /* El fondo oscuro ya ocupa todo el ancho de la vista: no hacen falta márgenes

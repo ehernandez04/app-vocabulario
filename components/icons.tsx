@@ -67,6 +67,8 @@ export const IconTick = svg(<path d="M4 12.5l5 5L20 6.5" />, { strokeWidth: 2.6 
 
 export const IconCruz = svg(<path d="M6 6l12 12M18 6L6 18" />, { strokeWidth: 2.6 });
 
+export const IconPapelera = svg(<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />);
+
 export const IconTarjetas = svg(
   <>
     <rect x="3" y="7" width="13" height="13" rx="2" />

@@ -61,6 +61,69 @@ export async function guardados(tema: string): Promise<Guardado[]> {
   return todos.filter((g) => g.tema === tema);
 }
 
+const marcar = (id: string, quitado: boolean) =>
+  fetch('/api/temas/ejercicios', {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ id, quitado }),
+  }).then((r) => {
+    if (!r.ok) throw new Error(`Quitar ${r.status}`);
+  });
+
+/**
+ * Quita un ejercicio del teléfono y avisa a la cuenta. Sin señal queda anotado en
+ * `meta` y se manda en la próxima descarga. Devuelve lo quitado, para poder devolverlo.
+ */
+export async function quitar(id: string): Promise<Guardado | null> {
+  const db = await abrir();
+  try {
+    const g = (await pedir(db.transaction('ejercicios').objectStore('ejercicios').get(id))) as Guardado | undefined;
+    if (!g) return null;
+    const tx = db.transaction(['ejercicios', 'meta'], 'readwrite');
+    tx.objectStore('ejercicios').delete(id);
+    tx.objectStore('meta').put(true, `quitar:${id}`);
+    await new Promise<void>((ok, mal) => {
+      tx.oncomplete = () => ok();
+      tx.onerror = () => mal(tx.error);
+    });
+    await enviarPendientes(db);
+    return g;
+  } finally {
+    db.close();
+  }
+}
+
+/** Deshace `quitar`: lo vuelve a guardar y lo devuelve a la cuenta. */
+export async function devolver(g: Guardado): Promise<void> {
+  const db = await abrir();
+  try {
+    const tx = db.transaction(['ejercicios', 'meta'], 'readwrite');
+    tx.objectStore('ejercicios').put(g);
+    tx.objectStore('meta').delete(`quitar:${g.id}`);
+    await new Promise<void>((ok, mal) => {
+      tx.oncomplete = () => ok();
+      tx.onerror = () => mal(tx.error);
+    });
+    // Si el aviso de quitado nunca salió, no hay nada que deshacer allá.
+    await marcar(g.id, false).catch(() => {});
+  } finally {
+    db.close();
+  }
+}
+
+/** Manda a la cuenta los quitados que no pudieron salir. Sin señal, se queda anotado. */
+async function enviarPendientes(db: IDBDatabase) {
+  const claves = (await pedir(db.transaction('meta').objectStore('meta').getAllKeys())) as string[];
+  for (const k of claves.filter((c) => String(c).startsWith('quitar:'))) {
+    try {
+      await marcar(String(k).slice(7), true);
+      db.transaction('meta', 'readwrite').objectStore('meta').delete(k);
+    } catch {
+      return; // sin señal o error: queda para la próxima
+    }
+  }
+}
+
 /**
  * Baja de la cuenta lo que cambió desde la última vez y lo guarda. Devuelve cuántos
  * cambios trajo. Falla si no hay señal: quien llama decide si le importa.
@@ -68,6 +131,7 @@ export async function guardados(tema: string): Promise<Guardado[]> {
 export async function descargar(tema: string): Promise<number> {
   const db = await abrir();
   try {
+    await enviarPendientes(db);
     const desde = (await pedir(db.transaction('meta').objectStore('meta').get(`desde:${tema}`))) as string | undefined;
     const url = `/api/temas/ejercicios?tema=${encodeURIComponent(tema)}${desde ? `&desde=${encodeURIComponent(desde)}` : ''}`;
     const r = await fetch(url);
