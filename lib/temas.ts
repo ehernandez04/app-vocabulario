@@ -55,7 +55,9 @@ export type DatosEjercicio = Ejercicio | EjercicioEscrito;
 export type Practica =
   | ({ tipo: 'elegir' } & Ejercicio)
   | ({ tipo: 'escribir' } & EjercicioEscrito)
-  | ({ tipo: 'traducir' } & EjercicioEscrito);
+  | ({ tipo: 'traducir' } & EjercicioEscrito)
+  /** Dictado (#67): se oye `aceptadas[0]` y se escribe. Es un traducir presentado de otra forma. */
+  | ({ tipo: 'escuchar' } & EjercicioEscrito);
 
 export type Nivel = {
   nombre: string;
@@ -301,6 +303,44 @@ export function calificarEscrito(e: EjercicioEscrito, escrito: string): Veredict
   const conocido = Object.entries(e.errores).find(([k]) => normalizar(k) === n);
   if (conocido) return { estado: 'fallo', mensaje: conocido[1] };
   return { estado: 'duda' };
+}
+
+/** La frase que suena en un dictado: la primera forma aceptada del ejercicio. */
+export const fraseDictado = (e: EjercicioEscrito): string => e.aceptadas[0];
+
+/**
+ * Califica un dictado contra lo que sonó, sin red. A diferencia de traducir, aquí
+ * no hay dudas: o es la frase o no lo es, así que nunca se le pregunta a la IA.
+ */
+export function calificarDictado(e: EjercicioEscrito, escrito: string): Veredicto {
+  const oida = fraseDictado(e);
+  const n = normalizar(escrito);
+  if (n === normalizar(oida)) return { estado: 'acierto', mensaje: '' };
+  const palabras = (t: string) => normalizar(t).split(' ').filter(Boolean);
+  const quedan = palabras(oida);
+  const sobran: string[] = [];
+  for (const w of palabras(escrito)) {
+    const i = quedan.indexOf(w);
+    if (i >= 0) quedan.splice(i, 1);
+    else sobran.push(w);
+  }
+  const partes = [
+    quedan.length ? `Te faltó: ${quedan.join(', ')}.` : '',
+    sobran.length ? `Sobró: ${sobran.join(', ')}.` : '',
+  ].filter(Boolean);
+  return {
+    estado: 'fallo',
+    mensaje: partes.length ? partes.join(' ') : 'Las palabras están, pero en otro orden.',
+  };
+}
+
+/**
+ * Una de cada dos traducciones de la tanda se vuelve dictado (#67). Es solo la
+ * presentación: el ejercicio es el mismo, así que no se genera ni se guarda nada.
+ */
+export function conDictados(lista: Practica[]): Practica[] {
+  let n = 0;
+  return lista.map((e) => (e.tipo === 'traducir' && n++ % 2 === 1 ? { ...e, tipo: 'escuchar' as const } : e));
 }
 
 export type Progreso = { nivel: number; racha: number };

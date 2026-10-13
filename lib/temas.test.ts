@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACIERTOS_PARA_SUBIR, TEMAS, calificarEscrito, explicar, normalizar, opcionesDe, registrar, type EjercicioEscrito } from './temas';
+import { ACIERTOS_PARA_SUBIR, TEMAS, calificarDictado, calificarEscrito, conDictados, explicar, normalizar, opcionesDe, registrar, type EjercicioEscrito, type Practica } from './temas';
 
 describe('ejercicios escritos a mano', () => {
   it('cada uno tiene la correcta fuera de los errores y una explicación por error', () => {
@@ -96,5 +96,39 @@ describe('calificarEscrito', () => {
   it('lo desconocido, o vacío, queda en duda', () => {
     expect(calificarEscrito(hueco, 'shall not')).toEqual({ estado: 'duda' });
     expect(calificarEscrito(hueco, '   ')).toEqual({ estado: 'duda' });
+  });
+});
+
+describe('dictado', () => {
+  const frase: EjercicioEscrito = {
+    es: 'Ella nos ayudará mañana.',
+    aceptadas: ['She will help us tomorrow.', 'She’ll help us tomorrow.'],
+    errores: { 'She wins help us tomorrow': 'x' },
+    explicacion: 'x',
+  };
+
+  it('acepta la frase que sonó sin importar mayúsculas, puntuación o contracción', () => {
+    expect(calificarDictado(frase, "she'll help us tomorrow").estado).toBe('acierto');
+    expect(calificarDictado(frase, 'SHE WILL HELP US TOMORROW!').estado).toBe('acierto');
+  });
+
+  it('nunca queda en duda: lo que no coincide es un fallo, aunque sea un error conocido', () => {
+    expect(calificarDictado(frase, '').estado).toBe('fallo');
+    expect(calificarDictado(frase, 'She wins help us tomorrow').estado).toBe('fallo');
+  });
+
+  it('dice qué palabras faltaron y cuáles sobraron', () => {
+    expect(calificarDictado(frase, 'She will help tomorrow')).toEqual({ estado: 'fallo', mensaje: 'Te faltó: us.' });
+    expect(calificarDictado(frase, 'She wins help us tomorrow')).toEqual({
+      estado: 'fallo',
+      mensaje: 'Te faltó: will. Sobró: wins.',
+    });
+    expect(calificarDictado(frase, 'tomorrow help us will she').estado).toBe('fallo');
+  });
+
+  it('convierte una de cada dos traducciones en dictado y deja el resto como está', () => {
+    const tr = (id: string): Practica => ({ ...frase, id, tipo: 'traducir' });
+    const lista: Practica[] = [tr('a'), { ...frase, tipo: 'escribir' }, tr('b'), tr('c'), tr('d')];
+    expect(conDictados(lista).map((e) => e.tipo)).toEqual(['traducir', 'escribir', 'escuchar', 'traducir', 'escuchar']);
   });
 });
