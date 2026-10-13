@@ -105,3 +105,32 @@ export function resolverLista(
 
 export const igualLista = (a: ListaEstado, b: ListaEstado): boolean =>
   a.name === b.name && a.words.length === b.words.length && a.words.every((w) => b.words.includes(w));
+
+export type AvanceTema = { nivel: number; racha: number };
+
+/**
+ * La regla del día a día para el nivel de un tema (#70), la misma idea que
+ * `resolverProgreso`.
+ *
+ * - Si el servidor no cambió desde la `base` que el teléfono vio, el cambio entra
+ *   tal cual, incluida una racha que volvió a cero por un fallo.
+ * - Si cambió, dos aparatos practicaron sin verse: gana el nivel más alto (nunca se
+ *   retrocede lo ganado) y, a igual nivel, la racha más larga.
+ */
+export function resolverTema(
+  servidor: { avance: AvanceTema; actualizado: Date } | null,
+  cliente: AvanceTema,
+  base: Date | null
+): { avance: AvanceTema; choque: boolean } {
+  if (!servidor) return { avance: cliente, choque: false };
+  if (base && servidor.actualizado.getTime() <= base.getTime()) {
+    return { avance: cliente, choque: false };
+  }
+  const s = servidor.avance;
+  const gana =
+    cliente.nivel > s.nivel || (cliente.nivel === s.nivel && cliente.racha > s.racha) ? cliente : s;
+  return { avance: { nivel: gana.nivel, racha: gana.racha }, choque: true };
+}
+
+export const igualTema = (a: AvanceTema, b: AvanceTema): boolean =>
+  a.nivel === b.nivel && a.racha === b.racha;

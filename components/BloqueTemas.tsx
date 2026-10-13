@@ -1,14 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { TEMAS, cargarProgreso } from '@/lib/temas';
+import { progresoTema } from '@/lib/local-store';
+import { TEMAS } from '@/lib/temas';
 
 /** El bloque de Inicio para entrar a los temas de gramática (#39). */
 export function BloqueTemas() {
   return (
     <div className="block">
       {TEMAS.map((t) => {
-        const { nivel } = cargarProgreso(t.id);
+        const { nivel } = progresoTema(t.id);
         const total = t.niveles.length;
         return (
           <Link

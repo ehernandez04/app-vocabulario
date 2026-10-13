@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { BotonAjustes } from '@/components/BotonAjustes';
 import { IconLuna, IconSol } from '@/components/icons';
-import { cargarProgreso, TEMAS } from '@/lib/temas';
+import { progresoTema } from '@/lib/local-store';
+import { TEMAS } from '@/lib/temas';
 import { isDue } from '@/lib/srs';
 import { plural, saludo } from '@/lib/ui';
 import { useEstado } from '../estado';
@@ -29,7 +30,7 @@ export default function Inicio() {
 
   // Con un solo tema la ruta es ese; los siguientes se abrirán por orden cuando existan.
   const tema = TEMAS[0];
-  const { nivel, racha } = cargarProgreso(tema.id);
+  const { nivel, racha } = progresoTema(tema.id);
   const nuevo = nivel === 1 && racha === 0;
   const actual = tema.niveles[nivel - 1];
   const porRepasar = deck.filter((w) => isDue(progresoDe(w.en))).length;

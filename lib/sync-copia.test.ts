@@ -17,6 +17,9 @@ const copia = (c: Partial<Copia> = {}): Copia => ({
   listasVersiones: {},
   listasSucias: {},
   listasBorradas: {},
+  temas: {},
+  temasVersiones: {},
+  temasSucios: {},
   ...c,
 });
 
@@ -278,5 +281,42 @@ describe('listas', () => {
     expect(c.listas.local).toBeUndefined();
     expect(c.listas.remota.words).toEqual(['x', 'y']);
     expect(c.listasSucias).toEqual({});
+  });
+});
+
+describe('temas (#70)', () => {
+  it('sube los temas sucios con su versión base', () => {
+    const c = copia({ temas: { will: { nivel: 2, racha: 3 } }, temasSucios: { will: true }, temasVersiones: { will: 'V1' } });
+    expect(construirPeticion(c).cuerpo.temas).toEqual([{ tema: 'will', nivel: 2, racha: 3, base: 'V1' }]);
+  });
+
+  it('no sube lo que no está sucio', () => {
+    expect(construirPeticion(copia({ temas: { will: { nivel: 2, racha: 3 } } })).cuerpo.temas).toEqual([]);
+  });
+
+  it('aplica la respuesta y limpia la marca', () => {
+    const c = copia({ temas: { will: { nivel: 1, racha: 1 } }, temasSucios: { will: true } });
+    const { enviado } = construirPeticion(c);
+    const t = aplicarRespuesta(c, enviado, resp({ temas: [{ tema: 'will', nivel: 2, racha: 0, version: 'V2' }] }));
+    expect(c.temas.will).toEqual({ nivel: 2, racha: 0 });
+    expect(c.temasVersiones.will).toBe('V2');
+    expect(c.temasSucios).toEqual({});
+    expect(t.temas).toEqual(['will']);
+  });
+
+  it('lo practicado mientras viajaba la petición no se pisa', () => {
+    const c = copia({ temas: { will: { nivel: 1, racha: 1 } }, temasSucios: { will: true } });
+    const { enviado } = construirPeticion(c);
+    c.temas.will = { nivel: 1, racha: 2 }; // otro acierto durante el viaje
+    aplicarRespuesta(c, enviado, resp({ temas: [{ tema: 'will', nivel: 1, racha: 1, version: 'V2' }] }));
+    expect(c.temas.will).toEqual({ nivel: 1, racha: 2 });
+    expect(c.temasSucios.will).toBe(true);
+    expect(c.temasVersiones.will).toBe('V2');
+  });
+
+  it('baja el avance de otro aparato', () => {
+    const c = copia();
+    aplicarRespuesta(c, construirPeticion(c).enviado, resp({ temas: [{ tema: 'will', nivel: 3, racha: 2, version: 'V1' }] }));
+    expect(c.temas.will).toEqual({ nivel: 3, racha: 2 });
   });
 });

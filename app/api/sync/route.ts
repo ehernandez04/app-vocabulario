@@ -13,6 +13,7 @@
  *             vio por última vez para esa palabra (null si nunca la vio)
  *   lists     listas cambiadas: `{id, name, words (textos en inglés), base, borrada?}`.
  *             El id lo genera el teléfono. Se sube la lista entera, no el cambio.
+ *   temas     nivel y racha por tema: `{tema, nivel, racha, base}` (#70)
  *   streak, lastDay
  *
  * Respuesta: lo que cambió en el servidor desde `desde`, más el estado final de
@@ -26,9 +27,10 @@
  */
 
 import { auth } from '@/auth';
-import { instante, lista as sanearLista, palabra, progreso, racha as sanearRacha, texto, type ListaEntrada, type PalabraEntrada, type ProgresoEntrada } from '@/lib/entrada';
-import { fusionarRacha, igualLista, igualProgreso, resolverLista, resolverProgreso } from '@/lib/fusion';
+import { avanceTema, instante, lista as sanearLista, palabra, progreso, racha as sanearRacha, texto, type ListaEntrada, type PalabraEntrada, type ProgresoEntrada } from '@/lib/entrada';
+import { fusionarRacha, igualLista, igualProgreso, igualTema, resolverLista, resolverProgreso, resolverTema } from '@/lib/fusion';
 import { prisma } from '@/lib/prisma';
+import { temaPorId } from '@/lib/temas';
 
 const MAX = 5000;
 
@@ -68,7 +70,8 @@ export async function POST(req: Request) {
   const crudasPalabras = Array.isArray(cuerpo.words) ? cuerpo.words : [];
   const crudoProgreso = Array.isArray(cuerpo.progress) ? cuerpo.progress : [];
   const crudasListas = Array.isArray(cuerpo.lists) ? cuerpo.lists : [];
-  if (crudasPalabras.length > MAX || crudoProgreso.length > MAX || crudasListas.length > MAX) {
+  const crudosTemas = Array.isArray(cuerpo.temas) ? cuerpo.temas : [];
+  if (crudosTemas.length > MAX || crudasPalabras.length > MAX || crudoProgreso.length > MAX || crudasListas.length > MAX) {
     return mala('Demasiados cambios para una sola sincronización');
   }
 
@@ -278,6 +281,49 @@ export async function POST(req: Request) {
     }
   }
 
+  // ── temas ───────────────────────────────────────────────────────────────
+  // Nivel y racha, con la misma idea de versión que el avance (ver resolverTema).
+  // Un tema que la app no conoce se descarta, y el nivel no puede pasar de los que
+  // tiene el tema: un dato roto no debe dejar a alguien en un nivel inexistente.
+  const entrantesTemas = new Map<string, { nivel: number; racha: number; base: Date | null }>();
+  for (const c of crudosTemas) {
+    const t = avanceTema(c);
+    const tema = t && temaPorId(t.tema);
+    if (!t || !tema) {
+      omitidos++;
+      continue;
+    }
+    entrantesTemas.set(t.tema, {
+      nivel: Math.min(t.nivel, tema.niveles.length),
+      racha: t.racha,
+      base: instante((c as Record<string, unknown>).base),
+    });
+  }
+  const previosTemas = entrantesTemas.size
+    ? new Map(
+        (
+          await prisma.temaProgreso.findMany({
+            where: { userId, tema: { in: [...entrantesTemas.keys()] } },
+            select: { tema: true, nivel: true, racha: true, updatedAt: true },
+          })
+        ).map((t) => [t.tema, t])
+      )
+    : new Map();
+  const opsTemas = [];
+  for (const [tema, { nivel, racha, base }] of entrantesTemas) {
+    const previo = previosTemas.get(tema);
+    const { avance, choque } = resolverTema(
+      previo ? { avance: previo, actualizado: previo.updatedAt } : null,
+      { nivel, racha },
+      base
+    );
+    if (choque) choques++;
+    if (!previo) opsTemas.push(prisma.temaProgreso.create({ data: { userId, tema, ...avance } }));
+    else if (!igualTema(previo, avance)) {
+      opsTemas.push(prisma.temaProgreso.update({ where: { userId_tema: { userId, tema } }, data: avance }));
+    }
+  }
+
   const sanea = sanearRacha(cuerpo.streak, cuerpo.lastDay);
   const fusionada = fusionarRacha({ streak: usuario.streak, lastDay: usuario.lastDay }, sanea);
 
@@ -286,6 +332,7 @@ export async function POST(req: Request) {
     ...actualizar,
     prisma.user.update({ where: { id: userId }, data: fusionada }),
     ...opsListas,
+    ...opsTemas,
   ]);
 
   // ── lo que bajo ─────────────────────────────────────────────────────────
@@ -325,6 +372,16 @@ export async function POST(req: Request) {
     },
   });
 
+  const temasNuevos = await prisma.temaProgreso.findMany({
+    where: {
+      userId,
+      ...(ventana
+        ? { OR: [{ updatedAt: { gte: ventana } }, { tema: { in: [...entrantesTemas.keys()] } }] }
+        : {}),
+    },
+    select: { tema: true, nivel: true, racha: true, updatedAt: true },
+  });
+
   return Response.json({
     cursor: cursor.toISOString(),
     words: palabrasNuevas.map(({ deletedAt, createdAt, ...w }) => ({
@@ -346,6 +403,7 @@ export async function POST(req: Request) {
       borrada: l.deletedAt !== null,
     })),
     reasignadas,
+    temas: temasNuevos.map(({ updatedAt, ...t }) => ({ ...t, version: updatedAt.toISOString() })),
     streak: fusionada.streak,
     lastDay: fusionada.lastDay,
     choques,

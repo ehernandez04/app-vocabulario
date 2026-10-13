@@ -37,6 +37,7 @@ model User {
   aiUsage    AiUsage[]
   push       PushSub[]
   ejercicios TemaEjercicio[]
+  temas      TemaProgreso[]
 
   @@map("users")
 }
@@ -252,4 +253,27 @@ model TemaEjercicio {
   @@index([userId, tema, nivel])
   @@index([userId, updatedAt])
   @@map("tema_ejercicios")
+}
+
+/// Dónde vas en un tema (#70): el nivel y la racha de aciertos. Una fila por
+/// persona y tema, y se crea al primer acierto o fallo (sin fila = nivel 1).
+///
+/// `updatedAt` es la versión de la sincronización, igual que en `Progress`: si el
+/// servidor no cambió desde la que el teléfono vio, entra lo del teléfono (incluida
+/// una racha que se reinició); si cambió, dos aparatos practicaron a la vez y gana
+/// el nivel más alto. Ver `resolverTema` en lib/fusion.ts.
+model TemaProgreso {
+  userId String @map("user_id") @db.Uuid
+  /// El id del tema en lib/temas.ts: `will`.
+  tema   String
+  nivel  Int    @default(1)
+  racha  Int    @default(0)
+
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userId, tema])
+  @@index([userId, updatedAt])
+  @@map("tema_progreso")
 }

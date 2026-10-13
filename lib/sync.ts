@@ -50,7 +50,7 @@ async function ejecutar(): Promise<Resultado> {
 
       const tocado = aplicarRespuesta(copia, enviado, (await r.json()) as Respuesta);
       store.guardarSync(copia, tocado);
-      if (tocado.progress.length || tocado.words.length || tocado.listas.length) cambios = true;
+      if (tocado.progress.length || tocado.words.length || tocado.listas.length || tocado.temas.length) cambios = true;
       if (!otra) break;
     }
     return { ok: true, cambios };

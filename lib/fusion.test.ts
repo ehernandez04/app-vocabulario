@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { igualLista, resolverLista, fusionarProgreso, fusionarRacha, resolverProgreso } from './fusion';
+import { igualLista, resolverLista, fusionarProgreso, fusionarRacha, resolverProgreso, resolverTema } from './fusion';
 
 const p = (box: number, due = '2026-10-12', seen = 0, miss = 0) => ({ box, due, seen, miss });
 
@@ -144,5 +144,34 @@ describe('resolverLista', () => {
   it('igualLista ignora el orden', () => {
     expect(igualLista(l('A', ['x', 'y']), l('A', ['y', 'x']))).toBe(true);
     expect(igualLista(l('A', ['x']), l('B', ['x']))).toBe(false);
+  });
+});
+
+describe('resolverTema', () => {
+  const v1 = new Date('2026-10-12T10:00:00.000Z');
+  const v2 = new Date('2026-10-12T11:00:00.000Z');
+
+  it('sin fila en el servidor entra lo del teléfono', () => {
+    expect(resolverTema(null, { nivel: 2, racha: 3 }, null)).toEqual({ avance: { nivel: 2, racha: 3 }, choque: false });
+  });
+
+  it('si el servidor no cambió, entra el cambio tal cual, aunque la racha baje', () => {
+    const r = resolverTema({ avance: { nivel: 2, racha: 7 }, actualizado: v1 }, { nivel: 2, racha: 0 }, v1);
+    expect(r).toEqual({ avance: { nivel: 2, racha: 0 }, choque: false });
+  });
+
+  it('si ambos tocaron el tema, gana el nivel más alto', () => {
+    const r = resolverTema({ avance: { nivel: 3, racha: 1 }, actualizado: v2 }, { nivel: 2, racha: 9 }, v1);
+    expect(r).toEqual({ avance: { nivel: 3, racha: 1 }, choque: true });
+  });
+
+  it('a igual nivel, gana la racha más larga', () => {
+    const r = resolverTema({ avance: { nivel: 2, racha: 4 }, actualizado: v2 }, { nivel: 2, racha: 6 }, v1);
+    expect(r.avance).toEqual({ nivel: 2, racha: 6 });
+  });
+
+  it('sin base (nunca lo vio) cuenta como choque', () => {
+    const r = resolverTema({ avance: { nivel: 1, racha: 0 }, actualizado: v1 }, { nivel: 2, racha: 0 }, null);
+    expect(r).toEqual({ avance: { nivel: 2, racha: 0 }, choque: true });
   });
 });

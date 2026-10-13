@@ -1,6 +1,6 @@
 /**
- * Aprender por tema (#39). Todo lo de acá es puro, salvo las dos funciones que
- * tocan localStorage: así se puede probar sin navegador.
+ * Aprender por tema (#39). Todo lo de acá es puro, así que se puede probar sin
+ * navegador. Dónde vas en cada tema vive en lib/local-store (y viaja a la cuenta, #70).
  *
  * Esqueleto (#63): los ejercicios están escritos a mano. Cuando llegue la
  * generación (#64) saldrán de la base, y la escalera real de niveles se revisa
@@ -246,30 +246,4 @@ export function registrar(
     return { progreso: { nivel: p.nivel + 1, racha: 0 }, subio: true };
   }
   return { progreso: { ...p, racha }, subio: false };
-}
-
-/**
- * De momento el nivel de cada tema vive solo en el teléfono. Si viaja a la
- * cuenta o no se decide en #64, junto con el modelo de datos.
- */
-const clave = (id: string) => `tema:${id}`;
-
-export function cargarProgreso(id: string): Progreso {
-  try {
-    const p = JSON.parse(localStorage.getItem(clave(id)) ?? 'null');
-    if (p && Number.isInteger(p.nivel) && Number.isInteger(p.racha) && p.nivel >= 1 && p.racha >= 0) {
-      return { nivel: p.nivel, racha: p.racha };
-    }
-  } catch {
-    // sin almacenamiento o dato roto: se empieza de cero
-  }
-  return PROGRESO_INICIAL;
-}
-
-export function guardarProgreso(id: string, p: Progreso) {
-  try {
-    localStorage.setItem(clave(id), JSON.stringify(p));
-  } catch {
-    // modo privado o lleno: el avance de esta sesión se pierde, nada más
-  }
 }
