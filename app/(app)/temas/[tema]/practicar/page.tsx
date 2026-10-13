@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { IconCruz, IconTick } from '@/components/icons';
+import { MasEjercicios } from '@/components/MasEjercicios';
 import { descargar, guardados } from '@/lib/ejercicios-local';
 import { shuffle } from '@/lib/srs';
 import {
@@ -40,6 +41,8 @@ export default function Practicar() {
   const [opciones, setOpciones] = useState<string[]>([]);
   const [elegida, setElegida] = useState<string | null>(null);
   const [aciertos, setAciertos] = useState(0);
+  // Sube cuando se generan ejercicios nuevos, para armar la tanda otra vez.
+  const [version, setVersion] = useState(0);
 
   // Hasta que la app esté lista no se toca localStorage: el servidor no lo tiene
   // y se desfasaría la hidratación. Los ejercicios son los escritos a mano más los
@@ -73,7 +76,7 @@ export default function Practicar() {
     return () => {
       vivo = false;
     };
-  }, [listo, idTema]);
+  }, [listo, idTema, version]);
 
   if (!listo || !sesion) return <section className="view" aria-busy="true" />;
 
@@ -84,10 +87,19 @@ export default function Practicar() {
         <div className="block">
           <p className="eyebrow">Sin ejercicios</p>
           <h1 className="h1">Aún no hay ejercicios en este nivel</h1>
-          <p className="muted">Los de este nivel se generan con la IA y necesitan conexión. Pronto podrás pedirlos desde aquí.</p>
+          <p className="muted">Se generan con la IA y necesitan conexión. Es una vez; después practicas sin señal.</p>
         </div>
         <div className="grow" />
-        <Link href={`/temas/${tema.id}`} className="btn solid wide">
+        <MasEjercicios
+          tema={tema.id}
+          nivel={progreso.nivel}
+          principal
+          alTerminar={() => {
+            setSesion(null);
+            setVersion((v) => v + 1);
+          }}
+        />
+        <Link href={`/temas/${tema.id}`} className="btn wide">
           Volver al tema
         </Link>
       </section>

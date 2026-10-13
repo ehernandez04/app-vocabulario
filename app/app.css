@@ -628,3 +628,15 @@
 .hueco.ok{color:var(--ok);border-color:var(--ok)}
 .hueco.no{color:var(--no);border-color:var(--no)}
 a.btn{display:flex;align-items:center;justify-content:center;text-decoration:none}
+
+/* ── Más ejercicios (#71) ────────────────────────────────────────────────── */
+.mas{display:flex;flex-direction:column;gap:6px}
+.mas-sub{margin:0;text-align:center;font-size:.76rem;color:var(--ink-faint)}
+.mas-sub.no{color:var(--no)}
+.spin{width:16px;height:16px;border-radius:50%;border:2.5px solid currentColor;
+  border-right-color:transparent;animation:girar .9s linear infinite}
+@keyframes girar{to{transform:rotate(360deg)}}
+.mas-bar{height:6px;border-radius:99px;background:var(--rule);overflow:hidden}
+.mas-bar i{display:block;height:100%;width:40%;background:var(--ink);border-radius:99px;
+  animation:avanza 2.4s ease-in-out infinite}
+@keyframes avanza{0%{margin-left:-40%}100%{margin-left:100%}}

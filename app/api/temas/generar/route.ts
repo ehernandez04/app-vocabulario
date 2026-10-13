@@ -16,6 +16,13 @@ const MODELO = 'claude-haiku-5-5';
 
 const mala = (mensaje: string, status = 400) => Response.json({ error: mensaje }, { status });
 
+/** Cuántos puntos de IA le quedan hoy a quien pregunta: el botón decide con esto si se puede pedir. */
+export async function GET() {
+  const userId = (await auth())?.user?.id;
+  if (!userId) return mala('Sin sesión', 401);
+  return Response.json({ restantes: await restantes(userId, hoy()) });
+}
+
 export async function POST(req: Request) {
   const session = await auth();
   const userId = session?.user?.id;
