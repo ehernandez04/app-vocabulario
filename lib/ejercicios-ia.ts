@@ -7,7 +7,7 @@
  * califica comparando con lo que trae, un error aquí se repetiría en cada intento.
  */
 
-import type { Ejercicio, Nivel, Tema } from './temas';
+import { normalizar, type Ejercicio, type EjercicioEscrito, type Nivel, type Tema } from './temas';
 
 /** Cuántos ejercicios se piden por tanda. */
 export const POR_TANDA = 40;
@@ -92,6 +92,109 @@ export function sanearEjercicios(bruto: unknown, yaTengo: Iterable<string> = [])
   }
   return salida;
 }
+
+/**
+ * Ejercicios de escribir y traducir (#66). Lo que se descarta es lo que no se puede
+ * calificar sin red: sin respuesta aceptada no hay con qué comparar, y un «error»
+ * que también es una respuesta aceptada daría fallo a quien acertó.
+ */
+export function sanearEscritos(
+  bruto: unknown,
+  tipo: 'escribir' | 'traducir',
+  yaTengo: Iterable<string> = []
+): EjercicioEscrito[] {
+  const lista = (bruto as { ejercicios?: unknown })?.ejercicios;
+  if (!Array.isArray(lista)) return [];
+  const vistas = new Set([...yaTengo].map((e) => comillas(e).toLowerCase()));
+  const maxRespuesta = tipo === 'escribir' ? 40 : 140;
+  const salida: EjercicioEscrito[] = [];
+
+  for (const x of lista) {
+    if (!x || typeof x !== 'object') continue;
+    const o = x as Record<string, unknown>;
+    const es = limpio(o.es, 140);
+    const explicacion = limpio(o.explicacion, 200);
+    if (!es || !explicacion || !Array.isArray(o.aceptadas)) continue;
+
+    const aceptadas: string[] = [];
+    for (const a of o.aceptadas.slice(0, 8)) {
+      const t = limpio(a, maxRespuesta);
+      if (t && !/_{2,}/.test(t) && !aceptadas.some((y) => normalizar(y) === normalizar(t))) aceptadas.push(t);
+    }
+    if (!aceptadas.length) continue;
+
+    const errores: Record<string, string> = {};
+    if (o.errores && typeof o.errores === 'object' && !Array.isArray(o.errores)) {
+      for (const [mal, porque] of Object.entries(o.errores as Record<string, unknown>)) {
+        const k = limpio(mal, maxRespuesta);
+        const v = limpio(porque, 200);
+        if (k && v && !aceptadas.some((a) => normalizar(a) === normalizar(k))) errores[k] = v;
+      }
+    }
+    if (!Object.keys(errores).length) continue;
+
+    let antes: string | undefined;
+    let despues: string | undefined;
+    if (tipo === 'escribir') {
+      const a = typeof o.antes === 'string' ? comillas(o.antes) : null;
+      const d = typeof o.despues === 'string' ? comillas(o.despues) : null;
+      if (a === null || d === null || a.length > 80 || d.length > 80 || !(a + d)) continue;
+      if (/_{2,}/.test(a + d)) continue; // el hueco lo pone la app
+      antes = a;
+      despues = d;
+    }
+
+    const clave = es.toLowerCase();
+    if (vistas.has(clave)) continue;
+    vistas.add(clave);
+    salida.push({ es, ...(antes !== undefined ? { antes, despues } : {}), aceptadas, errores, explicacion });
+  }
+  return salida;
+}
+
+const REGLAS_COMUNES = `- "es": a natural Spanish sentence (neutral Spanish, everyday situations: work, travel, home, friends).
+- "explicacion": one short Spanish sentence stating the rule that makes the answer right.
+- Use the typographic apostrophe in contractions (won’t, I’ll).
+- Test only the level's focus. Do not make the answer depend on other grammar unless the level is about it.
+- Vary subjects, verbs, vocabulary and sentence shapes. Do not repeat a sentence. Stay strictly at the requested level: do not use grammar from later levels.`;
+
+const SISTEMA_ESCRIBIR = `You write grammar exercises for a Spanish speaker learning English. Reply with ONLY a JSON object, no prose, no code fences.
+
+Each exercise is "type the missing words": a Spanish sentence, and the English sentence with ONE gap that the learner fills by typing (there are no options).
+
+Format:
+{"ejercicios":[{"es":"...","antes":"...","despues":"...","aceptadas":["right1","right2"],"errores":{"typical wrong answer":"why"},"explicacion":"..."}]}
+
+Rules:
+${REGLAS_COMUNES}
+- "antes" and "despues": the English text before and after the gap. Never write underscores. At least one of them is not empty.
+- "aceptadas": EVERY way of filling the gap that gives a correct sentence with the same meaning as "es" (1-3 items, e.g. both "won’t" and "will not" when both fit). Each is the words for the gap only, 1-3 words. Anything not listed will be sent to a person to check, so be complete.
+- "errores": 2 to 4 wrong answers a Spanish speaker really types, as keys, each with a short explanation IN SPANISH naming the rule. Every one must really be wrong in that gap; never list an accepted answer, or any correct form, here. Contractions (’ll / will, won’t / will not) are matched automatically: do not list both forms.
+- The gap must have a clear answer: add a context cue to the sentence if two different words could fit.`;
+
+const SISTEMA_TRADUCIR = `You write grammar exercises for a Spanish speaker learning English. Reply with ONLY a JSON object, no prose, no code fences.
+
+Each exercise is "translate into English": a short Spanish sentence that the learner translates by typing the whole English sentence (there are no options).
+
+Format:
+{"ejercicios":[{"es":"...","aceptadas":["translation 1","translation 2"],"errores":{"typical wrong sentence":"why"},"explicacion":"..."}]}
+
+Rules:
+${REGLAS_COMUNES}
+- Keep the Spanish sentence short (4-10 words) so it has few correct translations, and make it need the level's focus.
+- "aceptadas": 3 to 6 different correct translations, covering synonyms (look after / take care of), optional words (stay home / stay at home) and natural word order. Full sentences. Anything not listed will be sent to a person to check, so be complete. Contractions (I’ll / I will, won’t / will not) are matched automatically: do not list both forms.
+- Every accepted translation must carry EXACTLY the information of the Spanish sentence: never add or drop a detail (a time, a place, an adjective). They differ only in wording.
+- "errores": 2 to 4 full wrong sentences a Spanish speaker really writes, as keys, each with a short explanation IN SPANISH naming the rule. Every one must really be wrong in that sentence; never list an accepted translation, or any correct sentence, here.`;
+
+export const SISTEMA_POR_TIPO: Record<'escribir' | 'traducir', string> = {
+  escribir: SISTEMA_ESCRIBIR,
+  traducir: SISTEMA_TRADUCIR,
+};
+
+/** El prompt para que la IA revise una respuesta que el ejercicio no reconoció. */
+export const SISTEMA_REVISAR = `You check one answer from a Spanish speaker learning English. Reply with ONLY a JSON object, no prose, no code fences: {"acierto":true|false,"explicacion":"..."}.
+
+You get a Spanish sentence, the learner's English sentence, and the level's focus. "acierto" is true when the English sentence is grammatical, natural enough to say, and means the same as the Spanish. Accept any valid way of saying it, not only the obvious one. "explicacion" is one short sentence IN SPANISH: if right, why it works; if wrong, the specific mistake and the rule.`;
 
 export const SISTEMA = `You write grammar exercises for a Spanish speaker learning English. Reply with ONLY a JSON object, no prose, no code fences.
 

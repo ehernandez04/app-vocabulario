@@ -78,7 +78,7 @@ peticiones paralelas de 20 (una de 40 tardaba ~53 s, al borde del límite), y se
 y califica comparando con las respuestas y errores típicos del propio ejercicio, así que funciona
 sin conexión. Cada tanda cuesta 1 punto del tope diario y deja unos 28 ejercicios válidos: el
 saneado (`lib/ejercicios-ia.ts`) descarta a propósito lo que no tiene exactamente una respuesta
-posible. El nivel y la racha de cada tema viven en IndexedDB (almacén `temas`) y viajan a la cuenta (tabla `tema_progreso`, #70) con la misma idea de versión que el avance: si el servidor no cambió, entra lo del teléfono; si dos aparatos practicaron a la vez, gana el nivel más alto (`resolverTema`).
+posible. Los ejercicios son de tres tipos (`tipo` en `tema_ejercicios`): elegir, escribir el hueco y traducir. Los escritos se califican en el teléfono contra `aceptadas` y `errores` (`calificarEscrito`, que ignora mayúsculas, puntuación y apóstrofos, e iguala «I'll» con «I will»); si no coincide con nada, el ejercicio le pregunta a quien practica si quiere que la IA lo revise (`/api/temas/revisar`, 1 punto) y, mientras no haya respuesta, no cuenta ni como acierto ni como fallo. El nivel y la racha de cada tema viven en IndexedDB (almacén `temas`) y viajan a la cuenta (tabla `tema_progreso`, #70) con la misma idea de versión que el avance: si el servidor no cambió, entra lo del teléfono; si dos aparatos practicaron a la vez, gana el nivel más alto (`resolverTema`).
 
 **Recordatorio diario (#14): Web Push, no notificación local.** Una PWA no puede despertarse
 sola a una hora fija, así que lo manda el servidor. Cada aparato es una fila de `push_subs` con
