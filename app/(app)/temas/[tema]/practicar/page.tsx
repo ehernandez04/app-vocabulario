@@ -3,14 +3,18 @@
 import Link from 'next/link';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { IconBombilla, IconCruz, IconPapelera, IconTick } from '@/components/icons';
+import { IconAltavoz, IconBombilla, IconCruz, IconDespacio, IconPapelera, IconPlay, IconTick } from '@/components/icons';
 import { MasEjercicios } from '@/components/MasEjercicios';
+import * as audio from '@/lib/audio';
 import { descargar, devolver, guardados, quitar } from '@/lib/ejercicios-local';
 import { guardarProgresoTema, progresoTema } from '@/lib/local-store';
 import { shuffle } from '@/lib/srs';
 import {
+  calificarDictado,
   calificarEscrito,
+  conDictados,
   explicar,
+  fraseDictado,
   opcionesDe,
   registrar,
   temaPorId,
@@ -35,6 +39,7 @@ const CONSIGNA = {
   elegir: 'Elige la forma correcta',
   escribir: 'Escribe la palabra que falta',
   traducir: 'Tradúcelo al inglés',
+  escuchar: 'Escucha y escribe',
 } as const;
 
 /** Una tanda con los ejercicios del nivel en que vas, en orden mezclado. */
@@ -76,6 +81,9 @@ export default function Practicar() {
     };
   }, []);
 
+  // Que no siga sonando una frase al salir de la práctica.
+  useEffect(() => () => audio.stop(), []);
+
   const idTema = tema.id;
   useEffect(() => {
     if (!listo) return;
@@ -98,7 +106,7 @@ export default function Practicar() {
       ];
       // Se puede subir solo a un nivel que tenga ejercicios.
       const disponibles = t.niveles.reduce((hasta, _, i) => (delNivel(i + 1).length ? i + 1 : hasta), 0);
-      const ejercicios = shuffle(delNivel(progreso.nivel)).slice(0, POR_TANDA);
+      const ejercicios = conDictados(shuffle(delNivel(progreso.nivel)).slice(0, POR_TANDA));
       setSesion({ tema: idTema, nivel: progreso.nivel, progreso, ejercicios, disponibles });
       setOpciones(ejercicios[0]?.tipo === 'elegir' ? opcionesDe(ejercicios[0]) : []);
     })();
@@ -200,7 +208,7 @@ export default function Practicar() {
 
   const comprobar = () => {
     if (e.tipo === 'elegir' || respondida || !texto.trim()) return;
-    const v = calificarEscrito(e, texto);
+    const v = e.tipo === 'escuchar' ? calificarDictado(e, texto) : calificarEscrito(e, texto);
     setVeredicto(v);
     if (v.estado !== 'duda') contar(v.estado === 'acierto');
   };
@@ -255,7 +263,15 @@ export default function Practicar() {
     });
   };
 
+  /** Dice la frase del dictado; «despacio» la baja de velocidad. */
+  const oir = (despacio: boolean) => {
+    if (e.tipo !== 'escuchar') return;
+    audio.stop();
+    void audio.say(fraseDictado(e), 'en', { rate: despacio ? 0.6 : 0.95 });
+  };
+
   const siguiente = () => {
+    audio.stop();
     setIndice(indice + 1);
     preparar(ejercicios[indice + 1]);
   };
@@ -278,13 +294,35 @@ export default function Practicar() {
 
       <div className="note" style={{ '--note': '#FFE066' } as React.CSSProperties}>
         <span className="n-tag">{CONSIGNA[e.tipo]}</span>
-        <span className="es">{e.es}</span>
+        {e.tipo === 'escuchar' ? (
+          <>
+            {respondida && (
+              <>
+                <span className="en-dictado">{fraseDictado(e)}</span>
+                <span className="es">{e.es}</span>
+              </>
+            )}
+            <div className="oir">
+              {!respondida && (
+                <button className="play" onClick={() => oir(false)} aria-label="Escuchar la frase">
+                  <IconPlay />
+                </button>
+              )}
+              <button className="btn onnote sm" onClick={() => oir(respondida ? false : true)}>
+                {respondida ? <IconAltavoz /> : <IconDespacio />}
+                {respondida ? 'Otra vez' : 'Despacio'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <span className="es">{e.es}</span>
+        )}
       </div>
 
-      {e.tipo === 'traducir' ? (
+      {e.tipo === 'traducir' || e.tipo === 'escuchar' ? (
         <div>
           <label className="tus" htmlFor="respuesta">
-            Tu respuesta
+            {e.tipo === 'escuchar' ? 'Lo que oyes' : 'Tu respuesta'}
           </label>
           <textarea
             key={indice}
@@ -294,6 +332,7 @@ export default function Practicar() {
             onChange={(ev) => setTexto(ev.target.value)}
             readOnly={veredicto !== null}
             rows={3}
+            placeholder={e.tipo === 'escuchar' ? 'Escribe la frase en inglés' : undefined}
             lang="en"
             autoCapitalize="sentences"
             autoCorrect="off"
@@ -432,6 +471,11 @@ export default function Practicar() {
           <button className="btn solid wide" onClick={comprobar} disabled={!texto.trim()}>
             Comprobar
           </button>
+          {e.tipo === 'escuchar' && (
+            <button className="saltar" onClick={siguiente}>
+              No puedo escuchar ahora
+            </button>
+          )}
           <p className="hint">Este ejercicio se califica sin conexión.</p>
         </div>
       )}

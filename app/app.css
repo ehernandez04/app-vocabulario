@@ -641,6 +641,18 @@
 .expl p{margin:0;font-size:.92rem;line-height:1.45}
 .expl .corr{font:800 1.05rem var(--display);letter-spacing:-.01em;color:var(--ok);margin-bottom:4px}
 
+/* escuchar y escribir (#67) */
+.note:has(.oir){align-items:center;gap:14px;text-align:center}
+.note:has(.oir) .n-tag{align-self:flex-start}
+.note .oir{display:flex;flex-direction:column;align-items:center;gap:12px}
+.play{appearance:none;cursor:pointer;width:84px;height:84px;border-radius:50%;border:2px solid var(--on-note);
+  background:rgba(255,255,255,.45);color:var(--on-note);display:grid;place-items:center;box-shadow:0 2px 0 var(--on-note)}
+.play:active{transform:translateY(2px);box-shadow:none}
+.play svg{width:34px;height:34px}
+.en-dictado{font:800 1.35rem/1.15 var(--display);letter-spacing:-.02em;text-align:center}
+.saltar{appearance:none;background:none;border:0;cursor:pointer;padding:6px;font:700 .85rem var(--ui);
+  text-decoration:underline;color:var(--ink-soft);align-self:center}
+
 /* escribir y traducir (#66) */
 .campo{display:inline-block;width:9ch;max-width:100%;border:2px solid var(--ink);border-radius:10px;
   background:var(--card);color:var(--ink);padding:2px 10px;font:500 1.1rem var(--ui);
