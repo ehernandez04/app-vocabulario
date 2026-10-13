@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { aplicarCambios, ultimaVersion, type Guardado, type Recibido } from './ejercicios-local';
+import { aplicarCambios, tipoDe, ultimaVersion, type Guardado, type Recibido } from './ejercicios-local';
 
 const datos = { es: 'x', antes: 'a', despues: 'b', correcta: 'c', errores: { d: 'p', e: 'q' }, explicacion: 'z' };
-const g = (id: string, nivel = 1): Guardado => ({ id, tema: 'will', nivel, datos, updatedAt: '2026-10-12T10:00:00Z', deletedAt: null });
+const g = (id: string, nivel = 1): Guardado => ({ id, tema: 'will', nivel, tipo: 'elegir', datos, updatedAt: '2026-10-12T10:00:00Z', deletedAt: null });
 const r = (id: string, extra: Partial<Recibido> = {}): Recibido => ({
   id, nivel: 1, datos, updatedAt: '2026-10-13T10:00:00Z', deletedAt: null, ...extra,
 });
@@ -26,5 +26,16 @@ describe('ultimaVersion', () => {
   });
   it('sin cambios conserva la anterior', () => {
     expect(ultimaVersion([], '2026-10-12T00:00:00Z')).toBe('2026-10-12T00:00:00Z');
+  });
+});
+
+describe('tipo', () => {
+  it('lo que llega sin tipo es de elegir, y el tipo nuevo se conserva', () => {
+    expect(aplicarCambios([], 'will', [r('a')])[0].tipo).toBe('elegir');
+    expect(aplicarCambios([], 'will', [r('a', { tipo: 'traducir' })])[0].tipo).toBe('traducir');
+  });
+  it('un tipo desconocido se trata como elegir', () => {
+    expect(tipoDe('otro')).toBe('elegir');
+    expect(tipoDe(undefined)).toBe('elegir');
   });
 });

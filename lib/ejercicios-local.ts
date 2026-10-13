@@ -5,26 +5,30 @@
  * toca su versión ni su cola de cambios.
  */
 
-import type { Ejercicio } from './temas';
+import type { DatosEjercicio, TipoEjercicio } from './temas';
 
 export type Guardado = {
   id: string;
   tema: string;
   nivel: number;
-  datos: Ejercicio;
+  tipo: TipoEjercicio;
+  datos: DatosEjercicio;
   updatedAt: string;
   deletedAt: string | null;
 };
 
 /** Lo que devuelve GET /api/temas/ejercicios. */
-export type Recibido = Omit<Guardado, 'tema'> & { tipo?: string };
+export type Recibido = Omit<Guardado, 'tema' | 'tipo'> & { tipo?: string };
+
+/** Los ejercicios de antes de #66 no traían tipo: eran todos de elegir. */
+export const tipoDe = (t: unknown): TipoEjercicio => (t === 'escribir' || t === 'traducir' ? t : 'elegir');
 
 /** Aplica lo que llegó del servidor: lo nuevo entra, lo cambiado pisa, lo quitado sale. Puro. */
 export function aplicarCambios(actual: Guardado[], tema: string, recibidos: Recibido[]): Guardado[] {
   const porId = new Map(actual.map((g) => [g.id, g]));
   for (const r of recibidos) {
     if (r.deletedAt) porId.delete(r.id);
-    else porId.set(r.id, { id: r.id, tema, nivel: r.nivel, datos: r.datos, updatedAt: r.updatedAt, deletedAt: null });
+    else porId.set(r.id, { id: r.id, tema, nivel: r.nivel, tipo: tipoDe(r.tipo), datos: r.datos, updatedAt: r.updatedAt, deletedAt: null });
   }
   return [...porId.values()];
 }
@@ -58,7 +62,7 @@ export async function guardados(tema: string): Promise<Guardado[]> {
   const db = await abrir();
   const todos = await pedir<Guardado[]>(db.transaction('ejercicios').objectStore('ejercicios').getAll());
   db.close();
-  return todos.filter((g) => g.tema === tema);
+  return todos.filter((g) => g.tema === tema).map((g) => ({ ...g, tipo: tipoDe(g.tipo) }));
 }
 
 const marcar = (id: string, quitado: boolean) =>

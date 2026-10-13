@@ -5,9 +5,9 @@
  */
 
 import { auth } from '@/auth';
-import { leerEjercicios, pedido, POR_TANDA, sanearEjercicios, SISTEMA } from '@/lib/ejercicios-ia';
+import { leerEjercicios, pedido, POR_TANDA, sanearEjercicios, sanearEscritos, SISTEMA, SISTEMA_POR_TIPO } from '@/lib/ejercicios-ia';
 import { prisma } from '@/lib/prisma';
-import { temaPorId, type Ejercicio } from '@/lib/temas';
+import { temaPorId, TIPOS, type DatosEjercicio, type Ejercicio, type TipoEjercicio } from '@/lib/temas';
 import { COSTE_EJERCICIOS, devolver, hoy, LIMITE_DIARIO, reservar, restantes } from '@/lib/uso-ia';
 
 export const maxDuration = 60;
@@ -33,10 +33,16 @@ export async function POST(req: Request) {
 
   let idTema = '';
   let numNivel = 0;
+  let tipo: TipoEjercicio = 'elegir';
   try {
-    const c = (await req.json()) as { tema?: unknown; nivel?: unknown };
+    const c = (await req.json()) as { tema?: unknown; nivel?: unknown; tipo?: unknown };
     idTema = typeof c.tema === 'string' ? c.tema : '';
     numNivel = typeof c.nivel === 'number' ? c.nivel : 0;
+    if (c.tipo !== undefined) {
+      const t = TIPOS.find((x) => x.id === c.tipo);
+      if (!t) return mala('Ese tipo de ejercicio no existe');
+      tipo = t.id;
+    }
   } catch {
     return mala('El cuerpo no es JSON');
   }
@@ -63,7 +69,10 @@ export async function POST(req: Request) {
 
   // Dos peticiones paralelas de la mitad: una sola de 40 tardaba cerca de un minuto,
   // al borde del límite. Cuestan lo mismo y se cuentan como un solo punto.
-  const pedir = async (cantidad: number): Promise<Ejercicio[]> => {
+  const limpiar = (bruto: unknown): DatosEjercicio[] =>
+    tipo === 'elegir' ? sanearEjercicios(bruto, yaTengo) : sanearEscritos(bruto, tipo, yaTengo);
+
+  const pedir = async (cantidad: number): Promise<DatosEjercicio[]> => {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': clave, 'anthropic-version': '2023-06-01' },
@@ -72,7 +81,7 @@ export async function POST(req: Request) {
         max_tokens: 8000,
         // En Haiku 5.5 el pensamiento viene encendido: sin esto cada tanda gasta de más.
         output_config: { effort: 'low' },
-        system: SISTEMA,
+        system: tipo === 'elegir' ? SISTEMA : SISTEMA_POR_TIPO[tipo],
         messages: [{ role: 'user', content: pedido(tema, nivel, cantidad, yaTengo.slice(0, 40)) }],
       }),
       signal: AbortSignal.timeout(55000),
@@ -80,16 +89,16 @@ export async function POST(req: Request) {
     if (!r.ok) throw new Error(`Anthropic ${r.status}`);
     const datos = (await r.json()) as { content?: { type: string; text?: string }[] };
     const salida = (datos.content ?? []).filter((b) => b.type === 'text').map((b) => b.text ?? '').join('');
-    return sanearEjercicios(leerEjercicios(salida), yaTengo);
+    return limpiar(leerEjercicios(salida));
   };
 
-  let nuevos: Ejercicio[] = [];
+  let nuevos: DatosEjercicio[] = [];
   try {
     const mitades = await Promise.allSettled([pedir(POR_TANDA / 2), pedir(POR_TANDA / 2)]);
     // Si una mitad falla se aprovecha la otra. Las dos no se ven entre sí: se quitan las repetidas al juntarlas.
     const buenas = mitades.flatMap((m) => (m.status === 'fulfilled' ? m.value : []));
     if (mitades.every((m) => m.status === 'rejected')) throw new Error('Fallaron las dos peticiones');
-    nuevos = sanearEjercicios({ ejercicios: buenas }, yaTengo);
+    nuevos = limpiar({ ejercicios: buenas });
     if (!nuevos.length) throw new Error('Sin ejercicios válidos');
   } catch (e) {
     await devolver(userId, dia, COSTE_EJERCICIOS); // una tanda que falla por culpa nuestra no cuenta
@@ -98,7 +107,7 @@ export async function POST(req: Request) {
   }
 
   await prisma.temaEjercicio.createMany({
-    data: nuevos.map((e) => ({ userId, tema: tema.id, nivel: numNivel, tipo: 'elegir', datos: e })),
+    data: nuevos.map((e) => ({ userId, tema: tema.id, nivel: numNivel, tipo, datos: e })),
   });
 
   return Response.json({ generados: nuevos.length, restantes: await restantes(userId, dia) });

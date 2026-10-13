@@ -4,17 +4,18 @@ import { useEffect, useState } from 'react';
 import { useEstado } from '@/app/estado';
 import { descargar, guardados } from '@/lib/ejercicios-local';
 import { plural } from '@/lib/ui';
-import { temaPorId } from '@/lib/temas';
+import { temaPorId, TIPOS, type TipoEjercicio } from '@/lib/temas';
 
 /** Lo que cuesta una tanda, en puntos del tope diario (ver `COSTE_EJERCICIOS`). */
 const COSTE = 1;
 
-/** Cuántos ejercicios hay de un nivel: los escritos a mano más los guardados. */
-export async function contarEjercicios(idTema: string, nivel: number): Promise<number> {
+/** Cuántos ejercicios hay de un nivel, por tipo: los escritos a mano (todos de elegir) más los guardados. */
+export async function contarEjercicios(idTema: string, nivel: number): Promise<Record<TipoEjercicio, number>> {
   const tema = temaPorId(idTema);
-  const aMano = tema?.niveles[nivel - 1]?.ejercicios.length ?? 0;
+  const cuenta: Record<TipoEjercicio, number> = { elegir: tema?.niveles[nivel - 1]?.ejercicios.length ?? 0, escribir: 0, traducir: 0 };
   const extra = await guardados(idTema).catch(() => []);
-  return aMano + extra.filter((g) => g.nivel === nivel).length;
+  for (const g of extra) if (g.nivel === nivel) cuenta[g.tipo]++;
+  return cuenta;
 }
 
 type Props = {
@@ -32,14 +33,20 @@ type Props = {
  */
 export function MasEjercicios({ tema, nivel, principal, alTerminar }: Props) {
   const { avisar } = useEstado();
-  const [tienes, setTienes] = useState<number | null>(null);
+  const [tienes, setTienes] = useState<Record<TipoEjercicio, number> | null>(null);
+  const [tipo, setTipo] = useState<TipoEjercicio | null>(null);
   const [restantes, setRestantes] = useState<number | null>(null);
   const [generando, setGenerando] = useState(false);
   const [enLinea, setEnLinea] = useState(true);
 
   useEffect(() => {
     let vivo = true;
-    contarEjercicios(tema, nivel).then((n) => vivo && setTienes(n));
+    contarEjercicios(tema, nivel).then((n) => {
+      if (!vivo) return;
+      setTienes(n);
+      // Se propone el tipo del que menos hay; quien ya eligió uno no lo pierde.
+      setTipo((t) => t ?? TIPOS.reduce((min, x) => (n[x.id] < n[min.id] ? x : min), TIPOS[0]).id);
+    });
     // Los puntos y la conexión se leen una vez montado: el servidor no sabe ninguno.
     const poner = () => setEnLinea(navigator.onLine);
     poner();
@@ -65,7 +72,7 @@ export function MasEjercicios({ tema, nivel, principal, alTerminar }: Props) {
       const r = await fetch('/api/temas/generar', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ tema, nivel }),
+        body: JSON.stringify({ tema, nivel, tipo: tipo ?? 'elegir' }),
       });
       const datos = (await r.json()) as { generados?: number; restantes?: number; error?: string };
       if (typeof datos.restantes === 'number') setRestantes(datos.restantes);
@@ -88,6 +95,23 @@ export function MasEjercicios({ tema, nivel, principal, alTerminar }: Props) {
 
   return (
     <div className="mas">
+      <p className="mas-lbl">Tipo de ejercicio</p>
+      <div className="tipos" role="radiogroup" aria-label="Tipo de ejercicio">
+        {TIPOS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="radio"
+            aria-checked={tipo === t.id}
+            className={`tipo${tipo === t.id ? ' on' : ''}`}
+            onClick={() => setTipo(t.id)}
+            disabled={generando}
+          >
+            {t.nombre}
+            <small>{tienes ? tienes[t.id] : '·'}</small>
+          </button>
+        ))}
+      </div>
       <button
         className={`btn${principal ? ' solid' : ''}`}
         onClick={generar}
@@ -116,7 +140,7 @@ export function MasEjercicios({ tema, nivel, principal, alTerminar }: Props) {
       {!generando && motivo && <p className="mas-sub no">{motivo}</p>}
       {!generando && !motivo && (
         <p className="mas-sub">
-          {!principal && tienes !== null ? `Tienes ${tienes} · ` : ''}
+          {!principal && tienes !== null ? `Tienes ${tienes.elegir + tienes.escribir + tienes.traducir} · ` : ''}
           {puntos ?? ''}
         </p>
       )}

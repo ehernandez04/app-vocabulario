@@ -22,6 +22,41 @@ export type Ejercicio = {
   explicacion: string;
 };
 
+/** Cómo se contesta un ejercicio: eligiendo, escribiendo el hueco o traduciendo una frase. */
+export type TipoEjercicio = 'elegir' | 'escribir' | 'traducir';
+
+export const TIPOS: { id: TipoEjercicio; nombre: string }[] = [
+  { id: 'elegir', nombre: 'Elegir' },
+  { id: 'escribir', nombre: 'Escribir' },
+  { id: 'traducir', nombre: 'Traducir' },
+];
+
+/**
+ * Un ejercicio de escribir (#66). En `escribir` hay hueco (`antes` y `despues`) y
+ * `aceptadas` son las palabras que lo llenan; en `traducir` no hay hueco y
+ * `aceptadas` son frases enteras. Calificar es comparar con `aceptadas` y con las
+ * claves de `errores`, sin red.
+ */
+export type EjercicioEscrito = {
+  id?: string;
+  es: string;
+  antes?: string;
+  despues?: string;
+  aceptadas: string[];
+  /** Respuestas equivocadas conocidas, cada una con por qué lo está. */
+  errores: Record<string, string>;
+  explicacion: string;
+};
+
+/** Lo que guarda la cuenta en `datos`, según el `tipo`. */
+export type DatosEjercicio = Ejercicio | EjercicioEscrito;
+
+/** Un ejercicio listo para practicar, de cualquiera de los tres tipos. */
+export type Practica =
+  | ({ tipo: 'elegir' } & Ejercicio)
+  | ({ tipo: 'escribir' } & EjercicioEscrito)
+  | ({ tipo: 'traducir' } & EjercicioEscrito);
+
 export type Nivel = {
   nombre: string;
   ejemplo: string;
@@ -225,6 +260,47 @@ export function opcionesDe(e: Ejercicio, azar: () => number = Math.random): stri
     [todas[i], todas[j]] = [todas[j], todas[i]];
   }
   return todas;
+}
+
+/**
+ * El texto como se compara: sin mayúsculas, sin puntuación y con un solo tipo de
+ * apóstrofo, para que «won't» y «Won’t.» valgan igual, y con «I'll» e «I will» iguales. Lo demás —palabras de más o de
+ * menos, el orden— sí cuenta.
+ */
+export const normalizar = (s: string): string =>
+  s
+    .toLowerCase()
+    .replace(/[’‘`´]/g, "'")
+    .replace(/[.,;:!?¡¿"“”()]/g, '')
+    // Las contracciones de will valen como la forma larga: «I'll» es «I will».
+    .replace(/\bwon't\b/g, 'will not')
+    .replace(/'ll\b/g, ' will')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+export type Veredicto =
+  | { estado: 'acierto'; mensaje: string; alternativa?: string }
+  | { estado: 'fallo'; mensaje: string }
+  /** No coincide con nada conocido: lo decide quien contesta si se le pregunta a la IA. */
+  | { estado: 'duda' };
+
+/** Califica lo escrito comparando con lo que el ejercicio ya sabe. Sin red y sin gastar nada. */
+export function calificarEscrito(e: EjercicioEscrito, escrito: string): Veredicto {
+  const n = normalizar(escrito);
+  if (!n) return { estado: 'duda' };
+  const aceptadas = e.aceptadas.map(normalizar);
+  if (aceptadas.includes(n)) {
+    // Si había otra forma, se muestra la primera por si la tuya no era la más natural.
+    const primera = e.aceptadas[0];
+    return {
+      estado: 'acierto',
+      mensaje: e.explicacion,
+      ...(aceptadas.length > 1 && aceptadas[0] !== n ? { alternativa: primera } : {}),
+    };
+  }
+  const conocido = Object.entries(e.errores).find(([k]) => normalizar(k) === n);
+  if (conocido) return { estado: 'fallo', mensaje: conocido[1] };
+  return { estado: 'duda' };
 }
 
 export type Progreso = { nivel: number; racha: number };

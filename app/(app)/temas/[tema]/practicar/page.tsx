@@ -9,13 +9,15 @@ import { descargar, devolver, guardados, quitar } from '@/lib/ejercicios-local';
 import { guardarProgresoTema, progresoTema } from '@/lib/local-store';
 import { shuffle } from '@/lib/srs';
 import {
+  calificarEscrito,
   explicar,
   opcionesDe,
   registrar,
   temaPorId,
   ACIERTOS_PARA_SUBIR,
-  type Ejercicio,
+  type Practica,
   type Progreso,
+  type Veredicto,
 } from '@/lib/temas';
 import { useEstado } from '../../../../estado';
 
@@ -25,7 +27,15 @@ const POR_TANDA = 10;
 /** Cuánto se espera a la descarga antes de practicar con lo que ya hay. */
 const ESPERA_DESCARGA_MS = 3000;
 
-type Sesion = { tema: string; progreso: Progreso; ejercicios: Ejercicio[]; disponibles: number };
+/** `nivel` es el de los ejercicios de la tanda: el progreso puede subir mientras se practica. */
+type Sesion = { tema: string; nivel: number; progreso: Progreso; ejercicios: Practica[]; disponibles: number };
+
+/** Cómo se llama cada tipo en la nota amarilla. */
+const CONSIGNA = {
+  elegir: 'Elige la forma correcta',
+  escribir: 'Escribe la palabra que falta',
+  traducir: 'Tradúcelo al inglés',
+} as const;
 
 /** Una tanda con los ejercicios del nivel en que vas, en orden mezclado. */
 export default function Practicar() {
@@ -40,6 +50,12 @@ export default function Practicar() {
   const [opciones, setOpciones] = useState<string[]>([]);
   const [elegida, setElegida] = useState<string | null>(null);
   const [aciertos, setAciertos] = useState(0);
+  // Escribir y traducir: lo que se escribe, y qué se concluyó. `duda` espera a que
+  // quien practica decida si la IA lo revisa; no cuenta hasta entonces.
+  const [texto, setTexto] = useState('');
+  const [veredicto, setVeredicto] = useState<Veredicto | null>(null);
+  const [revisando, setRevisando] = useState(false);
+  const [enLinea, setEnLinea] = useState(true);
   // Sube cuando se generan ejercicios nuevos, para armar la tanda otra vez.
   const [version, setVersion] = useState(0);
 
@@ -47,6 +63,17 @@ export default function Practicar() {
   // y se desfasaría la hidratación. Los ejercicios son los escritos a mano más los
   // generados que hay en el teléfono; con señal se baja primero lo nuevo, pero sin
   // esperar más de unos segundos: practicar sin conexión tiene que funcionar.
+  useEffect(() => {
+    const poner = () => setEnLinea(navigator.onLine);
+    poner();
+    window.addEventListener('online', poner);
+    window.addEventListener('offline', poner);
+    return () => {
+      window.removeEventListener('online', poner);
+      window.removeEventListener('offline', poner);
+    };
+  }, []);
+
   const idTema = tema.id;
   useEffect(() => {
     if (!listo) return;
@@ -62,15 +89,16 @@ export default function Practicar() {
       if (!vivo) return;
       const t = temaPorId(idTema)!;
       const progreso = progresoTema(idTema);
-      const delNivel = (n: number) => [
-        ...t.niveles[n - 1].ejercicios,
-        ...extra.filter((g) => g.nivel === n).map((g) => ({ ...g.datos, id: g.id })),
+      const delNivel = (n: number): Practica[] => [
+        ...t.niveles[n - 1].ejercicios.map((e) => ({ ...e, tipo: 'elegir' as const })),
+        // Los guardados llevan su tipo; los datos ya vienen saneados de la cuenta.
+        ...extra.filter((g) => g.nivel === n).map((g) => ({ ...g.datos, tipo: g.tipo, id: g.id }) as Practica),
       ];
       // Se puede subir solo a un nivel que tenga ejercicios.
       const disponibles = t.niveles.reduce((hasta, _, i) => (delNivel(i + 1).length ? i + 1 : hasta), 0);
       const ejercicios = shuffle(delNivel(progreso.nivel)).slice(0, POR_TANDA);
-      setSesion({ tema: idTema, progreso, ejercicios, disponibles });
-      setOpciones(ejercicios[0] ? opcionesDe(ejercicios[0]) : []);
+      setSesion({ tema: idTema, nivel: progreso.nivel, progreso, ejercicios, disponibles });
+      setOpciones(ejercicios[0]?.tipo === 'elegir' ? opcionesDe(ejercicios[0]) : []);
     })();
     return () => {
       vivo = false;
@@ -128,18 +156,80 @@ export default function Practicar() {
     );
   }
 
-  const respondida = elegida !== null;
-  const resultado = respondida ? explicar(e, elegida) : null;
+  const eligiendo = e.tipo === 'elegir';
+  // Elegir se resuelve al tocar una opción; escribir, cuando hay un veredicto de acierto o fallo.
+  const respondida = eligiendo ? elegida !== null : veredicto !== null && veredicto.estado !== 'duda';
+  const enDuda = !eligiendo && veredicto?.estado === 'duda';
+  const resultado: { acierto: boolean; mensaje: string; alternativa?: string } | null =
+    eligiendo && elegida !== null
+      ? explicar(e, elegida)
+      : veredicto && veredicto.estado !== 'duda'
+        ? {
+            acierto: veredicto.estado === 'acierto',
+            mensaje: veredicto.mensaje,
+            alternativa: veredicto.estado === 'acierto' ? veredicto.alternativa : undefined,
+          }
+        : null;
 
-  const elegir = (opcion: string) => {
-    if (respondida) return;
-    setElegida(opcion);
-    const r = explicar(e, opcion);
-    if (r.acierto) setAciertos((n) => n + 1);
-    const { progreso: nuevo, subio } = registrar(progreso, r.acierto, sesion.disponibles);
+  /** Una respuesta con veredicto cuenta: suma a la racha o la reinicia, y puede subir de nivel. */
+  const contar = (acierto: boolean) => {
+    if (acierto) setAciertos((n) => n + 1);
+    const { progreso: nuevo, subio } = registrar(progreso, acierto, sesion.disponibles);
     guardarProgresoTema(tema.id, nuevo);
     setSesion({ ...sesion, progreso: nuevo });
     if (subio) avisar(`Subiste al nivel ${nuevo.nivel}: ${tema.niveles[nuevo.nivel - 1].nombre}`);
+  };
+
+  /** Deja la pantalla lista para el ejercicio que ocupa `de`. */
+  const preparar = (de: Practica | undefined) => {
+    setElegida(null);
+    setTexto('');
+    setVeredicto(null);
+    setRevisando(false);
+    setOpciones(de?.tipo === 'elegir' ? opcionesDe(de) : []);
+  };
+
+  const elegir = (opcion: string) => {
+    if (e.tipo !== 'elegir' || respondida) return;
+    setElegida(opcion);
+    contar(explicar(e, opcion).acierto);
+  };
+
+  const comprobar = () => {
+    if (e.tipo === 'elegir' || respondida || !texto.trim()) return;
+    const v = calificarEscrito(e, texto);
+    setVeredicto(v);
+    if (v.estado !== 'duda') contar(v.estado === 'acierto');
+  };
+
+  // Solo si quien practica lo pide: cuesta un punto del tope diario y exige conexión.
+  const revisarConIA = async () => {
+    if (e.tipo === 'elegir') return;
+    setRevisando(true);
+    try {
+      const r = await fetch('/api/temas/revisar', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          tema: tema.id,
+          nivel: sesion.nivel,
+          es: e.es,
+          respuesta: texto,
+          ...(e.tipo === 'escribir' ? { antes: e.antes, despues: e.despues } : {}),
+        }),
+      });
+      const d = (await r.json()) as { acierto?: boolean; mensaje?: string; error?: string };
+      if (!r.ok || typeof d.acierto !== 'boolean') {
+        avisar(d.error ?? 'No se pudo revisar tu respuesta. Inténtalo de nuevo.');
+        return;
+      }
+      setVeredicto(d.acierto ? { estado: 'acierto', mensaje: d.mensaje ?? '' } : { estado: 'fallo', mensaje: d.mensaje ?? '' });
+      contar(d.acierto);
+    } catch {
+      avisar('No se pudo conectar. Comprueba tu señal e inténtalo de nuevo.');
+    } finally {
+      setRevisando(false);
+    }
   };
 
   // Solo los generados tienen id: los escritos a mano no están en la cuenta.
@@ -151,25 +241,23 @@ export default function Practicar() {
     // Sale de la tanda y pasa al siguiente. El indice no cambia: el siguiente ocupa su sitio.
     const restantes = ejercicios.filter((x) => x.id !== id);
     setSesion({ ...sesion, ejercicios: restantes });
-    setElegida(null);
-    if (restantes[indice]) setOpciones(opcionesDe(restantes[indice]));
+    preparar(restantes[indice]);
     avisar('Ejercicio quitado', {
       etiqueta: 'Deshacer',
       alPulsar: async () => {
         await devolver(quitado).catch(() => {});
         setSesion((s) => (s ? { ...s, ejercicios: [...s.ejercicios.slice(0, indice), e, ...s.ejercicios.slice(indice)] } : s));
-        setOpciones(opcionesDe(e));
-        setElegida(null);
+        preparar(e);
       },
     });
   };
 
   const siguiente = () => {
-    const nuevo = indice + 1;
-    setIndice(nuevo);
-    setElegida(null);
-    if (ejercicios[nuevo]) setOpciones(opcionesDe(ejercicios[nuevo]));
+    setIndice(indice + 1);
+    preparar(ejercicios[indice + 1]);
   };
+
+  const claseHueco = resultado ? (resultado.acierto ? ' ok' : ' no') : '';
 
   return (
     <section className="view">
@@ -186,47 +274,87 @@ export default function Practicar() {
       </div>
 
       <div className="note" style={{ '--note': '#FFE066' } as React.CSSProperties}>
-        <span className="n-tag">Elige la forma correcta</span>
+        <span className="n-tag">{CONSIGNA[e.tipo]}</span>
         <span className="es">{e.es}</span>
       </div>
 
-      <p className="tema-frase">
-        {e.antes && `${e.antes} `}
-        <span className={`hueco${resultado ? (resultado.acierto ? ' ok' : ' no') : ''}`}>
-          {respondida ? e.correcta : '   '}
-        </span>{' '}
-        {e.despues}
-      </p>
+      {e.tipo === 'traducir' ? (
+        <div>
+          <label className="tus" htmlFor="respuesta">
+            Tu respuesta
+          </label>
+          <textarea
+            key={indice}
+            id="respuesta"
+            className={`area${claseHueco}${enDuda || revisando ? ' neutro' : ''}`}
+            value={texto}
+            onChange={(ev) => setTexto(ev.target.value)}
+            readOnly={veredicto !== null}
+            rows={3}
+            lang="en"
+            autoCapitalize="sentences"
+            autoCorrect="off"
+            spellCheck={false}
+            autoFocus
+          />
+        </div>
+      ) : (
+        <p className="tema-frase">
+          {e.antes && `${e.antes} `}
+          {e.tipo === 'escribir' ? (
+            <input
+              key={indice}
+              className={`campo${claseHueco}${enDuda || revisando ? ' neutro' : ''}`}
+              aria-label="La palabra que falta"
+              value={texto}
+              onChange={(ev) => setTexto(ev.target.value)}
+              onKeyDown={(ev) => ev.key === 'Enter' && comprobar()}
+              readOnly={veredicto !== null}
+              lang="en"
+              autoCapitalize="none"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              autoFocus
+            />
+          ) : (
+            <span className={`hueco${claseHueco}`}>{respondida ? e.correcta : '   '}</span>
+          )}{' '}
+          {e.despues}
+        </p>
+      )}
 
-      <div className="opts">
-        {opciones.map((o) => {
-          let clase = '';
-          let marca = null;
-          if (respondida) {
-            if (o === e.correcta) {
-              clase = ' good';
-              marca = (
-                <span className="mk">
-                  <IconTick />
-                </span>
-              );
-            } else if (o === elegida) {
-              clase = ' bad';
-              marca = (
-                <span className="mk">
-                  <IconCruz />
-                </span>
-              );
-            } else clase = ' off';
-          }
-          return (
-            <button key={o} className={`opt${clase}`} onClick={() => elegir(o)} disabled={respondida}>
-              <span className="lb">{o}</span>
-              {marca}
-            </button>
-          );
-        })}
-      </div>
+      {eligiendo && (
+        <div className="opts">
+          {opciones.map((o) => {
+            let clase = '';
+            let marca = null;
+            if (respondida) {
+              if (o === e.correcta) {
+                clase = ' good';
+                marca = (
+                  <span className="mk">
+                    <IconTick />
+                  </span>
+                );
+              } else if (o === elegida) {
+                clase = ' bad';
+                marca = (
+                  <span className="mk">
+                    <IconCruz />
+                  </span>
+                );
+              } else clase = ' off';
+            }
+            return (
+              <button key={o} className={`opt${clase}`} onClick={() => elegir(o)} disabled={respondida}>
+                <span className="lb">{o}</span>
+                {marca}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="grow" />
 
@@ -235,6 +363,7 @@ export default function Practicar() {
           <div>
             <p className={`ttl ${resultado.acierto ? 'good' : 'bad'}`}>{resultado.acierto ? '¡Bien!' : 'Casi…'}</p>
             <p className="sub">{resultado.mensaje}</p>
+            {resultado.alternativa && <p className="sub">También vale: «{resultado.alternativa}».</p>}
           </div>
           <button className="btn solid wide" onClick={siguiente}>
             {indice + 1 < ejercicios.length ? 'Siguiente' : 'Ver resultado'}
@@ -246,8 +375,38 @@ export default function Practicar() {
             </button>
           )}
         </div>
-      ) : (
+      ) : revisando ? (
+        <div className="fb" role="status">
+          <p className="ttl">
+            <span className="spin" aria-hidden="true" /> Revisando tu respuesta…
+          </p>
+          <p className="hint">Cuesta 1 punto de IA de tus 30 de hoy.</p>
+        </div>
+      ) : enDuda ? (
+        <div className="fb">
+          <div>
+            <p className="ttl">No la reconozco</p>
+            <p className="sub">{enLinea ? '¿Quieres que la IA la revise?' : 'Para que la IA la revise necesito conexión.'}</p>
+          </div>
+          <div className="dos">
+            <button className="btn wide" onClick={siguiente}>
+              Seguir
+            </button>
+            <button className="btn solid wide" onClick={revisarConIA} disabled={!enLinea}>
+              Revisar con IA
+            </button>
+          </div>
+          <p className="hint">Cuesta 1 punto de IA de tus 30 de hoy.</p>
+        </div>
+      ) : eligiendo ? (
         <p className="hint">Este ejercicio funciona sin conexión.</p>
+      ) : (
+        <div className="fb">
+          <button className="btn solid wide" onClick={comprobar} disabled={!texto.trim()}>
+            Comprobar
+          </button>
+          <p className="hint">Este ejercicio se califica sin conexión.</p>
+        </div>
       )}
     </section>
   );

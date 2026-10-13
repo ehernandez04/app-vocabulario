@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACIERTOS_PARA_SUBIR, TEMAS, explicar, opcionesDe, registrar } from './temas';
+import { ACIERTOS_PARA_SUBIR, TEMAS, calificarEscrito, explicar, normalizar, opcionesDe, registrar, type EjercicioEscrito } from './temas';
 
 describe('ejercicios escritos a mano', () => {
   it('cada uno tiene la correcta fuera de los errores y una explicación por error', () => {
@@ -51,5 +51,50 @@ describe('registrar', () => {
   it('en el último nivel disponible no sube y la racha se queda llena', () => {
     const r = registrar({ nivel: 2, racha: ACIERTOS_PARA_SUBIR - 1 }, true, 2);
     expect(r).toEqual({ progreso: { nivel: 2, racha: ACIERTOS_PARA_SUBIR }, subio: false });
+  });
+});
+
+describe('normalizar', () => {
+  it('ignora mayúsculas, puntuación y el tipo de apóstrofo', () => {
+    expect(normalizar("  Won't. ")).toBe(normalizar('won’t'));
+    expect(normalizar('If it rains,  I will stay home!')).toBe('if it rains i will stay home');
+  });
+  it('iguala las contracciones de will con la forma larga', () => {
+    expect(normalizar("I'll stay")).toBe(normalizar('I will stay'));
+    expect(normalizar('I won’t go')).toBe(normalizar('I will not go'));
+  });
+  it('no confunde palabras distintas', () => {
+    expect(normalizar('wont')).not.toBe(normalizar("won't"));
+  });
+});
+
+describe('calificarEscrito', () => {
+  const hueco: EjercicioEscrito = {
+    es: 'Mañana no llamaré a mi jefe.',
+    antes: 'I',
+    despues: 'call my boss tomorrow.',
+    aceptadas: ['won’t', 'will never'],
+    errores: { 'don’t will': 'La negación se pega a «will».' },
+    explicacion: '«Won’t» es «will not».',
+  };
+  it('acepta una respuesta aceptada, con otro apóstrofo y mayúsculas', () => {
+    expect(calificarEscrito(hueco, "WON'T")).toEqual({ estado: 'acierto', mensaje: hueco.explicacion });
+  });
+  it('si acertó con otra forma, enseña la primera', () => {
+    expect(calificarEscrito(hueco, 'will never')).toEqual({
+      estado: 'acierto',
+      mensaje: hueco.explicacion,
+      alternativa: 'won’t',
+    });
+  });
+  it('«will not» cuenta como «won’t» y no se muestra como alternativa', () => {
+    expect(calificarEscrito(hueco, 'will not')).toEqual({ estado: 'acierto', mensaje: hueco.explicacion });
+  });
+  it('un error conocido es un fallo con su explicación', () => {
+    expect(calificarEscrito(hueco, "don't will")).toEqual({ estado: 'fallo', mensaje: 'La negación se pega a «will».' });
+  });
+  it('lo desconocido, o vacío, queda en duda', () => {
+    expect(calificarEscrito(hueco, 'shall not')).toEqual({ estado: 'duda' });
+    expect(calificarEscrito(hueco, '   ')).toEqual({ estado: 'duda' });
   });
 });
