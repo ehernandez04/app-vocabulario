@@ -80,6 +80,18 @@ sin conexión. Cada tanda cuesta 1 punto del tope diario y deja unos 28 ejercici
 saneado (`lib/ejercicios-ia.ts`) descarta a propósito lo que no tiene exactamente una respuesta
 posible. Los ejercicios son de tres tipos (`tipo` en `tema_ejercicios`): elegir, escribir el hueco y traducir. Los escritos se califican en el teléfono contra `aceptadas` y `errores` (`calificarEscrito`, que ignora mayúsculas, puntuación y apóstrofos, e iguala «I'll» con «I will»); si no coincide con nada, el ejercicio le pregunta a quien practica si quiere que la IA lo revise (`/api/temas/revisar`, 1 punto) y, mientras no haya respuesta, no cuenta ni como acierto ni como fallo. El nivel y la racha de cada tema viven en IndexedDB (almacén `temas`) y viajan a la cuenta (tabla `tema_progreso`, #70) con la misma idea de versión que el avance: si el servidor no cambió, entra lo del teléfono; si dos aparatos practicaron a la vez, gana el nivel más alto (`resolverTema`).
 
+**Escucha y repite (#68): pronunciación con Azure Speech.** Una de cada tres traducciones de
+la tanda se presenta como «repetir» (`conDictados`; sin conexión ese turno queda en traducir):
+suena la frase, quien practica la dice, el teléfono la convierte a WAV de 16 kHz
+(`lib/wav.ts`, porque cada navegador graba en un formato distinto) y `POST /api/temas/pronunciar`
+la evalúa con *pronunciation assessment*. El resultado son tres estados («Se te entiende bien»,
+«Casi», «Repítela») más el sonido más flojo, sin porcentajes (`lib/pronunciacion.ts`): el
+objetivo es que se te entienda, no borrar el acento. **Los umbrales son provisionales:** hay
+que calibrarlos con grabaciones reales. Tiene tope propio de 20 evaluaciones al día
+(tabla `voice_usage`, `lib/uso-voz.ts`), aparte de los puntos de IA, porque Azure cobra por
+segundo de audio. No cuenta para la racha ni para subir de nivel (#77). Variables:
+`AZURE_SPEECH_KEY` y `AZURE_SPEECH_REGION`; sin ellas la ruta contesta 503.
+
 **Recordatorio diario (#14): Web Push, no notificación local.** Una PWA no puede despertarse
 sola a una hora fija, así que lo manda el servidor. Cada aparato es una fila de `push_subs` con
 su hora (HH:MM) y su zona horaria; `lib/recordatorio.ts` decide si toca avisar (pasó la hora,
@@ -385,6 +397,10 @@ components/IndicadorSync.tsx  insignia del avatar y fila de estado en Ajustes
 lib/palabra.ts          etiqueta de significados («run (verbo)»), claves y «ya la tienes» (con tests)
 lib/svg.ts              saneado del SVG que dibuja el modelo (con tests)
 lib/uso-ia.ts           el tope diario de IA, compartido por la búsqueda y el dibujo
+lib/uso-voz.ts          el tope diario de evaluaciones de pronunciación (#68)
+lib/pronunciacion.ts    de la respuesta de Azure a «se te entiende» y el sonido a mejorar (con tests)
+lib/wav.ts              la toma del micrófono a WAV de 16 kHz
+components/Repetir.tsx  el ejercicio «Escucha y repite»
 lib/diccionario.ts      pronunciación desde dictionaryapi.dev, con respaldo en el modelo
 lib/listas.ts           listas de palabras: siembra, filtro del mazo (con tests)
 lib/temas.ts            los temas, su escalera de niveles, calificar y racha (con tests)

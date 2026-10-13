@@ -29,6 +29,7 @@
   --ok: #1f6f43;
   --no: #b4380b;
   --no-bg: #fbe8e0;
+  --aviso: #8a5a00;
   --drop: 0 12px 24px rgba(60, 50, 20, 0.2);
   --lift: 0 2px 0 var(--edge);
   --safe-t: env(safe-area-inset-top, 0px);
@@ -55,6 +56,7 @@
   --ok: #6fd39b;
   --no: #ff9a6e;
   --no-bg: #33201a;
+  --aviso: #f2c14e;
   --drop: 0 12px 28px rgba(0, 0, 0, 0.55);
   --lift: 0 2px 0 rgba(0, 0, 0, 0.6);
 }
