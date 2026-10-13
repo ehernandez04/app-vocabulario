@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { notFound, useParams } from 'next/navigation';
+import { MasEjercicios } from '@/components/MasEjercicios';
 import { ACIERTOS_PARA_SUBIR, cargarProgreso, temaPorId } from '@/lib/temas';
 import { useEstado } from '../../../estado';
 
@@ -44,9 +45,12 @@ export default function VistaTema() {
         </div>
       </div>
 
-      <Link href={`/temas/${tema.id}/practicar`} className="btn solid wide">
-        Practicar este nivel
-      </Link>
+      <div className="block">
+        <Link href={`/temas/${tema.id}/practicar`} className="btn solid wide">
+          Practicar este nivel
+        </Link>
+        <MasEjercicios tema={tema.id} nivel={nivel} />
+      </div>
 
       <div className="block">
         <p className="eyebrow">Escalera</p>
