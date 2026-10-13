@@ -32,8 +32,8 @@ export function EnCamino({
         </p>
       </div>
 
-      <Link href="/" className="btn solid wide" style={{ textAlign: 'center' }}>
-        Volver a Inicio
+      <Link href="/palabras" className="btn solid wide" style={{ textAlign: 'center' }}>
+        Volver a Palabras
       </Link>
     </section>
   );

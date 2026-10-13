@@ -7,7 +7,6 @@ import { TEMAS, cargarProgreso } from '@/lib/temas';
 export function BloqueTemas() {
   return (
     <div className="block">
-      <p className="eyebrow">Aprender por tema</p>
       {TEMAS.map((t) => {
         const { nivel } = cargarProgreso(t.id);
         const total = t.niveles.length;

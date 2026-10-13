@@ -1,57 +1,38 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { Sticker } from '@/components/Sticker';
-import {
-  IconAdivinar,
-  IconAuriculares,
-  IconFlecha,
-  IconLuna,
-  IconSol,
-  IconTarjetas,
-} from '@/components/icons';
-import * as store from '@/lib/local-store';
-import { isDue } from '@/lib/srs';
-import { noteColor, peekColor, saludo } from '@/lib/ui';
 import { BotonAjustes } from '@/components/BotonAjustes';
-import { BloqueTemas } from '@/components/BloqueTemas';
-import { MasFalladas } from '@/components/MasFalladas';
-import { PalabraEn } from '@/components/PalabraEn';
-import { FilaListas } from '@/components/FilaListas';
-import { HojaNuevaPalabra } from '@/components/HojaNuevaPalabra';
+import { IconLuna, IconSol } from '@/components/icons';
+import { cargarProgreso, TEMAS } from '@/lib/temas';
+import { isDue } from '@/lib/srs';
+import { plural, saludo } from '@/lib/ui';
 import { useEstado } from '../estado';
 
-const COLORES_CAJA = ['#FFE066', '#FFB4A2', '#B8E1FF', '#C8F0A8', '#FFE066'];
+/** Las partes de un nivel. Hoy solo Ideas existe; las otras se muestran para que se vea el camino. */
+const PARTES = [
+  { nombre: 'Vocabulary', detalle: 'Las palabras del tema', color: 'var(--note-4)', icono: 'Aa' },
+  { nombre: 'Ideas', detalle: 'Armar frases', color: 'var(--note-1)', icono: '☰', activa: true },
+  { nombre: 'Speaking', detalle: 'Dilo tú', color: 'var(--note-2)', icono: '🎤' },
+  { nombre: 'Listening', detalle: 'Escribe lo que oyes', color: 'var(--note-3)', icono: '🎧' },
+];
 
+/**
+ * Inicio (#76): qué sigue en tu ruta. El tema y el nivel en que vas, con un solo
+ * botón para continuar; el repaso de palabras queda abajo, más pequeño. El mazo y
+ * sus tres modos de repaso viven ahora en «Palabras».
+ */
 export default function Inicio() {
-  const { listo, deck, mazo, cola, indice, progresoDe, ajuste, alternarTema, recargarMazo, rearmarCola, avisar, usuario } =
-    useEstado();
-  const [hoja, setHoja] = useState<'nueva' | null>(null);
+  const { listo, deck, progresoDe, ajuste, alternarTema, usuario } = useEstado();
 
-  const trasCambiarElMazo = (mensaje: string) => {
-    recargarMazo();
-    rearmarCola();
-    setHoja(null);
-    avisar(mensaje);
-  };
-
-
-  // Hasta que IndexedDB conteste no sabemos el progreso real. Pintar números
-  // provisionales y corregirlos medio segundo después se ve peor que esperar.
+  // Hasta que IndexedDB conteste no sabemos el progreso real: esperar se ve mejor que corregir números.
   if (!listo) return <section className="view" aria-busy="true" />;
 
-  const vencidas = deck.filter((w) => isDue(progresoDe(w.en))).length;
-  // El titular habla de lo que vas a repasar (la lista elegida); el anillo y las cajas, de todo el mazo.
-  const porRepasar = mazo.filter((w) => isDue(progresoDe(w.en))).length;
-  const total = deck.length;
-  const alDia = total - vencidas;
-  const pct = total ? Math.round((alDia / total) * 100) : 0;
-  const C = 2 * Math.PI * 19;
-
-  const siguiente = cola[indice] || mazo[0];
-  const cuentas = store.boxCounts(deck);
-  const max = Math.max(...cuentas, 1);
+  // Con un solo tema la ruta es ese; los siguientes se abrirán por orden cuando existan.
+  const tema = TEMAS[0];
+  const { nivel, racha } = cargarProgreso(tema.id);
+  const nuevo = nivel === 1 && racha === 0;
+  const actual = tema.niveles[nivel - 1];
+  const porRepasar = deck.filter((w) => isDue(progresoDe(w.en))).length;
   const oscuro = ajuste('theme') === 'dark';
   const primerNombre = usuario.nombre?.trim().split(/\s+/)[0] ?? null;
 
@@ -59,26 +40,22 @@ export default function Inicio() {
     <section className="view">
       <div className="hello">
         <div>
-          <p className="eyebrow">{saludo()}{primerNombre ? `, ${primerNombre}` : ''}</p>
-          {/* Concordancia a mano: el helper plural() no sirve con verbo. */}
+          <p className="eyebrow">
+            {saludo()}
+            {primerNombre ? `, ${primerNombre}` : ''}
+          </p>
           <h1 className="h1">
-            {!porRepasar ? (
+            {nuevo ? (
               <>
-                Todo
+                Aprende inglés
                 <br />
-                al día
-              </>
-            ) : porRepasar === 1 ? (
-              <>
-                1 palabra
-                <br />
-                te espera
+                paso a paso
               </>
             ) : (
               <>
-                {porRepasar} palabras
+                Sigue donde
                 <br />
-                te esperan
+                lo dejaste
               </>
             )}
           </h1>
@@ -87,160 +64,71 @@ export default function Inicio() {
           <span className="streak">
             <span className="flame">🔥</span> {ajuste('streak')}
           </span>
-          <button
-            className="themebtn"
-            onClick={alternarTema}
-            aria-label="Cambiar entre tema claro y oscuro"
-          >
+          <button className="themebtn" onClick={alternarTema} aria-label="Cambiar entre tema claro y oscuro">
             {oscuro ? <IconSol /> : <IconLuna />}
           </button>
           <BotonAjustes />
         </div>
       </div>
 
-      <div className="today">
-        <div className="ring">
-          <svg width="62" height="62" viewBox="0 0 44 44" aria-hidden="true">
-            <circle cx="22" cy="22" r="19" fill="none" stroke="var(--rule)" strokeWidth="4" />
-            <circle
-              cx="22"
-              cy="22"
-              r="19"
-              fill="none"
-              stroke="var(--ink)"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeDasharray={C.toFixed(1)}
-              strokeDashoffset={(C * (1 - pct / 100)).toFixed(1)}
-            />
-          </svg>
-          <span className="val">{pct}%</span>
+      <div className="block">
+        <div className="note" style={{ '--note': nuevo ? '#FFE066' : '#B8E1FF' } as React.CSSProperties}>
+          <span className="n-tag">
+            {nuevo ? 'Empieza aquí · tu primer tema' : `Tu tema · nivel ${nivel} de ${tema.niveles.length}`}
+          </span>
+          <span className="tema-w">{tema.nombre}</span>
+          <span className="es">{nuevo ? tema.resumen : actual.nombre}</span>
+          <span className="tema-dots" aria-hidden="true">
+            {tema.niveles.map((_, i) => (
+              <i key={i} className={i < nivel ? 'on' : undefined} />
+            ))}
+          </span>
         </div>
-        <div className="txt">
-          <b>
-            {alDia} de {total} al día
-          </b>
-          <span className="muted">
-            {!vencidas
-              ? 'Vuelve mañana por las siguientes'
-              : vencidas === 1
-                ? 'Te falta 1 por repasar'
-                : `Te faltan ${vencidas} por repasar`}
+        <Link href={`/temas/${tema.id}/practicar`} className="btn solid wide">
+          {nuevo ? `Empezar con «${tema.nombre}»` : 'Continuar'}
+        </Link>
+      </div>
+
+      <div className="block">
+        <p className="eyebrow">Este nivel, por partes</p>
+        <div className="partes">
+          {PARTES.map((p) => {
+            const contenido = (
+              <>
+                <i style={{ background: p.color }}>{p.icono}</i>
+                <span>
+                  {p.nombre}
+                  <small>{p.activa ? p.detalle : 'Pronto'}</small>
+                </span>
+              </>
+            );
+            return p.activa ? (
+              <Link key={p.nombre} href={`/temas/${tema.id}/practicar`} className="parte">
+                {contenido}
+              </Link>
+            ) : (
+              <span key={p.nombre} className="parte off" aria-disabled="true">
+                {contenido}
+              </span>
+            );
+          })}
+          <span className="parte off ancha" aria-disabled="true">
+            <i style={{ background: 'var(--note-1)' }}>💬</i>
+            <span>
+              Conversar con la IA
+              <small>Practica hablando · próximamente</small>
+            </span>
           </span>
         </div>
       </div>
 
-      <FilaListas />
-
-      {siguiente && (
-      <Link
-        href="/tarjetas"
-        className="stack"
-        aria-label={`Practicar la siguiente palabra: ${siguiente.en}`}
-      >
-        <div className="lay b2">
-          <div className="flat" style={{ background: peekColor(deck, siguiente, 2) }} />
-        </div>
-        <div className="lay b1">
-          <div className="flat" style={{ background: peekColor(deck, siguiente, 1) }} />
-        </div>
-        <div className="lay top">
-          <div
-            className="note"
-            style={{ '--note': noteColor(deck, siguiente) } as React.CSSProperties}
-          >
-            <div className="n-top">
-              <span className="n-tag">Siguiente palabra</span>
-              <Sticker word={siguiente} size="sm" />
-            </div>
-            <span className="en sm">
-              <PalabraEn en={siguiente.en} />
-            </span>
-            <span className="hand">toca para practicar →</span>
-          </div>
-        </div>
+      <Link href="/tarjetas" className="repaso">
+        <span className="ic">{porRepasar}</span>
+        <span className="lab">
+          <b>Repaso de palabras</b>
+          <span>{porRepasar ? `${plural(porRepasar, 'palabra')} por repasar hoy` : 'Todo al día'}</span>
+        </span>
       </Link>
-      )}
-
-      <div className="block">
-        <p className="eyebrow">Cómo quieres repasar</p>
-        <div className="modes">
-          <Link href="/tarjetas" className="mode">
-            <span className="ic" style={{ background: '#FFE066' }}>
-              <IconTarjetas />
-            </span>
-            <span className="lab">
-              <b>Tarjetas</b>
-              <span>Ver, escuchar y dar la vuelta</span>
-            </span>
-            <span className="arr">
-              <IconFlecha />
-            </span>
-          </Link>
-          <Link href="/adivinar" className="mode">
-            <span className="ic" style={{ background: '#FFB4A2' }}>
-              <IconAdivinar />
-            </span>
-            <span className="lab">
-              <b>Adivinar</b>
-              <span>Elige la traducción correcta</span>
-            </span>
-            <span className="arr">
-              <IconFlecha />
-            </span>
-          </Link>
-          <Link href="/camino" className="mode dark">
-            <span className="ic" style={{ background: '#FFE066' }}>
-              <IconAuriculares />
-            </span>
-            <span className="lab">
-              <b>Modo camino</b>
-              <span>Manos libres, solo audio</span>
-            </span>
-            <span className="arr">
-              <IconFlecha />
-            </span>
-          </Link>
-        </div>
-      </div>
-
-      <div className="block">
-        <p className="eyebrow">Tus cinco cajas de repaso</p>
-        <div className="boxes">
-          {cuentas.map((n, i) => (
-            <div className="bx" key={i}>
-              <div className="col">
-                <i
-                  style={{
-                    height: n ? `${Math.max(14, (n / max) * 100)}%` : 0,
-                    background: COLORES_CAJA[i],
-                  }}
-                />
-              </div>
-              <span className="n">{n}</span>
-              <span className="l">caja {i + 1}</span>
-            </div>
-          ))}
-        </div>
-        <p className="muted sm">Cada acierto sube la palabra una caja: 1, 2, 4, 8 y 16 días.</p>
-      </div>
-
-      <BloqueTemas />
-
-      <MasFalladas />
-
-      <div className="block">
-        <button className="btn solid wide" onClick={() => setHoja('nueva')}>
-          ＋ Agregar una palabra
-        </button>
-      </div>
-
-      {hoja === 'nueva' && (
-        <HojaNuevaPalabra
-          alCerrar={() => setHoja(null)}
-          alGuardar={(_w, mensaje) => trasCambiarElMazo(mensaje)}
-        />
-      )}
     </section>
   );
 }

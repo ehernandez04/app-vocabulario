@@ -327,7 +327,7 @@
 .tick{font:800 2rem var(--display);font-variant-numeric:tabular-nums}
 
 /* ── barra inferior ──────────────────────────────────────────────────────── */
-.tabbar{display:grid;grid-template-columns:repeat(4,1fr);border-top:1.5px solid var(--rule);
+.tabbar{display:grid;grid-template-columns:repeat(3,1fr);border-top:1.5px solid var(--rule);
   background:var(--card);padding:7px 6px calc(7px + var(--safe-b));flex:none;z-index:5}
 /* Antes eran <button role="tab">; ahora son enlaces de navegación, así que el
    estado activo va en aria-current="page", que es lo correcto para un <nav>. */
@@ -640,3 +640,26 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .mas-bar i{display:block;height:100%;width:40%;background:var(--ink);border-radius:99px;
   animation:avanza 2.4s ease-in-out infinite}
 @keyframes avanza{0%{margin-left:-40%}100%{margin-left:100%}}
+
+/* ── Inicio nuevo (#76) ──────────────────────────────────────────────────── */
+.note .tema-w{font:800 2.3rem var(--display);letter-spacing:-.035em;line-height:1}
+.note .es{font:700 1.25rem var(--hand);line-height:1.15}
+.partes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.parte{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:13px;
+  border:2px solid var(--edge);background:var(--card);box-shadow:var(--lift);
+  color:var(--ink);text-decoration:none;font:700 .85rem var(--ui);transition:transform .12s,box-shadow .12s}
+.parte:active{transform:translateY(2px);box-shadow:none}
+.parte i{flex:none;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;
+  font-style:normal;font-size:.8rem;color:var(--on-note)}
+.parte small{display:block;font:500 .7rem var(--ui);color:var(--ink-soft)}
+.parte.off{opacity:.55;box-shadow:none;border-color:var(--rule)}
+.parte.ancha{grid-column:1/-1}
+.repaso{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:14px;
+  border:2px solid var(--edge);background:var(--card);box-shadow:var(--lift);
+  color:var(--ink);text-decoration:none}
+.repaso:active{transform:translateY(2px);box-shadow:none}
+.repaso .ic{flex:none;min-width:38px;height:38px;padding:0 8px;border-radius:11px;background:var(--note-2);
+  color:var(--on-note);display:grid;place-items:center;font:800 .95rem var(--display)}
+.repaso .lab{display:flex;flex-direction:column;min-width:0}
+.repaso .lab b{font-size:.92rem}
+.repaso .lab span{font-size:.78rem;color:var(--ink-soft)}
