@@ -78,7 +78,7 @@ peticiones paralelas de 20 (una de 40 tardaba ~53 s, al borde del límite), y se
 y califica comparando con las respuestas y errores típicos del propio ejercicio, así que funciona
 sin conexión. Cada tanda cuesta 1 punto del tope diario y deja unos 28 ejercicios válidos: el
 saneado (`lib/ejercicios-ia.ts`) descarta a propósito lo que no tiene exactamente una respuesta
-posible. El nivel de cada tema vive hoy solo en `localStorage` (#70 lo sube a la cuenta).
+posible. El nivel y la racha de cada tema viven en IndexedDB (almacén `temas`) y viajan a la cuenta (tabla `tema_progreso`, #70) con la misma idea de versión que el avance: si el servidor no cambió, entra lo del teléfono; si dos aparatos practicaron a la vez, gana el nivel más alto (`resolverTema`).
 
 **Recordatorio diario (#14): Web Push, no notificación local.** Una PWA no puede despertarse
 sola a una hora fija, así que lo manda el servidor. Cada aparato es una fila de `push_subs` con
@@ -387,7 +387,7 @@ lib/svg.ts              saneado del SVG que dibuja el modelo (con tests)
 lib/uso-ia.ts           el tope diario de IA, compartido por la búsqueda y el dibujo
 lib/diccionario.ts      pronunciación desde dictionaryapi.dev, con respaldo en el modelo
 lib/listas.ts           listas de palabras: siembra, filtro del mazo (con tests)
-lib/temas.ts            los temas, su escalera de niveles, calificar y progreso (con tests)
+lib/temas.ts            los temas, su escalera de niveles, calificar y racha (con tests)
 lib/ejercicios-ia.ts    prompt y saneado de los ejercicios que genera el modelo (con tests)
 lib/ejercicios-local.ts la copia de esos ejercicios en el teléfono (IndexedDB propia)
 lib/sync.ts             une la copia con la red; una petición a la vez

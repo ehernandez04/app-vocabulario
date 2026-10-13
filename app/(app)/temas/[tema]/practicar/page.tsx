@@ -6,11 +6,10 @@ import { useEffect, useState } from 'react';
 import { IconCruz, IconTick } from '@/components/icons';
 import { MasEjercicios } from '@/components/MasEjercicios';
 import { descargar, guardados } from '@/lib/ejercicios-local';
+import { guardarProgresoTema, progresoTema } from '@/lib/local-store';
 import { shuffle } from '@/lib/srs';
 import {
-  cargarProgreso,
   explicar,
-  guardarProgreso,
   opcionesDe,
   registrar,
   temaPorId,
@@ -62,7 +61,7 @@ export default function Practicar() {
       const extra = await guardados(idTema).catch(() => []);
       if (!vivo) return;
       const t = temaPorId(idTema)!;
-      const progreso = cargarProgreso(idTema);
+      const progreso = progresoTema(idTema);
       const delNivel = (n: number) => [
         ...t.niveles[n - 1].ejercicios,
         ...extra.filter((g) => g.nivel === n).map((g) => ({ ...g.datos, id: g.id })),
@@ -138,7 +137,7 @@ export default function Practicar() {
     const r = explicar(e, opcion);
     if (r.acierto) setAciertos((n) => n + 1);
     const { progreso: nuevo, subio } = registrar(progreso, r.acierto, sesion.disponibles);
-    guardarProgreso(tema.id, nuevo);
+    guardarProgresoTema(tema.id, nuevo);
     setSesion({ ...sesion, progreso: nuevo });
     if (subio) avisar(`Subiste al nivel ${nuevo.nivel}: ${tema.niveles[nuevo.nivel - 1].nombre}`);
   };

@@ -16,7 +16,7 @@
  *  - Las palabras propias altas y bajas esperan en `pendientes`.
  */
 
-import { fusionarRacha, igualLista, igualProgreso, type Racha } from './fusion';
+import { fusionarRacha, igualLista, igualProgreso, igualTema, type AvanceTema, type Racha } from './fusion';
 import type { Lista } from './listas';
 import type { Progress, Word } from './srs';
 import { svgAImagen } from './svg';
@@ -42,6 +42,12 @@ export type Copia = {
   listasSucias: Record<string, true>;
   /** Listas borradas que el servidor aún no confirmó. */
   listasBorradas: Record<string, true>;
+  /** Nivel y racha de cada tema (#70), por id de tema. */
+  temas: Record<string, AvanceTema>;
+  /** Versión del servidor vista por última vez, por tema. */
+  temasVersiones: Record<string, string>;
+  /** Temas cuyo avance cambió y el servidor aún no lo confirmó. */
+  temasSucios: Record<string, true>;
 };
 
 export type Peticion = {
@@ -51,6 +57,7 @@ export type Peticion = {
   })[];
   progress: (Progress & { en: string; base: string | null })[];
   lists: { id: string; name: string; words: string[]; base: string | null; borrada?: true }[];
+  temas: (AvanceTema & { tema: string; base: string | null })[];
   streak: number;
   lastDay: string | null;
 };
@@ -61,6 +68,7 @@ export type Enviado = {
   pendientes: Record<string, Pendiente['tipo']>;
   listas: Record<string, Lista>;
   listasBorradas: Record<string, true>;
+  temas: Record<string, AvanceTema>;
 };
 
 export type Respuesta = {
@@ -74,12 +82,13 @@ export type Respuesta = {
   lists?: { id: string; name: string; words: string[]; createdAt: string; version: string; borrada: boolean }[];
   /** Listas nuevas que el servidor fundió con otra del mismo nombre: id del teléfono → id definitivo. */
   reasignadas?: Record<string, string>;
+  temas?: (AvanceTema & { tema: string; version: string })[];
   streak: number;
   lastDay: string | null;
 };
 
 /** Qué tocó la respuesta, para persistir solo eso. */
-export type Tocado = { progress: string[]; words: string[]; listas: string[] };
+export type Tocado = { progress: string[]; words: string[]; listas: string[]; temas: string[] };
 
 const intacto = (p: Progress) => p.seen > 0 || p.box > 1;
 
@@ -140,8 +149,12 @@ export function construirPeticion(c: Copia): { cuerpo: Peticion; enviado: Enviad
     })),
   ];
 
+  const temas = Object.keys(c.temasSucios)
+    .filter((id) => c.temas[id])
+    .map((tema) => ({ tema, ...c.temas[tema], base: c.temasVersiones[tema] ?? null }));
+
   return {
-    cuerpo: { desde: c.cursor, words, progress, lists, streak: c.racha.streak, lastDay: c.racha.lastDay },
+    cuerpo: { desde: c.cursor, words, progress, lists, temas, streak: c.racha.streak, lastDay: c.racha.lastDay },
     enviado: {
       progress: Object.fromEntries(
         Object.keys(c.sucios)
@@ -155,6 +168,11 @@ export function construirPeticion(c: Copia): { cuerpo: Peticion; enviado: Enviad
           .map((id) => [id, { ...c.listas[id], words: [...c.listas[id].words] }])
       ),
       listasBorradas: { ...c.listasBorradas },
+      temas: Object.fromEntries(
+        Object.keys(c.temasSucios)
+          .filter((id) => c.temas[id])
+          .map((id) => [id, { ...c.temas[id] }])
+      ),
     },
   };
 }
@@ -169,7 +187,7 @@ export function construirPeticion(c: Copia): { cuerpo: Peticion; enviado: Enviad
  * actualiza su versión base.
  */
 export function aplicarRespuesta(c: Copia, enviado: Enviado, r: Respuesta): Tocado {
-  const tocado: Tocado = { progress: [], words: [], listas: [] };
+  const tocado: Tocado = { progress: [], words: [], listas: [], temas: [] };
 
   // Palabras primero: un avance puede referirse a una palabra recién llegada.
   for (const w of r.words) {
@@ -275,6 +293,31 @@ export function aplicarRespuesta(c: Copia, enviado: Enviado, r: Respuesta): Toca
   for (const id of Object.keys(enviado.listas)) {
     if (!c.listasSucias[id] || (r.lists ?? []).some((l) => l.id === id)) continue;
     if (c.listas[id] && igualLista(c.listas[id], enviado.listas[id])) delete c.listasSucias[id];
+  }
+
+  // Temas, con el mismo cuidado que el avance: lo practicado mientras viajaba la
+  // petición no se pisa con la respuesta.
+  const temasVistos = new Set<string>();
+  for (const t of r.temas ?? []) {
+    temasVistos.add(t.tema);
+    const mandado = enviado.temas[t.tema];
+    const local = c.temas[t.tema];
+    const cambioEnVuelo =
+      c.temasSucios[t.tema] && local && (!mandado || !igualTema(local, mandado));
+    c.temasVersiones[t.tema] = t.version;
+    tocado.temas.push(t.tema);
+    if (cambioEnVuelo) continue;
+    c.temas[t.tema] = { nivel: t.nivel, racha: t.racha };
+    delete c.temasSucios[t.tema];
+  }
+  // Lo que se mandó y el servidor no devolvió (tema desconocido): seguir
+  // marcándolo solo lo reenviaría para siempre.
+  for (const id of Object.keys(enviado.temas)) {
+    if (temasVistos.has(id) || !c.temasSucios[id]) continue;
+    if (c.temas[id] && igualTema(c.temas[id], enviado.temas[id])) {
+      delete c.temasSucios[id];
+      tocado.temas.push(id);
+    }
   }
 
   for (const [en, tipo] of Object.entries(enviado.pendientes)) {

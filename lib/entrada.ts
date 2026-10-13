@@ -60,6 +60,17 @@ export function progreso(v: unknown): ProgresoEntrada | null {
 }
 
 /** Una fecha ISO válida, o null. La versión que el cliente dice haber visto. */
+/** El nivel y la racha de un tema que sube el teléfono. El id del tema lo valida quien llama. */
+export function avanceTema(v: unknown): { tema: string; nivel: number; racha: number } | null {
+  if (!v || typeof v !== 'object') return null;
+  const t = v as Record<string, unknown>;
+  const tema = texto(t.tema, 40);
+  const nivel = entero(t.nivel, 1, 100);
+  const racha = entero(t.racha, 0, 1000);
+  if (!tema || nivel === null || racha === null) return null;
+  return { tema, nivel, racha };
+}
+
 export function instante(v: unknown): Date | null {
   if (typeof v !== 'string') return null;
   const d = new Date(v);

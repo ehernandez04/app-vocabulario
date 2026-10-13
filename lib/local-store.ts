@@ -17,10 +17,12 @@
 
 import { limpiarNombre, SIEMBRA, type Lista } from './listas';
 import { emptyProgress, today, type Progress, type Word } from './srs';
+import type { AvanceTema } from './fusion';
+import { PROGRESO_INICIAL } from './temas';
 import type { Copia, Pendiente, Tocado } from './sync-copia';
 
 const DB = 'vocabulario';
-const VERSION = 4;
+const VERSION = 5;
 
 export type Settings = {
   streak: number;
@@ -53,13 +55,15 @@ export const DEFAULTS: Settings = {
   lista: null,
 };
 
-type Almacen = 'progress' | 'settings' | 'words' | 'sync' | 'lists';
+type Almacen = 'progress' | 'settings' | 'words' | 'sync' | 'lists' | 'temas';
 
 let db: IDBDatabase | null = null;
 let progress: Record<string, Progress> = {};
 let settings: Settings = { ...DEFAULTS };
 let words: Record<string, Word> = {};
 let lists: Record<string, Lista> = {};
+/** Nivel y racha de cada tema (#70). */
+let temas: Record<string, AvanceTema> = {};
 /** Si ya se crearon las listas de partida. Aparte de `settings`, como `subidoA`. */
 let listasSembradas = false;
 /** A qué cuenta ya se subió este teléfono. Va aparte de `settings`: no es un ajuste, y no debe viajar en un export. */
@@ -73,6 +77,8 @@ let pendientes: Record<string, Pendiente> = {};
 let listasVersiones: Record<string, string> = {};
 let listasSucias: Record<string, true> = {};
 let listasBorradas: Record<string, true> = {};
+let temasVersiones: Record<string, string> = {};
+let temasSucios: Record<string, true> = {};
 let cursor: string | null = null;
 let alCambiar: (() => void) | null = null;
 
@@ -90,6 +96,7 @@ function open(): Promise<IDBDatabase> {
       if (!d.objectStoreNames.contains('words')) d.createObjectStore('words');
       if (!d.objectStoreNames.contains('sync')) d.createObjectStore('sync');
       if (!d.objectStoreNames.contains('lists')) d.createObjectStore('lists');
+      if (!d.objectStoreNames.contains('temas')) d.createObjectStore('temas');
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -146,7 +153,9 @@ export async function init() {
     settings = { ...DEFAULTS, ...(guardados as Partial<Settings>) };
     words = await readAll<Word>('words');
     lists = await readAll<Lista>('lists');
+    temas = await readAll<AvanceTema>('temas');
     cargarSync(await readAll<unknown>('sync'));
+    adoptarTemasViejos();
   } catch {
     db = null; // seguimos solo en memoria
   }
@@ -304,6 +313,8 @@ function cargarSync(guardado: Record<string, unknown>) {
   listasVersiones = {};
   listasSucias = {};
   listasBorradas = {};
+  temasVersiones = {};
+  temasSucios = {};
   cursor = typeof guardado.cursor === 'string' ? guardado.cursor : null;
   for (const [k, v] of Object.entries(guardado)) {
     if (k.startsWith('v:') && typeof v === 'string') versiones[k.slice(2)] = v;
@@ -312,6 +323,8 @@ function cargarSync(guardado: Record<string, unknown>) {
     else if (k.startsWith('lv:') && typeof v === 'string') listasVersiones[k.slice(3)] = v;
     else if (k.startsWith('ld:')) listasSucias[k.slice(3)] = true;
     else if (k.startsWith('lb:')) listasBorradas[k.slice(3)] = true;
+    else if (k.startsWith('tv:') && typeof v === 'string') temasVersiones[k.slice(3)] = v;
+    else if (k.startsWith('td:')) temasSucios[k.slice(3)] = true;
   }
 }
 
@@ -363,6 +376,9 @@ export function copiaSync(): Copia {
     listasVersiones,
     listasSucias,
     listasBorradas,
+    temas,
+    temasVersiones,
+    temasSucios,
   };
 }
 
@@ -375,6 +391,7 @@ export const contarPendientes = (): number =>
     ...Object.keys(pendientes),
     ...Object.keys(listasSucias).map((id) => `lista:${id}`),
     ...Object.keys(listasBorradas).map((id) => `lista:${id}`),
+    ...Object.keys(temasSucios).map((id) => `tema:${id}`),
   ]).size;
 
 /** Persiste lo que `aplicarRespuesta` cambió en la copia. */
@@ -396,6 +413,10 @@ export function guardarSync(c: Copia, tocado: Tocado) {
     if (lists[id]) put('lists', id, lists[id]);
     else del('lists', id);
   }
+  for (const id of tocado.temas) {
+    if (temas[id]) put('temas', id, temas[id]);
+    else del('temas', id);
+  }
   // Si la lista que se estaba repasando ya no existe (borrada desde otro
   // dispositivo, o fundida con otra), se vuelve a «todas».
   if (settings.lista && !lists[settings.lista]) set('lista', null);
@@ -414,8 +435,44 @@ export function guardarSync(c: Copia, tocado: Tocado) {
     for (const [id, v] of Object.entries(listasVersiones)) o.put(v, `lv:${id}`);
     for (const id of Object.keys(listasSucias)) o.put(true, `ld:${id}`);
     for (const id of Object.keys(listasBorradas)) o.put(true, `lb:${id}`);
+    for (const [id, v] of Object.entries(temasVersiones)) o.put(v, `tv:${id}`);
+    for (const id of Object.keys(temasSucios)) o.put(true, `td:${id}`);
   } catch {
     /* la copia en memoria está bien; en el peor caso se vuelve a mandar */
+  }
+}
+
+/* ── nivel de cada tema (#70) ─────────────────────────────────────────────── */
+
+export const progresoTema = (id: string): AvanceTema => temas[id] ?? PROGRESO_INICIAL;
+
+export function guardarProgresoTema(id: string, p: AvanceTema) {
+  temas[id] = { nivel: p.nivel, racha: p.racha };
+  put('temas', id, temas[id]);
+  temasSucios[id] = true;
+  put('sync', `td:${id}`, true);
+  alCambiar?.();
+}
+
+/**
+ * Antes de #70 el nivel vivía en localStorage (`tema:<id>`). Se adopta una vez y
+ * se marca para subir; sin versión, el servidor lo trata como choque y gana el
+ * nivel más alto, así que nunca se pierde lo ganado en otro aparato.
+ */
+function adoptarTemasViejos() {
+  try {
+    for (const k of Object.keys(localStorage)) {
+      if (!k.startsWith('tema:')) continue;
+      const id = k.slice(5);
+      const p = JSON.parse(localStorage.getItem(k) ?? 'null');
+      if (!temas[id] && p && Number.isInteger(p.nivel) && Number.isInteger(p.racha) && p.nivel >= 1 && p.racha >= 0) {
+        guardarProgresoTema(id, { nivel: p.nivel, racha: p.racha });
+      }
+      // Solo se borra si ya quedó en IndexedDB; sin ella (modo privado) se deja.
+      if (db) localStorage.removeItem(k);
+    }
+  } catch {
+    // sin localStorage: no hay nada que adoptar
   }
 }
 
