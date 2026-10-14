@@ -15,6 +15,12 @@ export const UMBRAL_BIEN = { precision: 65, completa: 85 };
 export const UMBRAL_CASI = { precision: 45, completa: 60 };
 /** Una palabra con menos de esto se marca como floja. */
 export const UMBRAL_PALABRA = 60;
+/**
+ * Un sonido con menos de esto se señala aunque su palabra salga bien: con voces
+ * nativas de prueba todos pasan de 80, y quien tiene acento fuerte saca 50-60 en
+ * un sonido dentro de una palabra con 97.
+ */
+export const UMBRAL_FONEMA = 60;
 
 export type Sonido = {
   /** La palabra donde está el sonido flojo. */
@@ -72,13 +78,16 @@ export function interpretar(r: RespuestaAzure): ResultadoVoz | null {
   let peor: { nota: number; sonido: Sonido } | undefined;
   for (const w of m.Words ?? []) {
     const texto = w.Word ?? '';
+    if (!texto) continue;
     const notaP = nota(w, 'AccuracyScore') ?? 100;
     const tipo = w.PronunciationAssessment?.ErrorType ?? w.ErrorType;
-    if (!texto || (notaP >= UMBRAL_PALABRA && tipo !== 'Omission')) continue;
-    flojas.push(texto);
+    // Una palabra de más (Insertion) no es de la frase: no se marca ni se mira.
+    if (tipo === 'Insertion') continue;
+    if (notaP < UMBRAL_PALABRA || tipo === 'Omission') flojas.push(texto);
+    // Los sonidos se miran en todas las palabras: un sonido flojo puede estar en una palabra con buena nota.
     for (const f of w.Phonemes ?? []) {
       const nf = nota(f, 'AccuracyScore') ?? 100;
-      if (!f.Phoneme || nf >= UMBRAL_PALABRA || (peor && nf >= peor.nota)) continue;
+      if (!f.Phoneme || nf >= UMBRAL_FONEMA || (peor && nf >= peor.nota)) continue;
       const otro = f.NBestPhonemes?.find((n) => n.Phoneme && n.Phoneme !== f.Phoneme);
       peor = { nota: nf, sonido: { palabra: texto, esperado: f.Phoneme, ...(otro?.Phoneme ? { sonaComo: otro.Phoneme } : {}) } };
     }
