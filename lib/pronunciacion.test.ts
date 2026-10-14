@@ -60,6 +60,19 @@ describe('interpretar', () => {
     expect(interpretar({ RecognitionStatus: 'Success', NBest: [] })).toBeNull();
   });
 
+  it('señala un sonido flojo aunque su palabra salga bien (caso real de Azure)', () => {
+    const r = interpretar(
+      respuesta({
+        Words: [
+          { Word: 'will', AccuracyScore: 97, Phonemes: [fonema('w', 56, 'd'), fonema('ɪ', 100)] },
+          { Word: 'we', AccuracyScore: 97, ErrorType: 'Insertion', Phonemes: [fonema('w', 10, 'ɹ')] },
+        ],
+      })
+    )!;
+    expect(r.flojas).toEqual([]);
+    expect(r.sonido).toEqual({ palabra: 'will', esperado: 'w', sonaComo: 'd' });
+  });
+
   it('sin palabras flojas no hay sonido que señalar', () => {
     const r = interpretar(respuesta({ Words: [{ Word: 'dad', AccuracyScore: 95 }] }))!;
     expect(r.flojas).toEqual([]);
