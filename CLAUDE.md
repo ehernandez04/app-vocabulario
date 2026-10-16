@@ -19,6 +19,15 @@ Repo: https://github.com/ehernandez04/app-vocabulario
 
 ## Cómo se trabaja
 
+- **Flujo por issue (tras un /clear, «sigue con el siguiente issue» significa esto):**
+  1. Haz lo que dice `/retomar` (rama, PRs abiertos, siguiente issue por etapa) y propón el issue.
+  2. Rama `<etapa>/<descripcion>-<n°>`, implementa (con mockup aprobado si toca interfaz).
+  3. **Al terminar, sin que te lo pidan:** delega en el subagente `verificador` (lint, test, build),
+     opcionalmente en `revisor` si el cambio es grande, y luego en `git-pr` para commit y PR con
+     `Closes #N`. No pegues logs completos en el contexto; los subagentes devuelven resúmenes.
+  4. Pide a Erick el `! gh pr merge <n> --rebase`. El issue se cierra solo al mergear.
+  5. Después del merge, actualiza `docs/estado.md` si fue relevante.
+
 - **Mockup primero en todo cambio de interfaz, por chico que parezca.** Antes de tocar
   código hay que mostrar cómo va a quedar —publicado como artifact, para que Erick lo
   pueda abrir en el teléfono— y **esperar su aprobación explícita**. Si pide un ajuste, se

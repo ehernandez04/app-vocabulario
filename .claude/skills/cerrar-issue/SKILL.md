@@ -1,7 +1,6 @@
 ---
 name: cerrar-issue
 description: Flujo para cerrar un issue ya implementado: verificar, commitear y abrir PR delegando en subagentes baratos.
-disable-model-invocation: true
 argument-hint: <n° de issue>
 ---
 

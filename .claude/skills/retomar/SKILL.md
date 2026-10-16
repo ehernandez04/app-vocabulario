@@ -1,7 +1,6 @@
 ---
 name: retomar
 description: Retoma el trabajo tras /clear o /compact. Muestra rama, PRs abiertos y el siguiente issue por etapa, en pocas líneas.
-disable-model-invocation: true
 ---
 
 Ejecuta en paralelo y resume en menos de 12 líneas (sin releer CLAUDE.md completo):
