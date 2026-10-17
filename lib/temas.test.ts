@@ -5,11 +5,11 @@ import {
   calificarDictado,
   calificarEscrito,
   claveComparacion,
-  conDictados,
   explicar,
   fraseCompleta,
   normalizar,
   opcionesDe,
+  paraParte,
   registrar,
   type EjercicioEscrito,
   type Practica,
@@ -162,15 +162,34 @@ describe('dictado', () => {
     expect(calificarDictado(frase, 'tomorrow help us will she').estado).toBe('fallo');
   });
 
-  it('reparte las traducciones entre traducir, dictado y repetir, y deja el resto como está', () => {
-    const tr = (id: string): Practica => ({ ...frase, id, tipo: 'traducir' });
-    const lista: Practica[] = [tr('a'), { ...frase, tipo: 'escribir' }, tr('b'), tr('c'), tr('d'), tr('e')];
-    expect(conDictados(lista).map((e) => e.tipo)).toEqual(['traducir', 'escribir', 'escuchar', 'repetir', 'traducir', 'escuchar']);
+});
+
+describe('paraParte (#77)', () => {
+  const base: EjercicioEscrito = {
+    es: 'Ella nos ayudará mañana.',
+    aceptadas: ['She will help us tomorrow.'],
+    errores: {},
+    explicacion: 'x',
+  };
+  const tr = (id: string): Practica => ({ ...base, id, tipo: 'traducir' });
+  const esc: Practica = { ...base, tipo: 'escribir' };
+
+  it('Ideas usa la lista tal cual, de cualquier tipo', () => {
+    const lista = [tr('a'), esc];
+    expect(paraParte(lista, 'ideas')).toBe(lista);
   });
 
-  it('sin conexión no hay repetir: ese turno se queda en traducir', () => {
-    const tr = (id: string): Practica => ({ ...frase, id, tipo: 'traducir' });
-    expect(conDictados([tr('a'), tr('b'), tr('c')], false).map((e) => e.tipo)).toEqual(['traducir', 'escuchar', 'traducir']);
+  it('Listening toma solo los de traducir y los presenta como dictado', () => {
+    expect(paraParte([tr('a'), esc, tr('b')], 'listening').map((e) => e.tipo)).toEqual(['escuchar', 'escuchar']);
+  });
+
+  it('Speaking toma solo los de traducir y los presenta como repetir', () => {
+    expect(paraParte([tr('a'), esc, tr('b')], 'speaking').map((e) => e.tipo)).toEqual(['repetir', 'repetir']);
+  });
+
+  it('Speaking sin conexión se queda sin ejercicios, pero Listening no necesita voz', () => {
+    expect(paraParte([tr('a'), tr('b')], 'speaking', false)).toEqual([]);
+    expect(paraParte([tr('a'), tr('b')], 'listening', false).map((e) => e.tipo)).toEqual(['escuchar', 'escuchar']);
   });
 });
 

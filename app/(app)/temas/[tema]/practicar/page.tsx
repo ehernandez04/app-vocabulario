@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { notFound, useParams, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { notFound, useParams, useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { IconBombilla, IconCruz, IconPapelera, IconParar, IconPlay, IconTick, IconTortuga } from '@/components/icons';
 import { MasEjercicios } from '@/components/MasEjercicios';
 import { Repetir } from '@/components/Repetir';
@@ -13,14 +13,15 @@ import { shuffle } from '@/lib/srs';
 import {
   calificarDictado,
   calificarEscrito,
-  conDictados,
   explicar,
   fraseCompleta,
   fraseDictado,
   opcionesDe,
+  paraParte,
   registrar,
   temaPorId,
   ACIERTOS_PARA_SUBIR,
+  type Parte,
   type Practica,
   type Progreso,
   type Veredicto,
@@ -63,11 +64,24 @@ const CONSIGNA = {
   repetir: 'Escucha y repite',
 } as const;
 
-/** Una tanda con los ejercicios del nivel en que vas, en orden mezclado. */
+/** `useSearchParams` exige un límite de Suspense para no romper el build estático. */
 export default function Practicar() {
+  return (
+    <Suspense fallback={<section className="view" aria-busy="true" />}>
+      <PracticaDeLaParte />
+    </Suspense>
+  );
+}
+
+/** Una tanda con los ejercicios del nivel y la parte (#77) en que vas, en orden mezclado. */
+function PracticaDeLaParte() {
   const { listo, avisar, ajuste } = useEstado();
   const router = useRouter();
   const { tema: id } = useParams<{ tema: string }>();
+  const parteParam = useSearchParams().get('parte');
+  // Solo Ideas cuenta para la racha y el nivel (#77): Speaking y Listening se
+  // practican aparte y nunca bloquean ni adelantan nada.
+  const parte: Parte = parteParam === 'speaking' || parteParam === 'listening' ? parteParam : 'ideas';
   const tema = temaPorId(id);
   if (!tema) notFound();
 
@@ -133,16 +147,17 @@ export default function Practicar() {
         // Los guardados llevan su tipo; los datos ya vienen saneados de la cuenta.
         ...extra.filter((g) => g.nivel === n).map((g) => ({ ...g.datos, tipo: g.tipo, id: g.id }) as Practica),
       ];
-      // Se puede subir solo a un nivel que tenga ejercicios.
+      // Se puede subir solo a un nivel que tenga ejercicios, sin importar la parte.
       const disponibles = t.niveles.reduce((hasta, _, i) => (delNivel(i + 1).length ? i + 1 : hasta), 0);
-      const ejercicios = conDictados(shuffle(delNivel(progreso.nivel)).slice(0, POR_TANDA), navigator.onLine);
+      const universo = paraParte(delNivel(progreso.nivel), parte, navigator.onLine);
+      const ejercicios = shuffle(universo).slice(0, POR_TANDA);
       setSesion({ tema: idTema, nivel: progreso.nivel, progreso, ejercicios, disponibles });
       setOpciones(ejercicios[0]?.tipo === 'elegir' ? opcionesDe(ejercicios[0]) : []);
     })();
     return () => {
       vivo = false;
     };
-  }, [listo, idTema, version]);
+  }, [listo, idTema, parte, version]);
 
   if (!listo || !sesion) return <section className="view" aria-busy="true" />;
 
@@ -152,19 +167,27 @@ export default function Practicar() {
       <section className="view">
         <div className="block">
           <p className="eyebrow">Sin ejercicios</p>
-          <h1 className="h1">Aún no hay ejercicios en este nivel</h1>
-          <p className="muted">Se generan con la IA y necesitan conexión. Es una vez; después practicas sin señal.</p>
+          <h1 className="h1">
+            {parte === 'speaking' && !enLinea ? 'Escucha y repite necesita conexión' : 'Aún no hay ejercicios en este nivel'}
+          </h1>
+          <p className="muted">
+            {parte === 'speaking' && !enLinea
+              ? 'La evaluación de tu pronunciación se hace en el servidor. Con señal, vuelve a entrar.'
+              : 'Se generan con la IA y necesitan conexión. Es una vez; después practicas sin señal.'}
+          </p>
         </div>
         <div className="grow" />
-        <MasEjercicios
-          tema={tema.id}
-          nivel={progreso.nivel}
-          principal
-          alTerminar={() => {
-            setSesion(null);
-            setVersion((v) => v + 1);
-          }}
-        />
+        {!(parte === 'speaking' && !enLinea) && (
+          <MasEjercicios
+            tema={tema.id}
+            nivel={progreso.nivel}
+            principal
+            alTerminar={() => {
+              setSesion(null);
+              setVersion((v) => v + 1);
+            }}
+          />
+        )}
         <Link href={`/temas/${tema.id}`} className="btn wide">
           Volver al tema
         </Link>
@@ -183,9 +206,11 @@ export default function Practicar() {
           <h1 className="h1">
             {aciertos} de {ejercicios.length}
           </h1>
-          <p className="muted">
-            Aciertos seguidos: {progreso.racha} de {ACIERTOS_PARA_SUBIR} para subir.
-          </p>
+          {parte === 'ideas' && (
+            <p className="muted">
+              Aciertos seguidos: {progreso.racha} de {ACIERTOS_PARA_SUBIR} para subir.
+            </p>
+          )}
         </div>
         <div className="grow" />
         <Link href={`/temas/${tema.id}`} className="btn solid wide">
@@ -246,9 +271,14 @@ export default function Practicar() {
       if (e.tipo !== 'escuchar' && ajuste('revisionIA') === 'auto' && enLinea) void revisarConIA();
       return;
     }
-    // Con la frase a la vista no se puntúa: no suma ni resta, y vuelve a salir al final de la tanda.
-    if (e.tipo === 'escuchar' && ayuda) setSesion({ ...sesion, ejercicios: [...ejercicios, e] });
-    else contar(v.estado === 'acierto');
+    if (e.tipo === 'escuchar') {
+      // Listening no cuenta para la racha ni el nivel (#77): solo Ideas sube de nivel.
+      // Con la frase a la vista tampoco suma ni resta, y vuelve a salir al final de la tanda.
+      if (ayuda) setSesion({ ...sesion, ejercicios: [...ejercicios, e] });
+      else if (v.estado === 'acierto') setAciertos((n) => n + 1);
+      return;
+    }
+    contar(v.estado === 'acierto');
   };
 
   // Solo si quien practica lo pide: cuesta un punto del tope diario y exige conexión.

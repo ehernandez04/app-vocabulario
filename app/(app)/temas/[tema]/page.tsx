@@ -7,7 +7,15 @@ import { progresoTema } from '@/lib/local-store';
 import { ACIERTOS_PARA_SUBIR, temaPorId } from '@/lib/temas';
 import { useEstado } from '../../../estado';
 
-/** La vista de un tema: dónde vas, la escalera de niveles y el botón para practicar. */
+/** Las partes de un nivel (#77). Conversar con la IA queda para el #78. */
+const PARTES = [
+  { nombre: 'Vocabulary', detalle: 'Las palabras del tema', color: 'var(--note-4)', icono: 'Aa', ruta: 'vocabulario' },
+  { nombre: 'Ideas', detalle: 'Armar frases', color: 'var(--acento)', icono: '☰', ruta: 'practicar' },
+  { nombre: 'Speaking', detalle: 'Dilo tú', color: 'var(--note-2)', icono: '🎤', ruta: 'practicar?parte=speaking' },
+  { nombre: 'Listening', detalle: 'Escribe lo que oyes', color: 'var(--note-3)', icono: '🎧', ruta: 'practicar?parte=listening' },
+];
+
+/** La vista de un tema: dónde vas, la escalera de niveles y las partes del nivel (cuatro activas y Conversar como placeholder). */
 export default function VistaTema() {
   const { listo } = useEstado();
   const { tema: id } = useParams<{ tema: string }>();
@@ -47,9 +55,25 @@ export default function VistaTema() {
       </div>
 
       <div className="block">
-        <Link href={`/temas/${tema.id}/practicar`} className="btn solid wide">
-          Practicar este nivel
-        </Link>
+        <p className="eyebrow">Este nivel, por partes</p>
+        <div className="partes">
+          {PARTES.map((p) => (
+            <Link key={p.nombre} href={`/temas/${tema.id}/${p.ruta}`} className="parte on">
+              <i style={{ background: p.color }}>{p.icono}</i>
+              <span>
+                {p.nombre}
+                <small>{p.detalle}</small>
+              </span>
+            </Link>
+          ))}
+          <span className="parte off ancha" aria-disabled="true">
+            <i style={{ background: 'var(--acento)' }}>💬</i>
+            <span>
+              Conversar con la IA
+              <small>Practica hablando · próximamente</small>
+            </span>
+          </span>
+        </div>
         <MasEjercicios tema={tema.id} nivel={nivel} />
       </div>
 

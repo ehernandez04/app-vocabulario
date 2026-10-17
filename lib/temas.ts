@@ -61,12 +61,21 @@ export type Practica =
   /** Escucha y repite (#68): se oye `aceptadas[0]`, se dice en voz alta y se evalúa la pronunciación. */
   | ({ tipo: 'repetir' } & EjercicioEscrito);
 
+/**
+ * Una palabra de la parte Vocabulary (#77). Es propia del tema y nivel, no el
+ * mazo global de Palabras: no lleva caja ni racha, solo se escucha y se lee
+ * antes de practicar.
+ */
+export type PalabraVocab = { en: string; ipa: string; es: string };
+
 export type Nivel = {
   nombre: string;
   ejemplo: string;
   /** Qué practica el nivel, en inglés, para el prompt de generación (#64). */
   foco: string;
   ejercicios: Ejercicio[];
+  /** Escrito a mano, igual que `ejercicios` (#63): sin generación todavía. */
+  palabras: PalabraVocab[];
 };
 
 export type Tema = {
@@ -146,6 +155,16 @@ const WILL: Tema = {
           explicacion: 'Las promesas se hacen con «will».',
         },
       ],
+      palabras: [
+        { en: 'will', ipa: '/wɪl/', es: '(verbo) ir a, (promesa)' },
+        { en: 'promise', ipa: '/ˈprɒmɪs/', es: 'prometer' },
+        { en: 'tomorrow', ipa: '/təˈmɒroʊ/', es: 'mañana' },
+        { en: 'soon', ipa: '/suːn/', es: 'pronto' },
+        { en: 'decide', ipa: '/dɪˈsaɪd/', es: 'decidir' },
+        { en: 'later', ipa: '/ˈleɪtər/', es: 'más tarde' },
+        { en: 'arrive', ipa: '/əˈraɪv/', es: 'llegar' },
+        { en: 'sunny', ipa: '/ˈsʌni/', es: 'soleado' },
+      ],
     },
     {
       nombre: 'Negativo e interrogativo',
@@ -220,6 +239,14 @@ const WILL: Tema = {
           explicacion: 'Con palabra de pregunta, «will» va justo después: «What will you do?».',
         },
       ],
+      palabras: [
+        { en: "won't", ipa: '/woʊnt/', es: 'no (futuro), forma corta de "will not"' },
+        { en: 'wait', ipa: '/weɪt/', es: 'esperar' },
+        { en: 'forget', ipa: '/fərˈɡɛt/', es: 'olvidar' },
+        { en: 'party', ipa: '/ˈpɑːrti/', es: 'fiesta' },
+        { en: 'boss', ipa: '/bɒs/', es: 'jefe, jefa' },
+        { en: 'maybe', ipa: '/ˈmeɪbiː/', es: 'quizás' },
+      ],
     },
     // Sin ejercicios a mano: los de estos niveles los genera la IA (#64).
     {
@@ -227,18 +254,38 @@ const WILL: Tema = {
       ejemplo: 'Decisión al momento o plan',
       foco: 'Will versus going to: will for instant decisions, promises and offers; going to for plans already made and predictions based on evidence.',
       ejercicios: [],
+      palabras: [
+        { en: 'plan', ipa: '/plæn/', es: 'plan, planear' },
+        { en: 'already', ipa: '/ɔːlˈrɛdi/', es: 'ya' },
+        { en: 'instead', ipa: '/ɪnˈstɛd/', es: 'en vez de eso' },
+        { en: 'offer', ipa: '/ˈɒfər/', es: 'ofrecer' },
+        { en: 'prediction', ipa: '/prɪˈdɪkʃən/', es: 'predicción' },
+      ],
     },
     {
       nombre: 'Primer condicional',
       ejemplo: 'If it rains, I will stay.',
       foco: 'First conditional: if + present simple, will + base verb. Typical mistakes: "if it will rain", "if it rains, I stay" (when a future result is meant).',
       ejercicios: [],
+      palabras: [
+        { en: 'if', ipa: '/ɪf/', es: 'si' },
+        { en: 'rain', ipa: '/reɪn/', es: 'llover, lluvia' },
+        { en: 'stay', ipa: '/steɪ/', es: 'quedarse' },
+        { en: 'miss', ipa: '/mɪs/', es: 'perder (el bus, la ocasión)' },
+        { en: 'hurry', ipa: '/ˈhɜːri/', es: 'apurarse' },
+      ],
     },
     {
       nombre: 'Contracciones y uso natural',
       ejemplo: 'I’ll, won’t, I’ll be there',
       foco: 'Natural use: I\u2019ll, we\u2019ll, won\u2019t, I\u2019ll probably, I think I\u2019ll, I\u2019ll be there. Typical mistakes: probably in the wrong place, overusing "will not" in speech.',
       ejercicios: [],
+      palabras: [
+        { en: "I'll", ipa: '/a\u026al/', es: 'forma corta de "I will"' },
+        { en: 'probably', ipa: '/\u02c8pr\u0252b\u0259bli/', es: 'probablemente' },
+        { en: 'be there', ipa: '/bi \u00f0\u025br/', es: 'estar ah\u00ed' },
+        { en: 'think', ipa: '/\u03b8\u026a\u014bk/', es: 'pensar, creer' },
+      ],
     },
   ],
 };
@@ -370,21 +417,22 @@ export function calificarDictado(e: EjercicioEscrito, escrito: string): Veredict
   };
 }
 
+/** Las cuatro partes de un nivel que ya se pueden practicar (#77); Conversar queda para el #78. */
+export type Parte = 'ideas' | 'speaking' | 'listening';
+
 /**
- * Las traducciones de la tanda se reparten entre traducir, dictado (#67) y repetir
- * en voz alta (#68), de tres en tres. Es solo la presentación: el ejercicio es el
- * mismo, así que no se genera ni se guarda nada. Repetir exige conexión (la
- * evaluación es en el servidor): sin ella, ese turno se queda en traducir.
+ * Qué entra en cada parte (#77). Ideas usa el ejercicio tal como es: elegir,
+ * escribir o traducir. Speaking y Listening toman solo los de traducir y los
+ * presentan como repetir en voz alta (#68) o como dictado (#67): es solo la
+ * presentación, el ejercicio es el mismo, así que no se genera ni se guarda
+ * nada aparte. Repetir exige conexión (la evaluación es en el servidor): sin
+ * ella, Speaking se queda sin ejercicios para esa tanda.
  */
-export function conDictados(lista: Practica[], conVoz = true): Practica[] {
-  let n = 0;
-  return lista.map((e) => {
-    if (e.tipo !== 'traducir') return e;
-    const turno = n++ % 3;
-    if (turno === 1) return { ...e, tipo: 'escuchar' as const };
-    if (turno === 2 && conVoz) return { ...e, tipo: 'repetir' as const };
-    return e;
-  });
+export function paraParte(lista: Practica[], parte: Parte, conVoz = true): Practica[] {
+  if (parte === 'ideas') return lista;
+  const traducibles = lista.filter((e) => e.tipo === 'traducir');
+  if (parte === 'speaking') return conVoz ? traducibles.map((e) => ({ ...e, tipo: 'repetir' as const })) : [];
+  return traducibles.map((e) => ({ ...e, tipo: 'escuchar' as const }));
 }
 
 export type Progreso = { nivel: number; racha: number };
