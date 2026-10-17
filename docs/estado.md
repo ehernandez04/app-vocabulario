@@ -23,7 +23,13 @@ vas con un botón «Continuar»; el mazo, las listas y los tres modos de repaso 
 Camino) viven en `/palabras`. Reglas ya decididas: los **temas se abren en orden**; **no se salta un
 nivel** salvo con un botón al final de ciertas lecciones (#79); para subir de nivel **solo cuenta
 Ideas** (10 aciertos seguidos, un fallo reinicia la racha) y Vocabulary, Speaking y Listening no
-bloquean (#77). Los ejercicios los genera `claude-haiku-5-5` por tandas de 40 por nivel, en dos
+bloquean (#77). Las cuatro partes son pantallas propias (`/temas/[tema]/vocabulario` y
+`/temas/[tema]/practicar` con `?parte=speaking|listening`; Ideas es el valor por defecto),
+repartidas por `paraParte` en `lib/temas.ts`: toma solo los ejercicios de traducir y los
+reetiqueta como dictado o repetición según la parte. Vocabulary muestra las palabras propias
+del tema y nivel —no el mazo global—, escritas a mano en el campo `palabras` de cada `Nivel`
+(igual que los ejercicios de #63): sin caja ni racha, solo para repasar antes de practicar.
+Conversar con la IA sigue sin construir (#78). Los ejercicios los genera `claude-haiku-5-5` por tandas de 40 por nivel, en dos
 peticiones paralelas de 20 (una de 40 tardaba ~53 s, al borde del límite), y se guardan en
 `tema_ejercicios` (con marca de borrado); la práctica los copia a IndexedDB (`lib/ejercicios-local.ts`)
 y califica comparando con las respuestas y errores típicos del propio ejercicio, así que funciona
