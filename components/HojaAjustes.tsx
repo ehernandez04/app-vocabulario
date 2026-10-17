@@ -1,6 +1,7 @@
 'use client';
 
 import { salir } from '@/app/acciones';
+import { useEffect, useState } from 'react';
 import { useEstado } from '@/app/estado';
 import * as audio from '@/lib/audio';
 import * as store from '@/lib/local-store';
@@ -18,6 +19,24 @@ import { FilaSync } from './IndicadorSync';
  * veces al día, y esto se toca una vez al mes. Reusar la hoja además evita un
  * segundo tipo de panel haciendo el mismo trabajo.
  */
+/** Cuántos puntos de IA quedan hoy; null mientras no se sabe (sin conexión o cargando). */
+function usePuntosIA(): { restantes: number; limite: number } | null {
+  const [p, setP] = useState<{ restantes: number; limite: number } | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    fetch('/api/uso')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (vivo && d && typeof d.restantes === 'number' && typeof d.limite === 'number') setP(d);
+      })
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, []);
+  return p;
+}
+
 export function HojaAjustes({
   alCerrar,
   alAbrirImportar,
@@ -26,6 +45,7 @@ export function HojaAjustes({
   alAbrirImportar: () => void;
 }) {
   const { usuario, deck, ajuste, guardarAjuste, recargarMazo, rearmarCola, avisar } = useEstado();
+  const puntos = usePuntosIA();
   const mias = store.userWords();
   const grabadas = audio.recordedVoices();
 
@@ -61,6 +81,34 @@ export function HojaAjustes({
         <FilaSync />
 
         <FilaRecordatorio />
+
+        <p className="eyebrow">Revisión con IA</p>
+        <div className="opciones-ia" role="radiogroup" aria-label="Revisión con IA">
+          {(
+            [
+              ['preguntar', 'Preguntarme', 'Si tu traducción no coincide, te ofrece revisarla y tú decides.'],
+              ['auto', 'Automática', 'La revisa sola y te avisa que usó la IA. Gasta 1 punto por frase dudosa.'],
+            ] as const
+          ).map(([valor, nombre, detalle]) => (
+            <button
+              key={valor}
+              role="radio"
+              aria-checked={ajuste('revisionIA') === valor}
+              className={`opcion-ia${ajuste('revisionIA') === valor ? ' on' : ''}`}
+              onClick={() => guardarAjuste('revisionIA', valor)}
+            >
+              <span className="rd" aria-hidden="true" />
+              <span>
+                <b>{nombre}</b>
+                <small>{detalle}</small>
+              </span>
+            </button>
+          ))}
+        </div>
+        <p className="muted sm">
+          {puntos ? `Puntos de IA de hoy: ${puntos.limite - puntos.restantes} de ${puntos.limite}. ` : ''}
+          Sin conexión o sin puntos, la frase queda «en duda» y no se gasta nada.
+        </p>
 
         <p className="eyebrow">Voz</p>
         <div className="voicebox">

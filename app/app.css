@@ -755,3 +755,19 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .lb-ayuda{font:800 .72rem var(--ui);color:#b79cff}
 .en-ayuda{font:800 1.3rem/1.2 var(--display);letter-spacing:-.02em}
 .nota-ayuda{font:500 .78rem var(--ui);color:var(--ink-soft)}
+
+/* revisión con IA a elección (#114) */
+.chip-ia{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 10px;border-radius:99px;
+  background:rgba(183,156,255,.16);border:1px solid rgba(183,156,255,.45);color:#b79cff;font:800 .75rem var(--ui)}
+.chip-ia::before{content:"✦"}
+.ia-guardada{color:#b79cff}
+.opcion-ia{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;padding:14px;border-radius:18px;
+  background:var(--card);border:1.5px solid var(--rule);color:var(--ink);cursor:pointer;font:inherit}
+.opcion-ia.on{border-color:var(--acento);background:rgba(182,255,92,.1)}
+.opcion-ia .rd{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--ink-soft);margin-top:2px;position:relative}
+.opcion-ia.on .rd{border-color:var(--acento)}
+.opcion-ia.on .rd::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--acento)}
+.opcion-ia b{display:block;font-weight:800}
+.opcion-ia small{display:block;color:var(--ink-soft);font-size:.78rem;margin-top:2px}
+.opciones-ia{display:flex;flex-direction:column;gap:10px}
+
