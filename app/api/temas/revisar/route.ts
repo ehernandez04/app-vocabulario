@@ -8,13 +8,16 @@
  */
 
 import { auth } from '@/auth';
-import { SISTEMA_REVISAR } from '@/lib/ejercicios-ia';
+import { conAceptada, SISTEMA_REVISAR } from '@/lib/ejercicios-ia';
+import { prisma } from '@/lib/prisma';
 import { temaPorId } from '@/lib/temas';
 import { COSTE_REVISION, devolver, hoy, LIMITE_DIARIO, reservar, restantes } from '@/lib/uso-ia';
 
 export const maxDuration = 30;
 
 const MODELO = 'claude-haiku-5-5';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const mala = (mensaje: string, status = 400) => Response.json({ error: mensaje }, { status });
 
@@ -43,6 +46,8 @@ export async function POST(req: Request) {
   const antes = typeof c.antes === 'string' ? c.antes.slice(0, 120) : '';
   const despues = typeof c.despues === 'string' ? c.despues.slice(0, 120) : '';
   if (!tema || !nivel || !es || !respuesta) return mala('Faltan datos');
+  // Si es un ejercicio generado, lo que la IA dé por bueno se guarda como aceptado.
+  const idEjercicio = typeof c.id === 'string' && UUID.test(c.id) ? c.id : null;
 
   const dia = hoy();
   if (!(await reservar(userId, dia, COSTE_REVISION))) {
@@ -81,6 +86,7 @@ export async function POST(req: Request) {
     if (typeof v.acierto !== 'boolean' || typeof v.explicacion !== 'string' || !v.explicacion.trim()) {
       throw new Error('Respuesta sin formato');
     }
+    if (v.acierto && idEjercicio) await aprender(userId, idEjercicio, respuesta);
     return Response.json({
       acierto: v.acierto,
       mensaje: v.explicacion.trim().slice(0, 240),
@@ -90,5 +96,18 @@ export async function POST(req: Request) {
     await devolver(userId, dia, COSTE_REVISION); // una revisión que falla por culpa nuestra no cuenta
     console.error('temas/revisar', e instanceof Error ? e.message : e);
     return mala('No se pudo revisar tu respuesta. Inténtalo de nuevo.', 502);
+  }
+}
+
+/** Es un extra: si falla, la revisión ya salió bien y no se estropea por esto. */
+async function aprender(userId: string, id: string, respuesta: string) {
+  try {
+    const fila = await prisma.temaEjercicio.findFirst({ where: { id, userId, deletedAt: null } });
+    const datos = fila && typeof fila.datos === 'object' && !Array.isArray(fila.datos) ? fila.datos : null;
+    const nuevos = datos && conAceptada(datos as { aceptadas?: unknown; errores?: unknown }, respuesta);
+    // Al cambiar `updatedAt`, el teléfono lo baja en la próxima descarga.
+    if (nuevos) await prisma.temaEjercicio.update({ where: { id }, data: { datos: nuevos as object } });
+  } catch (e) {
+    console.error('temas/revisar aprender', e instanceof Error ? e.message : e);
   }
 }

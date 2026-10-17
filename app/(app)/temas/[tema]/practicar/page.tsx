@@ -228,6 +228,7 @@ export default function Practicar() {
           nivel: sesion.nivel,
           es: e.es,
           respuesta: texto,
+          ...(e.id ? { id: e.id } : {}),
           ...(e.tipo === 'escribir' ? { antes: e.antes, despues: e.despues } : {}),
         }),
       });

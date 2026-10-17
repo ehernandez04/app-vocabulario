@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { leerEjercicios, sanearEjercicios, sanearEscritos } from './ejercicios-ia';
+import { conAceptada, leerEjercicios, sanearEjercicios, sanearEscritos } from './ejercicios-ia';
 
 const bueno = {
   es: 'No lo olvidaré.',
@@ -95,5 +95,21 @@ describe('sanearEscritos', () => {
   it('quita repetidas, también contra las que ya tenía', () => {
     expect(sanearEscritos({ ejercicios: [traducir, traducir] }, 'traducir')).toHaveLength(1);
     expect(sanearEscritos({ ejercicios: [traducir] }, 'traducir', ['si llueve, me quedaré en casa.'])).toEqual([]);
+  });
+});
+
+describe('conAceptada', () => {
+  const datos = { aceptadas: ['cook'], errores: { 'cook the dinner': 'x' } };
+
+  it('suma la respuesta que la IA aceptó y la saca de los errores', () => {
+    expect(conAceptada(datos, 'cook the dinner')).toEqual({ aceptadas: ['cook', 'cook the dinner'], errores: {} });
+  });
+
+  it('no repite lo que ya vale, aunque cambie la puntuación o las mayúsculas', () => {
+    expect(conAceptada(datos, 'Cook.')).toBeNull();
+  });
+
+  it('no toca un ejercicio de elegir', () => {
+    expect(conAceptada({ errores: {} }, 'will')).toBeNull();
   });
 });

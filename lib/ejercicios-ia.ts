@@ -168,7 +168,7 @@ Format:
 Rules:
 ${REGLAS_COMUNES}
 - "antes" and "despues": the English text before and after the gap. Never write underscores. At least one of them is not empty.
-- "aceptadas": EVERY way of filling the gap that gives a correct sentence with the same meaning as "es" (1-3 items, e.g. both "won’t" and "will not" when both fit). Each is the words for the gap only, 1-3 words. Anything not listed will be sent to a person to check, so be complete.
+- "aceptadas": EVERY way of filling the gap that gives a correct sentence with the same meaning as "es" (2-5 items). Each is the words for the gap only, 1-3 words. Include synonyms (cook / make / prepare), and the same answer with an optional article or small word when the sentence stays correct (cook / cook the). Anything not listed will be sent to a person to check, so be complete. Contractions (’ll / will, won’t / will not) are matched automatically: do not list both forms.
 - "errores": 2 to 4 wrong answers a Spanish speaker really types, as keys, each with a short explanation IN SPANISH naming the rule. Every one must really be wrong in that gap; never list an accepted answer, or any correct form, here. Contractions (’ll / will, won’t / will not) are matched automatically: do not list both forms.
 - The gap must have a clear answer: add a context cue to the sentence if two different words could fit.`;
 
@@ -190,6 +190,26 @@ export const SISTEMA_POR_TIPO: Record<'escribir' | 'traducir', string> = {
   escribir: SISTEMA_ESCRIBIR,
   traducir: SISTEMA_TRADUCIR,
 };
+
+/** Cuántas respuestas aceptadas llega a tener un ejercicio al aprender de la IA. */
+const MAX_ACEPTADAS = 12;
+
+/**
+ * Lo que la IA dio por bueno pasa a ser una respuesta aceptada del ejercicio, para
+ * no gastar otro punto en la misma frase. Devuelve los datos nuevos, o `null` si
+ * no hay nada que cambiar (ya estaba, o no es un ejercicio de escribir).
+ */
+export function conAceptada<T extends { aceptadas?: unknown; errores?: unknown }>(datos: T, respuesta: string): T | null {
+  if (!Array.isArray(datos.aceptadas) || datos.aceptadas.length >= MAX_ACEPTADAS) return null;
+  const nueva = limpio(respuesta, 140);
+  if (!nueva || /_{2,}/.test(nueva)) return null;
+  const aceptadas = datos.aceptadas as string[];
+  if (aceptadas.some((a) => normalizar(a) === normalizar(nueva))) return null;
+  const errores = Object.fromEntries(
+    Object.entries((datos.errores ?? {}) as Record<string, string>).filter(([k]) => normalizar(k) !== normalizar(nueva))
+  );
+  return { ...datos, aceptadas: [...aceptadas, nueva], errores };
+}
 
 /** El prompt para que la IA revise una respuesta que el ejercicio no reconoció. */
 export const SISTEMA_REVISAR = `You check one answer from a Spanish speaker learning English. Reply with ONLY a JSON object, no prose, no code fences: {"acierto":true|false,"explicacion":"..."}.
