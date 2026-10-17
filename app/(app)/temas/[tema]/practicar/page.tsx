@@ -279,7 +279,7 @@ export default function Practicar() {
     }
     setSonando(velocidad);
     // Un stop() también resuelve la promesa anterior: solo apaga el estado quien sigue siendo el último.
-    void audio.say(fraseDictado(e), 'en', { rate: velocidad === 'lento' ? 0.75 : 0.95 }).then(() => {
+    void audio.say(fraseDictado(e), 'en', { rate: velocidad === 'lento' ? 0.65 : 1 }).then(() => {
       if (turno === turnoAudio.current) setSonando(null);
     });
   };
