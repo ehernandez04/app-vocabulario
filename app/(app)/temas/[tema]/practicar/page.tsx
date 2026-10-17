@@ -27,6 +27,24 @@ import {
 import { useEstado } from '../../../../estado';
 
 /** Cuántos ejercicios trae una tanda. */
+/** Los tres pasos de «Lento» en el dictado (#116): velocidad de la voz y cómo se llaman. */
+const LENTITUD = [
+  { nombre: 'Despacio', rate: 0.65 },
+  { nombre: 'Más lento', rate: 0.5 },
+  { nombre: 'Muy lento', rate: 0.4 },
+];
+const CLAVE_LENTITUD = 'dictado-lentitud';
+
+/** El paso guardado. La práctica solo se pinta cuando la app ya está lista, así que no desfasa la hidratación. */
+function leerLentitud(): number {
+  try {
+    const n = Number(localStorage.getItem(CLAVE_LENTITUD));
+    return Number.isInteger(n) && n >= 0 && n < LENTITUD.length ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+
 const POR_TANDA = 10;
 
 /** Cuánto se espera a la descarga antes de practicar con lo que ya hay. */
@@ -69,6 +87,10 @@ export default function Practicar() {
   const [version, setVersion] = useState(0);
   const [sonando, setSonando] = useState<'normal' | 'lento' | null>(null);
   const turnoAudio = useRef(0);
+  // Dictado (#116): qué tan lento suena «Lento» (se recuerda) y si se está viendo la frase.
+  const [lentitud, setLentitud] = useState(leerLentitud);
+  const [ayuda, setAyuda] = useState(false);
+
 
   // Hasta que la app esté lista no se toca localStorage: el servidor no lo tiene
   // y se desfasaría la hidratación. Los ejercicios son los escritos a mano más los
@@ -201,6 +223,7 @@ export default function Practicar() {
     setVeredicto(null);
     setRevisando(false);
     setVerExplicacion(false);
+    setAyuda(false);
     setOpciones(de?.tipo === 'elegir' ? opcionesDe(de) : []);
   };
 
@@ -214,7 +237,10 @@ export default function Practicar() {
     if (e.tipo === 'elegir' || respondida || !texto.trim()) return;
     const v = e.tipo === 'escuchar' ? calificarDictado(e, texto) : calificarEscrito(e, texto);
     setVeredicto(v);
-    if (v.estado !== 'duda') contar(v.estado === 'acierto');
+    if (v.estado === 'duda') return;
+    // Con la frase a la vista no se puntúa: no suma ni resta, y vuelve a salir al final de la tanda.
+    if (e.tipo === 'escuchar' && ayuda) setSesion({ ...sesion, ejercicios: [...ejercicios, e] });
+    else contar(v.estado === 'acierto');
   };
 
   // Solo si quien practica lo pide: cuesta un punto del tope diario y exige conexión.
@@ -279,9 +305,18 @@ export default function Practicar() {
     }
     setSonando(velocidad);
     // Un stop() también resuelve la promesa anterior: solo apaga el estado quien sigue siendo el último.
-    void audio.say(fraseDictado(e), 'en', { rate: velocidad === 'lento' ? 0.5 : 1 }).then(() => {
+    void audio.say(fraseDictado(e), 'en', { rate: velocidad === 'lento' ? LENTITUD[lentitud].rate : 1 }).then(() => {
       if (turno === turnoAudio.current) setSonando(null);
     });
+  };
+
+  const elegirLentitud = (i: number) => {
+    setLentitud(i);
+    try {
+      localStorage.setItem(CLAVE_LENTITUD, String(i));
+    } catch {
+      /* no pasa nada: vale para esta sesión */
+    }
   };
 
   const siguiente = () => {
@@ -331,16 +366,51 @@ export default function Practicar() {
                   >
                     {sonando === v ? <IconParar /> : v === 'normal' ? <IconPlay /> : <IconTortuga />}
                   </button>
-                  <span>{v === 'normal' ? 'Normal' : 'Lento'}</span>
+                  <span>{v === 'normal' ? 'Normal' : sonando === v ? LENTITUD[lentitud].nombre : 'Lento'}</span>
                   {sonando === v && <small>Sonando…</small>}
                 </div>
               ))}
             </div>
+            {!respondida && (
+              <div className="lentitud">
+                <span className="lentitud-t" id="lentitud-t">
+                  Qué tan lento
+                </span>
+                <div className="seg" role="radiogroup" aria-labelledby="lentitud-t">
+                  {LENTITUD.map((n, i) => (
+                    <button
+                      key={n.nombre}
+                      role="radio"
+                      aria-checked={lentitud === i}
+                      className={lentitud === i ? 'on' : undefined}
+                      onClick={() => elegirLentitud(i)}
+                    >
+                      {n.nombre}
+                      <small>×{String(n.rate).replace('.', ',')}</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <span className="es">{e.es}</span>
         )}
       </div>
+
+      {e.tipo === 'escuchar' && ayuda && (
+        <div className="frase-ayuda" role="status">
+          <span className="lb-ayuda">La frase</span>
+          <span className="en-ayuda" lang="en">
+            {fraseDictado(e)}
+          </span>
+          <span className="nota-ayuda">
+            {respondida
+              ? 'Con la frase a la vista no cuenta como acierto ni como fallo: volverá a salir.'
+              : 'Con la frase a la vista, este ejercicio no cuenta como acierto y volverá a salir.'}
+          </span>
+        </div>
+      )}
 
       {e.tipo === 'traducir' || e.tipo === 'escuchar' ? (
         <div>
@@ -495,9 +565,14 @@ export default function Practicar() {
             Comprobar
           </button>
           {e.tipo === 'escuchar' && (
-            <button className="saltar" onClick={siguiente}>
-              No puedo escuchar ahora
-            </button>
+            <div className="saltos">
+              <button className="saltar" onClick={() => setAyuda((v) => !v)} aria-expanded={ayuda}>
+                {ayuda ? 'Ocultar la frase' : 'Ver la frase'}
+              </button>
+              <button className="saltar" onClick={siguiente}>
+                No puedo escuchar ahora
+              </button>
+            </div>
           )}
           <p className="hint">Este ejercicio se califica sin conexión.</p>
         </div>

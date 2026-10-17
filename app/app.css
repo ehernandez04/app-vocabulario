@@ -739,3 +739,19 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .onda{display:flex;align-items:center;justify-content:center;gap:3px;height:34px}
 .onda i{width:4px;border-radius:2px;background:var(--no);transition:height .07s}
 .expl .sonido{color:var(--ink);font-size:1.05rem}
+
+/* dictado: lentitud a elegir y ver la frase (#116) */
+.lentitud{display:flex;flex-direction:column;gap:6px;width:100%}
+.lentitud-t{font:800 .7rem var(--ui);letter-spacing:.08em;text-transform:uppercase;opacity:.7}
+.seg{display:flex;gap:3px;padding:3px;border-radius:14px;background:rgba(20,16,43,.14)}
+.seg button{appearance:none;flex:1;border:0;cursor:pointer;border-radius:11px;padding:7px 2px;background:transparent;
+  color:var(--on-note);font:800 .75rem/1.15 var(--ui);text-align:center}
+.seg button small{display:block;font-weight:600;font-size:.62rem;opacity:.7}
+.seg button.on{background:var(--on-note);color:var(--note,#B6FF5C)}
+.seg button:focus-visible{outline:2.5px solid var(--on-note);outline-offset:1px}
+.saltos{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
+.frase-ayuda{display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:18px;
+  background:rgba(183,156,255,.12);border:1px solid rgba(183,156,255,.45)}
+.lb-ayuda{font:800 .72rem var(--ui);color:#b79cff}
+.en-ayuda{font:800 1.3rem/1.2 var(--display);letter-spacing:-.02em}
+.nota-ayuda{font:500 .78rem var(--ui);color:var(--ink-soft)}
