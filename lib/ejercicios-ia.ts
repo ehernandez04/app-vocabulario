@@ -182,7 +182,7 @@ Format:
 Rules:
 ${REGLAS_COMUNES}
 - Keep the Spanish sentence short (4-10 words) so it has few correct translations, and make it need the level's focus.
-- "aceptadas": 3 to 6 different correct translations, covering synonyms (look after / take care of), optional words (stay home / stay at home) and natural word order. Full sentences. Anything not listed will be sent to a person to check, so be complete. Contractions (I’ll / I will, won’t / will not) are matched automatically: do not list both forms.
+- "aceptadas": 5 to 8 different correct translations, covering synonyms (look after / take care of), optional words (stay home / stay at home) and natural word order. Full sentences. Anything not listed will be sent to a person to check, so be complete. Contractions (I’ll / I will, won’t / will not) are matched automatically: do not list both forms.
 - Every accepted translation must carry EXACTLY the information of the Spanish sentence: never add or drop a detail (a time, a place, an adjective). They differ only in wording.
 - "errores": 2 to 4 full wrong sentences a Spanish speaker really writes, as keys, each with a short explanation IN SPANISH naming the rule. Every one must really be wrong in that sentence; never list an accepted translation, or any correct sentence, here.`;
 
