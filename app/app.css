@@ -644,11 +644,21 @@
 /* escuchar y escribir (#67) */
 .note:has(.oir){align-items:center;gap:14px;text-align:center}
 .note:has(.oir) .n-tag{align-self:flex-start}
-.note .oir{display:flex;flex-direction:column;align-items:center;gap:12px}
+.note .oir{display:flex;flex-direction:row;align-items:flex-start;justify-content:center;gap:28px}
+.oir .op{display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:700;transition:opacity .15s}
+.oir .op small{font-weight:500;font-size:.75rem;color:var(--on-note);opacity:.7}
+.oir .op.apagado{opacity:.55}
 .play{appearance:none;cursor:pointer;width:84px;height:84px;border-radius:50%;border:2px solid var(--on-note);
   background:rgba(255,255,255,.45);color:var(--on-note);display:grid;place-items:center;box-shadow:0 2px 0 var(--on-note)}
 .play:active{transform:translateY(2px);box-shadow:none}
 .play svg{width:34px;height:34px}
+.play.lento svg{width:44px;height:44px}
+.play.chico{width:64px;height:64px}
+.play.chico svg,.play.lento.chico svg{width:28px;height:28px}
+.play.on{background:var(--on-note);color:#FFE066;animation:late 1.2s ease-in-out infinite}
+.play.on svg{width:30px;height:30px}
+@keyframes late{0%,100%{box-shadow:0 0 0 4px #FFE066,0 0 0 6px var(--on-note)}50%{box-shadow:0 0 0 7px #FFE066,0 0 0 9px var(--on-note)}}
+@media (prefers-reduced-motion:reduce){.play.on{animation:none}}
 .en-dictado{font:800 1.35rem/1.15 var(--display);letter-spacing:-.02em;text-align:center}
 .saltar{appearance:none;background:none;border:0;cursor:pointer;padding:6px;font:700 .85rem var(--ui);
   text-decoration:underline;color:var(--ink-soft);align-self:center}
