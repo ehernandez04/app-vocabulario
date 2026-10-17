@@ -18,6 +18,9 @@
 }
 .views{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
   padding-top:var(--safe-t)}
+/* la barra de pestañas flota sobre el contenido (#101): el que la tenga necesita
+   este hueco de más abajo para que el último bloque no quede tapado */
+.app:has(.tabbar) .views{padding-bottom:calc(92px + var(--safe-b))}
 .view{padding:16px 20px 20px;display:flex;flex-direction:column;gap:18px;min-height:100%}
 .grow{flex:1}
 .block{display:flex;flex-direction:column;gap:9px}
@@ -332,18 +335,23 @@
 .tick{font:800 2rem var(--display);font-variant-numeric:tabular-nums}
 
 /* ── barra inferior ──────────────────────────────────────────────────────── */
-.tabbar{display:grid;grid-template-columns:repeat(3,1fr);border-top:1.5px solid var(--rule);
-  background:var(--card);padding:7px 6px calc(7px + var(--safe-b));flex:none;z-index:5}
+/* Flotante y de cristal (#101): ya no empuja el contenido, por eso
+   `.app:has(.tabbar) .views` le deja el hueco de abajo. */
+.tabbar{position:absolute;left:14px;right:14px;bottom:calc(14px + var(--safe-b));
+  height:64px;border-radius:24px;background:var(--tabbar-bg);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.35);
+  display:grid;grid-template-columns:repeat(3,1fr);align-items:center;justify-items:center;
+  z-index:5}
 /* Antes eran <button role="tab">; ahora son enlaces de navegación, así que el
    estado activo va en aria-current="page", que es lo correcto para un <nav>. */
-.tab{appearance:none;background:none;border:0;cursor:pointer;color:var(--ink-faint);
+.tab{appearance:none;background:none;border:0;cursor:pointer;color:var(--ink-soft);
   text-decoration:none;
-  display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 2px;
-  font:500 .67rem var(--ui);transition:color .15s}
-.tab svg{width:21px;height:21px;stroke-width:1.8;
-  transition:transform .2s cubic-bezier(.3,1.5,.5,1)}
-.tab[aria-current="page"]{color:var(--ink);font-weight:700}
-.tab[aria-current="page"] svg{transform:translateY(-2px) scale(1.1)}
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  height:48px;padding:0 16px;border-radius:16px;
+  font:700 .62rem var(--ui);transition:background .15s,color .15s}
+.tab svg{width:20px;height:20px;stroke-width:1.8}
+.tab[aria-current="page"]{background:var(--acento);color:var(--on-acento)}
 
 /* ── hoja inferior y formularios ─────────────────────────────────────────── */
 .scrim{position:absolute;inset:0;background:rgba(28,27,25,.45);z-index:40;
@@ -698,28 +706,56 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
   animation:avanza 2.4s ease-in-out infinite}
 @keyframes avanza{0%{margin-left:-40%}100%{margin-left:100%}}
 
-/* ── Inicio nuevo (#76) ──────────────────────────────────────────────────── */
-.note .tema-w{font:800 2.3rem var(--display);letter-spacing:-.035em;line-height:1}
-.note .es{font:700 1.25rem var(--hand);line-height:1.15}
-.partes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.parte{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:13px;
-  border:2px solid var(--edge);background:var(--card);box-shadow:var(--lift);
-  color:var(--ink);text-decoration:none;font:700 .85rem var(--ui);transition:transform .12s,box-shadow .12s}
-.parte:active{transform:translateY(2px);box-shadow:none}
-.parte i{flex:none;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;
-  font-style:normal;font-size:.8rem;color:var(--on-note)}
+/* ── Inicio Aurora (#101) ─────────────────────────────────────────────────
+   El resto de la app todavía usa `.note` (post-it) para la nota del tema;
+   acá no: es una tarjeta con degradado, sin el pliegue de esquina, con el
+   botón de continuar adentro. `.partes`, `.parte` y `.repaso` son exclusivas
+   de Inicio, así que se reescriben directo en vez de quedar detrás de
+   `.inicio`. */
+.inicio .streak{background:var(--surface);border:1px solid var(--line);
+  box-shadow:none;color:var(--ink)}
+.inicio .themebtn{border:1px solid var(--line);background:var(--surface)}
+
+.hero{border-radius:26px;padding:18px;color:#fff;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;gap:6px;background:var(--gradiente-hero);
+  box-shadow:0 16px 36px rgba(109,75,255,.35)}
+.hero::after{content:"";position:absolute;right:-40px;top:-40px;width:140px;height:140px;
+  border-radius:50%;background:rgba(255,255,255,.14)}
+.hero-tag{font:700 .68rem var(--ui);letter-spacing:.08em;text-transform:uppercase;
+  opacity:.85;position:relative;z-index:1}
+.hero-tema{font:800 2.75rem var(--display);letter-spacing:-.045em;line-height:1;
+  position:relative;z-index:1}
+.hero-niv{font:700 1.05rem var(--ui);color:var(--acento);position:relative;z-index:1}
+.hero-niv.resumen{color:#fff;font-weight:500;font-size:.95rem}
+.hero-seg{display:flex;gap:5px;margin-top:6px;position:relative;z-index:1}
+.hero-seg i{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.28)}
+.hero-seg i.on{background:#fff}
+.hero-seg i.now{background:var(--acento)}
+.hero-cta{margin-top:10px;background:#fff;color:#2b1480;font:800 .95rem var(--ui);
+  min-height:50px;padding:14px;border-radius:16px;position:relative;z-index:1;
+  display:flex;align-items:center;justify-content:center;text-decoration:none}
+
+.partes{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.parte{display:flex;align-items:center;gap:10px;padding:12px;border-radius:20px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  text-decoration:none;font:800 .8rem var(--ui);transition:transform .12s}
+.parte:active{transform:translateY(2px)}
+.parte i{flex:none;width:36px;height:36px;border-radius:12px;display:grid;place-items:center;
+  font-style:normal;font-size:.85rem;color:var(--on-note)}
 .parte small{display:block;font:500 .7rem var(--ui);color:var(--ink-soft)}
-.parte.off{opacity:.55;box-shadow:none;border-color:var(--rule)}
+.parte.on{border-color:rgba(182,255,92,.55);background:rgba(182,255,92,.1)}
+.parte.off{opacity:.5}
 .parte.ancha{grid-column:1/-1}
-.repaso{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:14px;
-  border:2px solid var(--edge);background:var(--card);box-shadow:var(--lift);
-  color:var(--ink);text-decoration:none}
-.repaso:active{transform:translateY(2px);box-shadow:none}
-.repaso .ic{flex:none;min-width:38px;height:38px;padding:0 8px;border-radius:11px;background:var(--note-2);
-  color:var(--on-note);display:grid;place-items:center;font:800 .95rem var(--display)}
+
+.repaso{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:22px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none}
+.repaso:active{transform:translateY(2px)}
+.repaso .ic{flex:none;width:46px;height:46px;border-radius:15px;background:var(--acento);
+  color:var(--on-acento);display:grid;place-items:center;font:800 1.2rem var(--display)}
 .repaso .lab{display:flex;flex-direction:column;min-width:0}
-.repaso .lab b{font-size:.92rem}
-.repaso .lab span{font-size:.78rem;color:var(--ink-soft)}
+.repaso .lab b{font-size:.9rem;font-weight:800}
+.repaso .lab span{font-size:.76rem;color:var(--ink-soft)}
+.repaso .chev{margin-left:auto;color:var(--ink-soft);font-size:1.3rem}
 
 /* escucha y repite (#68) */
 .note.rep{align-items:center;gap:12px;text-align:center}
