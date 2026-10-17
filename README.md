@@ -1,4 +1,4 @@
-# Vocabulario en Ruta
+# Paso a Paso
 
 App para repasar vocabulario **inglés → español** en el camino, con audio y repetición
 espaciada. Pensada para usarse con una mano en el transporte público — o sin manos, con los

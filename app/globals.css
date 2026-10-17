@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /* ===========================================================================
-   Vocabulario en Ruta — tokens
+   Paso a Paso — tokens
 
    Portados tal cual desde legacy/src/styles.css. La app se compromete con el
    papel claro: es su identidad. El tema oscuro vive en `data-skin="dark"`, un

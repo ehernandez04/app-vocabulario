@@ -15,7 +15,7 @@ export default async function Entrar() {
   return (
     <section className="view entrada">
       <div className="block">
-        <p className="eyebrow">Vocabulario en Ruta</p>
+        <p className="eyebrow">Paso a Paso</p>
         <h1 className="h1">
           Inglés
           <br />

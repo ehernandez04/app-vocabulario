@@ -26,10 +26,10 @@ const hand = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: 'Vocabulario en Ruta',
+  title: 'Paso a Paso',
   description:
     'Repasa vocabulario inglés-español en el camino: tarjetas con audio, modo adivinar y modo manos libres.',
-  appleWebApp: { capable: true, title: 'Vocabulario', statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: 'Paso a Paso', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {

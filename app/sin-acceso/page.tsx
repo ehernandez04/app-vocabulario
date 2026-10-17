@@ -14,7 +14,7 @@ export default function SinAcceso() {
   return (
     <section className="view entrada">
       <div className="block">
-        <p className="eyebrow">Vocabulario en Ruta</p>
+        <p className="eyebrow">Paso a Paso</p>
         <h1 className="h1">
           Esta cuenta
           <br />

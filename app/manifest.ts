@@ -8,8 +8,8 @@ import type { MetadataRoute } from 'next';
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Vocabulario en Ruta',
-    short_name: 'Vocabulario',
+    name: 'Paso a Paso',
+    short_name: 'Paso a Paso',
     description:
       'Repasa vocabulario inglés-español en el camino: tarjetas con audio, modo adivinar y modo manos libres.',
     start_url: '/',
