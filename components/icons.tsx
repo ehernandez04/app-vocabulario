@@ -137,3 +137,10 @@ export const IconTemas = svg(
     <path d="M4 6h.01M4 12h.01M4 18h.01" />
   </>
 );
+
+export const IconHablar = svg(
+  <>
+    <path d="M4 5h16v11H9l-4 4v-4H4z" />
+    <path d="M8 9h8M8 12.5h5" />
+  </>
+);

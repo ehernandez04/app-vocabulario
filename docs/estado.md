@@ -29,7 +29,17 @@ repartidas por `paraParte` en `lib/temas.ts`: toma solo los ejercicios de traduc
 reetiqueta como dictado o repetición según la parte. Vocabulary muestra las palabras propias
 del tema y nivel —no el mazo global—, escritas a mano en el campo `palabras` de cada `Nivel`
 (igual que los ejercicios de #63): sin caja ni racha, solo para repasar antes de practicar.
-Conversar con la IA sigue sin construir (#78). Los ejercicios los genera `claude-haiku-5-5` por tandas de 40 por nivel, en dos
+**Conversar con la IA (#78): pestaña «Hablar», un turno por vez.** Es la quinta parte de un nivel (junto a
+Vocabulary, Ideas, Speaking y Listening), y también tiene su propia entrada en la barra de pestañas con la lista de
+temas y el nivel en que vas en cada uno. No se guarda nada de la charla ni cuenta para la racha o el nivel: es solo
+para soltarte hablando. Un turno encadena tres proveedores distintos, cada uno con su propio tope porque cobran
+distinto (`lib/uso-ia.ts`, `lib/uso-voz.ts`, `lib/uso-tts.ts`): Azure Speech transcribe lo que dijiste (mismo
+servicio que #68, sin evaluar pronunciación), Claude Haiku genera la respuesta de la IA en su papel ligado al
+`foco` del nivel, y ElevenLabs la convierte en voz. Quedamos en el **plan gratis de ElevenLabs** (10.000
+caracteres/mes): el tope mensual (`TtsUsage`, ~9.000 con margen) es de toda la cuenta, no por persona, y si se
+agota la conversación sigue en texto, sin voz de la IA, nunca se bloquea. El audio nunca arranca solo: la primera
+línea espera a que toques «Empezar a hablar» y cada respuesta sigue a que grabes tu turno, para no pisar la regla
+de no autoplay. Los ejercicios los genera `claude-haiku-5-5` por tandas de 40 por nivel, en dos
 peticiones paralelas de 20 (una de 40 tardaba ~53 s, al borde del límite), y se guardan en
 `tema_ejercicios` (con marca de borrado); la práctica los copia a IndexedDB (`lib/ejercicios-local.ts`)
 y califica comparando con las respuestas y errores típicos del propio ejercicio, así que funciona

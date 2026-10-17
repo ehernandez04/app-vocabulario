@@ -7,7 +7,7 @@ import { progresoTema } from '@/lib/local-store';
 import { ACIERTOS_PARA_SUBIR, temaPorId } from '@/lib/temas';
 import { useEstado } from '../../../estado';
 
-/** Las partes de un nivel (#77). Conversar con la IA queda para el #78. */
+/** Las partes de un nivel (#77 y #78). */
 const PARTES = [
   { nombre: 'Vocabulary', detalle: 'Las palabras del tema', color: 'var(--note-4)', icono: 'Aa', ruta: 'vocabulario' },
   { nombre: 'Ideas', detalle: 'Armar frases', color: 'var(--acento)', icono: '☰', ruta: 'practicar' },
@@ -66,13 +66,13 @@ export default function VistaTema() {
               </span>
             </Link>
           ))}
-          <span className="parte off ancha" aria-disabled="true">
+          <Link href={`/temas/${tema.id}/hablar`} className="parte on ancha">
             <i style={{ background: 'var(--acento)' }}>💬</i>
             <span>
               Conversar con la IA
-              <small>Practica hablando · próximamente</small>
+              <small>Habla sobre este nivel</small>
             </span>
-          </span>
+          </Link>
         </div>
         <MasEjercicios tema={tema.id} nivel={nivel} />
       </div>

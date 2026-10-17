@@ -14,6 +14,8 @@ export const COSTE_DIBUJO = 2;
 export const COSTE_EJERCICIOS = 1;
 /** Revisar con la IA una respuesta escrita que el ejercicio no reconoció (#66). */
 export const COSTE_REVISION = 1;
+/** Una vuelta de conversación hablada con la IA (#78): la apertura o cada respuesta. */
+export const COSTE_HABLA = 1;
 
 /** El día UTC, YYYY-MM-DD. No hace falta que coincida con el día local de quien estudia. */
 export const hoy = (): string => new Date().toISOString().slice(0, 10);
