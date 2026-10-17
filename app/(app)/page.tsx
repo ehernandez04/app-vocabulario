@@ -9,12 +9,12 @@ import { isDue } from '@/lib/srs';
 import { plural, saludo } from '@/lib/ui';
 import { useEstado } from '../estado';
 
-/** Las partes de un nivel. Hoy solo Ideas existe; las otras se muestran para que se vea el camino. */
+/** Las partes de un nivel (#77). Conversar con la IA queda para el #78. */
 const PARTES = [
-  { nombre: 'Vocabulary', detalle: 'Las palabras del tema', color: 'var(--note-4)', icono: 'Aa' },
-  { nombre: 'Ideas', detalle: 'Armar frases', color: 'var(--acento)', icono: '☰', activa: true },
-  { nombre: 'Speaking', detalle: 'Dilo tú', color: 'var(--note-2)', icono: '🎤' },
-  { nombre: 'Listening', detalle: 'Escribe lo que oyes', color: 'var(--note-3)', icono: '🎧' },
+  { nombre: 'Vocabulary', detalle: 'Las palabras del tema', color: 'var(--note-4)', icono: 'Aa', ruta: 'vocabulario' },
+  { nombre: 'Ideas', detalle: 'Armar frases', color: 'var(--acento)', icono: '☰', ruta: 'practicar' },
+  { nombre: 'Speaking', detalle: 'Dilo tú', color: 'var(--note-2)', icono: '🎤', ruta: 'practicar?parte=speaking' },
+  { nombre: 'Listening', detalle: 'Escribe lo que oyes', color: 'var(--note-3)', icono: '🎧', ruta: 'practicar?parte=listening' },
 ];
 
 /**
@@ -92,26 +92,15 @@ export default function Inicio() {
       <div className="block">
         <p className="eyebrow">Este nivel, por partes</p>
         <div className="partes">
-          {PARTES.map((p) => {
-            const contenido = (
-              <>
-                <i style={{ background: p.color }}>{p.icono}</i>
-                <span>
-                  {p.nombre}
-                  <small>{p.activa ? p.detalle : 'Pronto'}</small>
-                </span>
-              </>
-            );
-            return p.activa ? (
-              <Link key={p.nombre} href={`/temas/${tema.id}/practicar`} className="parte on">
-                {contenido}
-              </Link>
-            ) : (
-              <span key={p.nombre} className="parte off" aria-disabled="true">
-                {contenido}
+          {PARTES.map((p) => (
+            <Link key={p.nombre} href={`/temas/${tema.id}/${p.ruta}`} className="parte on">
+              <i style={{ background: p.color }}>{p.icono}</i>
+              <span>
+                {p.nombre}
+                <small>{p.detalle}</small>
               </span>
-            );
-          })}
+            </Link>
+          ))}
           <span className="parte off ancha" aria-disabled="true">
             <i style={{ background: 'var(--acento)' }}>💬</i>
             <span>
