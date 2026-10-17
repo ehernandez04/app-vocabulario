@@ -42,6 +42,13 @@
   --note-2: #ff8fc5;
   --note-3: #6fd3ff;
   --note-4: #c9b5ff;
+
+  /* Superficies de cristal esmerilado (#101): empiezan tenues sobre el fondo
+     claro, hasta que ese tema tenga su propio mockup. */
+  --surface: rgba(28, 27, 25, 0.05);
+  --line: rgba(28, 27, 25, 0.12);
+  --tabbar-bg: rgba(255, 255, 255, 0.78);
+  --gradiente-hero: linear-gradient(140deg, #6d4bff 0%, #b345f5 55%, #ff6fb1 100%);
 }
 
 :root[data-skin='dark'] {
@@ -60,6 +67,9 @@
   --aviso: #f2c14e;
   --drop: 0 14px 30px rgba(5, 3, 20, 0.6);
   --lift: 0 6px 16px rgba(5, 3, 20, 0.45);
+  --surface: rgba(255, 255, 255, 0.07);
+  --line: rgba(255, 255, 255, 0.12);
+  --tabbar-bg: rgba(24, 20, 51, 0.78);
 }
 
 /* Los tokens, disponibles también como utilidades de Tailwind:
