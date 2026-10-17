@@ -334,6 +334,17 @@ export function calificarEscrito(e: EjercicioEscrito, escrito: string): Veredict
 export const fraseDictado = (e: EjercicioEscrito): string => e.aceptadas[0];
 
 /**
+ * La frase entera en inglés con la respuesta correcta puesta (#109): en «elegir»
+ * y «escribir» se arma con el hueco ya resuelto; en «traducir» ya es la frase
+ * completa. Sirve para oírla después de comprobar, sin regalarla antes.
+ */
+export function fraseCompleta(e: Practica): string {
+  if (e.tipo === 'elegir') return [e.antes, e.correcta, e.despues].filter(Boolean).join(' ');
+  if (e.tipo === 'escribir') return [e.antes, e.aceptadas[0], e.despues].filter(Boolean).join(' ');
+  return fraseDictado(e);
+}
+
+/**
  * Califica un dictado contra lo que sonó, sin red. A diferencia de traducir, aquí
  * no hay dudas: o es la frase o no lo es, así que nunca se le pregunta a la IA.
  */

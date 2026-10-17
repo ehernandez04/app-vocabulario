@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { ACIERTOS_PARA_SUBIR, TEMAS, calificarDictado, calificarEscrito, claveComparacion, conDictados, explicar, normalizar, opcionesDe, registrar, type EjercicioEscrito, type Practica } from './temas';
+import {
+  ACIERTOS_PARA_SUBIR,
+  TEMAS,
+  calificarDictado,
+  calificarEscrito,
+  claveComparacion,
+  conDictados,
+  explicar,
+  fraseCompleta,
+  normalizar,
+  opcionesDe,
+  registrar,
+  type EjercicioEscrito,
+  type Practica,
+} from './temas';
 
 describe('ejercicios escritos a mano', () => {
   it('cada uno tiene la correcta fuera de los errores y una explicación por error', () => {
@@ -157,5 +171,44 @@ describe('dictado', () => {
   it('sin conexión no hay repetir: ese turno se queda en traducir', () => {
     const tr = (id: string): Practica => ({ ...frase, id, tipo: 'traducir' });
     expect(conDictados([tr('a'), tr('b'), tr('c')], false).map((e) => e.tipo)).toEqual(['traducir', 'escuchar', 'traducir']);
+  });
+});
+
+describe('fraseCompleta (#109)', () => {
+  it('en elegir arma la frase con la opción correcta en el hueco', () => {
+    const e: Practica = {
+      tipo: 'elegir',
+      es: '¿Vendrás a la fiesta?',
+      antes: '',
+      despues: 'you come to the party?',
+      correcta: 'Will',
+      errores: {},
+      explicacion: 'x',
+    };
+    expect(fraseCompleta(e)).toBe('Will you come to the party?');
+  });
+
+  it('en escribir arma la frase con la primera aceptada en el hueco', () => {
+    const e: Practica = {
+      tipo: 'escribir',
+      es: 'Te llamaré más tarde.',
+      antes: 'I',
+      despues: 'call you later.',
+      aceptadas: ['will'],
+      errores: {},
+      explicacion: 'x',
+    };
+    expect(fraseCompleta(e)).toBe('I will call you later.');
+  });
+
+  it('en traducir ya es la frase entera', () => {
+    const e: Practica = {
+      tipo: 'traducir',
+      es: 'Usted recibirá una respuesta pronto.',
+      aceptadas: ['You will receive a reply soon.', 'You will get a reply soon.'],
+      errores: {},
+      explicacion: 'x',
+    };
+    expect(fraseCompleta(e)).toBe('You will receive a reply soon.');
   });
 });

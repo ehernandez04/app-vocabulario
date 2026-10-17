@@ -15,6 +15,7 @@ import {
   calificarEscrito,
   conDictados,
   explicar,
+  fraseCompleta,
   fraseDictado,
   opcionesDe,
   registrar,
@@ -302,9 +303,14 @@ export default function Practicar() {
     });
   };
 
-  /** Dice la frase del dictado. Volver a tocar el botón que suena lo detiene. */
+  /**
+   * Dice la frase: la del dictado, o ya completa con la respuesta correcta en
+   * elegir/escribir/traducir, reusada tras comprobar (#109). Volver a tocar el
+   * botón que suena lo detiene.
+   */
   const oir = (velocidad: 'normal' | 'lento') => {
-    if (e.tipo !== 'escuchar') return;
+    if (e.tipo !== 'escuchar' && !resultado) return;
+    const frase = e.tipo === 'escuchar' ? fraseDictado(e) : fraseCompleta(e);
     audio.stop();
     const turno = ++turnoAudio.current;
     if (sonando === velocidad) {
@@ -313,7 +319,7 @@ export default function Practicar() {
     }
     setSonando(velocidad);
     // Un stop() también resuelve la promesa anterior: solo apaga el estado quien sigue siendo el último.
-    void audio.say(fraseDictado(e), 'en', { rate: velocidad === 'lento' ? LENTITUD[lentitud].rate : 1 }).then(() => {
+    void audio.say(frase, 'en', { rate: velocidad === 'lento' ? LENTITUD[lentitud].rate : 1 }).then(() => {
       if (turno === turnoAudio.current) setSonando(null);
     });
   };
@@ -533,6 +539,31 @@ export default function Practicar() {
                 Ver explicación
               </button>
             </>
+          )}
+          {(e.tipo === 'elegir' || e.tipo === 'escribir' || e.tipo === 'traducir') && (
+            <div className="frase-oir">
+              <div className="txt">
+                <span className="en" lang="en">
+                  {fraseCompleta(e)}
+                </span>
+                <span className={`hint${sonando ? ' on' : ''}`}>{sonando ? 'Sonando…' : 'Escucha la frase completa'}</span>
+              </div>
+              <div className="ops">
+                {(['normal', 'lento'] as const).map((v) => (
+                  <div key={v} className={`op${sonando && sonando !== v ? ' apagado' : ''}`}>
+                    <button
+                      className={`play chico${sonando === v ? ' on' : ''}`}
+                      onClick={() => oir(v)}
+                      aria-pressed={sonando === v}
+                      aria-label={sonando === v ? 'Detener' : v === 'normal' ? 'Escuchar a velocidad normal' : 'Escuchar despacio'}
+                    >
+                      {sonando === v ? <IconParar /> : v === 'normal' ? <IconPlay /> : <IconTortuga />}
+                    </button>
+                    <span>{v === 'normal' ? 'Normal' : 'Lento'}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
           <button className="btn solid wide" onClick={siguiente}>
             {indice + 1 < ejercicios.length ? 'Siguiente' : 'Ver resultado'}
