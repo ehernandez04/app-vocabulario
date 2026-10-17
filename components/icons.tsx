@@ -27,11 +27,13 @@ export const IconAltavoz = svg(
   </>
 );
 
-export const IconDespacio = svg(
+export const IconTortuga = svg(
   <>
-    <path d="M11 5 6 9H2v6h4l5 4V5z" />
-    <path d="M16 9.5a4 4 0 0 1 0 5" />
-  </>
+    <path d="M10 31c0-8 6-14 14-14s14 6 14 14z" />
+    <path d="M38 31c2-1 5-1 6-4 0-2-2-3-4-2" />
+    <path d="M13 31v3m5-3v3m10-3v3m5-3v3" />
+  </>,
+  { viewBox: '0 0 48 48' }
 );
 
 export const IconPlay = svg(

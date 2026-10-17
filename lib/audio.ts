@@ -178,7 +178,10 @@ export function say(text: string, lang: Idioma = 'en', opts: OpcionesDecir = {})
       a.onended = listo;
       a.onerror = listo; // si el MP3 falla, no bloqueamos la cadena
       a.src = url;
-      a.playbackRate = rate < 0.8 ? 0.7 : 1; // "Despacio" con un MP3 suena mejor así
+      a.playbackRate = rate < 0.8 ? 0.8 : 1;
+      // Sin esto el audio lento baja de tono y se vuelve pastoso.
+      a.preservesPitch = true;
+      (a as HTMLAudioElement & { webkitPreservesPitch?: boolean }).webkitPreservesPitch = true;
       a.play().catch(() => listo());
       if (token !== stopFlag) listo();
     });

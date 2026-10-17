@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { notFound, useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { IconAltavoz, IconBombilla, IconCruz, IconDespacio, IconPapelera, IconPlay, IconTick } from '@/components/icons';
+import { useEffect, useRef, useState } from 'react';
+import { IconBombilla, IconCruz, IconPapelera, IconParar, IconPlay, IconTick, IconTortuga } from '@/components/icons';
 import { MasEjercicios } from '@/components/MasEjercicios';
 import { Repetir } from '@/components/Repetir';
 import * as audio from '@/lib/audio';
@@ -67,6 +67,8 @@ export default function Practicar() {
   const [enLinea, setEnLinea] = useState(true);
   // Sube cuando se generan ejercicios nuevos, para armar la tanda otra vez.
   const [version, setVersion] = useState(0);
+  const [sonando, setSonando] = useState<'normal' | 'lento' | null>(null);
+  const turnoAudio = useRef(0);
 
   // Hasta que la app esté lista no se toca localStorage: el servidor no lo tiene
   // y se desfasaría la hidratación. Los ejercicios son los escritos a mano más los
@@ -266,11 +268,20 @@ export default function Practicar() {
     });
   };
 
-  /** Dice la frase del dictado; «despacio» la baja de velocidad. */
-  const oir = (despacio: boolean) => {
+  /** Dice la frase del dictado. Volver a tocar el botón que suena lo detiene. */
+  const oir = (velocidad: 'normal' | 'lento') => {
     if (e.tipo !== 'escuchar') return;
     audio.stop();
-    void audio.say(fraseDictado(e), 'en', { rate: despacio ? 0.6 : 0.95 });
+    const turno = ++turnoAudio.current;
+    if (sonando === velocidad) {
+      setSonando(null);
+      return;
+    }
+    setSonando(velocidad);
+    // Un stop() también resuelve la promesa anterior: solo apaga el estado quien sigue siendo el último.
+    void audio.say(fraseDictado(e), 'en', { rate: velocidad === 'lento' ? 0.75 : 0.95 }).then(() => {
+      if (turno === turnoAudio.current) setSonando(null);
+    });
   };
 
   const siguiente = () => {
@@ -310,15 +321,20 @@ export default function Practicar() {
               </>
             )}
             <div className="oir">
-              {!respondida && (
-                <button className="play" onClick={() => oir(false)} aria-label="Escuchar la frase">
-                  <IconPlay />
-                </button>
-              )}
-              <button className="btn onnote sm" onClick={() => oir(respondida ? false : true)}>
-                {respondida ? <IconAltavoz /> : <IconDespacio />}
-                {respondida ? 'Otra vez' : 'Despacio'}
-              </button>
+              {(['normal', 'lento'] as const).map((v) => (
+                <div key={v} className={`op${sonando && sonando !== v ? ' apagado' : ''}`}>
+                  <button
+                    className={`play${v === 'lento' ? ' lento' : ''}${respondida ? ' chico' : ''}${sonando === v ? ' on' : ''}`}
+                    onClick={() => oir(v)}
+                    aria-pressed={sonando === v}
+                    aria-label={sonando === v ? 'Detener' : v === 'normal' ? 'Escuchar a velocidad normal' : 'Escuchar despacio'}
+                  >
+                    {sonando === v ? <IconParar /> : v === 'normal' ? <IconPlay /> : <IconTortuga />}
+                  </button>
+                  <span>{v === 'normal' ? 'Normal' : 'Lento'}</span>
+                  {sonando === v && <small>Sonando…</small>}
+                </div>
+              ))}
             </div>
           </>
         ) : (
