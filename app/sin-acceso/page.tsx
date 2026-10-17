@@ -23,7 +23,7 @@ export default function SinAcceso() {
       </div>
 
       <div className="entrada-aviso">
-        <div className="note" style={{ '--note': '#FFB4A2' } as React.CSSProperties}>
+        <div className="note" style={{ '--note': '#FF8FC5' } as React.CSSProperties}>
           <p>
             La app es privada: solo entran los correos autorizados. Si crees que el tuyo
             debería estar, pídeselo a Erick y vuelve a intentarlo.

@@ -310,7 +310,7 @@ export default function Practicar() {
         <Repetir ejercicio={e} clave={e.id ?? String(indice)} alSiguiente={siguiente} avisar={avisar} />
       ) : (
         <>
-      <div className="note" style={{ '--note': '#FFE066' } as React.CSSProperties}>
+      <div className="note" style={{ '--note': '#B6FF5C' } as React.CSSProperties}>
         <span className="n-tag">{CONSIGNA[e.tipo]}</span>
         {e.tipo === 'escuchar' ? (
           <>

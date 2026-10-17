@@ -21,7 +21,7 @@ import { FilaListas } from '@/components/FilaListas';
 import { HojaNuevaPalabra } from '@/components/HojaNuevaPalabra';
 import { useEstado } from '../../estado';
 
-const COLORES_CAJA = ['#FFE066', '#FFB4A2', '#B8E1FF', '#C8F0A8', '#FFE066'];
+const COLORES_CAJA = ['#B6FF5C', '#FF8FC5', '#6FD3FF', '#C9B5FF', '#B6FF5C'];
 
 export default function Palabras() {
   const { listo, deck, mazo, cola, indice, progresoDe, ajuste, alternarTema, recargarMazo, rearmarCola, avisar, usuario } =
@@ -165,7 +165,7 @@ export default function Palabras() {
         <p className="eyebrow">Cómo quieres repasar</p>
         <div className="modes">
           <Link href="/tarjetas" className="mode">
-            <span className="ic" style={{ background: '#FFE066' }}>
+            <span className="ic" style={{ background: '#B6FF5C' }}>
               <IconTarjetas />
             </span>
             <span className="lab">
@@ -177,7 +177,7 @@ export default function Palabras() {
             </span>
           </Link>
           <Link href="/adivinar" className="mode">
-            <span className="ic" style={{ background: '#FFB4A2' }}>
+            <span className="ic" style={{ background: '#FF8FC5' }}>
               <IconAdivinar />
             </span>
             <span className="lab">
@@ -189,7 +189,7 @@ export default function Palabras() {
             </span>
           </Link>
           <Link href="/camino" className="mode dark">
-            <span className="ic" style={{ background: '#FFE066' }}>
+            <span className="ic" style={{ background: '#B6FF5C' }}>
               <IconAuriculares />
             </span>
             <span className="lab">

@@ -31,7 +31,7 @@ export default function VistaTema() {
         <p className="muted">{tema.resumen}</p>
       </div>
 
-      <div className="note" style={{ '--note': '#B8E1FF' } as React.CSSProperties}>
+      <div className="note" style={{ '--note': '#6FD3FF' } as React.CSSProperties}>
         <span className="n-tag">
           Nivel {nivel} · {actual.nombre}
         </span>

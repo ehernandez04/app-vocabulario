@@ -16,10 +16,9 @@ export default function manifest(): MetadataRoute.Manifest {
     display: 'standalone',
     orientation: 'portrait',
     lang: 'es',
-    // El papel claro, que es la identidad de la app. El tema oscuro es una
-    // elección dentro de la app, no el punto de partida.
-    background_color: '#F3EFE6',
-    theme_color: '#F3EFE6',
+    // El violeta noche de Aurora, que es el punto de partida de la app.
+    background_color: '#0E0B1F',
+    theme_color: '#0E0B1F',
     icons: [
       { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
       { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },

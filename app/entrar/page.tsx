@@ -29,13 +29,13 @@ export default async function Entrar() {
 
       <div className="entrada-mazo" aria-hidden="true">
         <div className="lay b2">
-          <div className="flat" style={{ background: '#C8F0A8' }} />
+          <div className="flat" style={{ background: '#C9B5FF' }} />
         </div>
         <div className="lay b1">
-          <div className="flat" style={{ background: '#FFB4A2' }} />
+          <div className="flat" style={{ background: '#FF8FC5' }} />
         </div>
         <div className="lay top">
-          <div className="note" style={{ '--note': '#FFE066' } as React.CSSProperties}>
+          <div className="note" style={{ '--note': '#B6FF5C' } as React.CSSProperties}>
             <div className="n-top">
               <span className="n-tag">Inglés · caja 1</span>
               <Sticker word={muestra} size="sm" />
