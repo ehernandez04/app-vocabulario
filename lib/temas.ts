@@ -282,6 +282,29 @@ export const normalizar = (s: string): string =>
     .replace(/\s+/g, ' ')
     .trim();
 
+/**
+ * La clave con la que se comparan las traducciones y los huecos: lo de `normalizar`
+ * más las contracciones habituales abiertas («I'm» es «I am», «don't» es «do not»).
+ * Es más tolerante que `normalizar` a propósito y solo se usa al calificar lo
+ * escrito; el dictado sigue comparando palabra por palabra.
+ */
+const SIN_CONTRACCION: [RegExp, string][] = [
+  [/\bcan't\b|\bcannot\b/g, 'can not'],
+  [/\bshan't\b/g, 'shall not'],
+  [/n't\b/g, ' not'],
+  [/\b(i|you|we|they)'re\b/g, '$1 are'],
+  [/\b(i)'m\b/g, '$1 am'],
+  [/\b(he|she|it|that|there|what|who|here)'s\b/g, '$1 is'],
+  [/'ve\b/g, ' have'],
+  [/'d\b/g, ' would'],
+];
+
+export const claveComparacion = (s: string): string => {
+  let t = normalizar(s);
+  for (const [re, por] of SIN_CONTRACCION) t = t.replace(re, por);
+  return t.replace(/\s+/g, ' ').trim();
+};
+
 export type Veredicto =
   | { estado: 'acierto'; mensaje: string; alternativa?: string }
   | { estado: 'fallo'; mensaje: string }
@@ -290,9 +313,9 @@ export type Veredicto =
 
 /** Califica lo escrito comparando con lo que el ejercicio ya sabe. Sin red y sin gastar nada. */
 export function calificarEscrito(e: EjercicioEscrito, escrito: string): Veredicto {
-  const n = normalizar(escrito);
+  const n = claveComparacion(escrito);
   if (!n) return { estado: 'duda' };
-  const aceptadas = e.aceptadas.map(normalizar);
+  const aceptadas = e.aceptadas.map(claveComparacion);
   if (aceptadas.includes(n)) {
     // Si había otra forma, se muestra la primera por si la tuya no era la más natural.
     const primera = e.aceptadas[0];
@@ -302,7 +325,7 @@ export function calificarEscrito(e: EjercicioEscrito, escrito: string): Veredict
       ...(aceptadas.length > 1 && aceptadas[0] !== n ? { alternativa: primera } : {}),
     };
   }
-  const conocido = Object.entries(e.errores).find(([k]) => normalizar(k) === n);
+  const conocido = Object.entries(e.errores).find(([k]) => claveComparacion(k) === n);
   if (conocido) return { estado: 'fallo', mensaje: conocido[1] };
   return { estado: 'duda' };
 }

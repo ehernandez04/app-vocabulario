@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACIERTOS_PARA_SUBIR, TEMAS, calificarDictado, calificarEscrito, conDictados, explicar, normalizar, opcionesDe, registrar, type EjercicioEscrito, type Practica } from './temas';
+import { ACIERTOS_PARA_SUBIR, TEMAS, calificarDictado, calificarEscrito, claveComparacion, conDictados, explicar, normalizar, opcionesDe, registrar, type EjercicioEscrito, type Practica } from './temas';
 
 describe('ejercicios escritos a mano', () => {
   it('cada uno tiene la correcta fuera de los errores y una explicación por error', () => {
@@ -68,6 +68,19 @@ describe('normalizar', () => {
   });
 });
 
+describe('claveComparacion', () => {
+  it('abre las contracciones habituales', () => {
+    expect(claveComparacion("I'm sure he doesn't know")).toBe(claveComparacion('I am sure he does not know'));
+    expect(claveComparacion('They’re here, and we’ve eaten')).toBe(claveComparacion('They are here and we have eaten'));
+    expect(claveComparacion("It's late; I can't go")).toBe(claveComparacion('It is late I cannot go'));
+    expect(claveComparacion("She'd come")).toBe(claveComparacion('She would come'));
+  });
+  it('no confunde frases distintas', () => {
+    expect(claveComparacion("I'm sure")).not.toBe(claveComparacion('I sure'));
+    expect(claveComparacion("don't go")).not.toBe(claveComparacion('go'));
+  });
+});
+
 describe('calificarEscrito', () => {
   const hueco: EjercicioEscrito = {
     es: 'Mañana no llamaré a mi jefe.',
@@ -77,6 +90,15 @@ describe('calificarEscrito', () => {
     errores: { 'don’t will': 'La negación se pega a «will».' },
     explicacion: '«Won’t» es «will not».',
   };
+  it('acepta una traducción con contracciones abiertas o cerradas', () => {
+    const t: EjercicioEscrito = {
+      es: 'No sé si él está listo.',
+      aceptadas: ["I don't know if he is ready."],
+      errores: {},
+      explicacion: 'Bien.',
+    };
+    expect(calificarEscrito(t, 'I do not know if he’s ready').estado).toBe('acierto');
+  });
   it('acepta una respuesta aceptada, con otro apóstrofo y mayúsculas', () => {
     expect(calificarEscrito(hueco, "WON'T")).toEqual({ estado: 'acierto', mensaje: hueco.explicacion });
   });
