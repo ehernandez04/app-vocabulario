@@ -189,33 +189,41 @@ for (const k of await caches.keys()) await caches.delete(k); location.reload()`
 
 ## Identidad visual (respetarla al escribir código nuevo)
 
-Viene del canvas de diseño que Erick aprobó. **Regla que mantiene la coherencia entre temas:
-el post-it es un objeto físico, así que siempre es papel de color con tinta oscura
-(`--on-note`, fijo en `#1C1B19`). Solo cambia el entorno de la app.**
+**Aurora**, aprobada por Erick en mockup (rediseño #97). Reemplaza la identidad de papel y
+post-its. Oscura de origen: violeta noche, superficies de cristal esmerilado, degradado
+violeta a rosa en lo protagonista y **un solo acento lima** para lo importante.
 
 ```
-Papel     #F3EFE6   Tinta       #1C1B19   Tinta suave #5E5A52
-Regla     #E2DCCF   Papel-2     #EAE4D7
-Post-it   #FFE066 (amarillo) · #FFB4A2 (coral) · #B8E1FF (azul) · #C8F0A8 (verde)
-Acierto   #1F6F43   Fallo       #B4380B
-Oscuro    papel #1A1916 · tarjeta #24231F · tinta #F3EFE6 · regla #36342E
+Fondo     #0E0B1F   Superficie #181433 / cristal rgba(255,255,255,.07)
+Tinta     #F4F2FF   Tinta suave #A69FCB   Regla #2A2450
+Acento    #B6FF5C (lima, texto encima #13230A)
+Degradado #6D4BFF → #B345F5 → #FF6FB1 (hero, iconos)
+Notas     #B6FF5C lima · #FF8FC5 rosa · #6FD3FF cielo · #C9B5FF lila (tinta oscura #14102B)
+Acierto   #7BE08F   Fallo #FF7A6B
 ```
 
-- **Display:** Bricolage Grotesque 800, `letter-spacing` negativo. Es la palabra en inglés.
-- **Cuerpo:** DM Sans 400/500/700.
-- **Manuscrita:** Caveat 700 — **solo para el español**. Separa los dos idiomas sin etiquetas.
-- Bordes de 1.5–2px en tinta con sombra dura `0 2px 0`, que se hunde al pulsar.
-- La ilustración de cada palabra se trata como una **pegatina** sobre la nota: recuadro con
-  borde discontinuo, girado unos grados.
+- **Display y cuerpo:** Manrope (800 para la palabra en inglés, con `letter-spacing`
+  negativo; 400–800 para la interfaz). **Fonética:** JetBrains Mono. Ya no hay manuscrita:
+  el español se distingue por peso y por color (lima sobre fondo oscuro). `--hand` apunta
+  ahora a Manrope por compatibilidad hasta que cada pantalla se reescriba.
+- Las notas son tarjetas de color vivo con tinta oscura (`--on-note`, fijo en los dos
+  temas). Esquinas generosas (22px+), sombras suaves en vez de bordes duros.
+- La ilustración de cada palabra sigue siendo una pegatina sobre la tarjeta.
+- Navegación con barra de pestañas abajo (Inicio, Repasar, Temas, Ajustes).
 
 Los tokens viven en `app/globals.css`, también expuestos como utilidades de Tailwind
-(`bg-paper`, `text-ink`, `bg-note-3`, `shadow-lift`…). Las tres tipografías se cargan con
+(`bg-paper`, `text-ink`, `bg-note-3`, `bg-acento`…). Las fuentes se cargan con
 `next/font/google` en `app/layout.tsx`.
 
-**El tema claro no es negociable como punto de partida.** La app usa `data-skin="dark"`, un
-atributo propio, y **no** `prefers-color-scheme` ni `data-theme`. Esto es deliberado: con
-`data-theme` el visor de artifacts pisaba la elección de la app y la mostraba oscura. El botón
-de la pantalla de Inicio es quien manda.
+**El tema oscuro es el punto de partida.** La app usa `data-skin="dark"`, un atributo
+propio, y **no** `prefers-color-scheme` ni `data-theme` (con `data-theme` el visor de
+artifacts pisaba la elección de la app). El botón de Inicio manda. **El tema claro es
+provisional**: conserva la paleta anterior hasta que tenga su propio mockup.
+
+**Estado del rediseño (#97):** la base (#99) ya está; faltan las pantallas, una por PR,
+cada una con mockup aprobado: Inicio, Tarjetas, Adivinar, Modo camino, Temas, hojas,
+Ajustes y Entrar. Mientras tanto muchas pantallas conservan su maquetación vieja con los
+colores nuevos.
 
 ## Modelo de datos y asistente de IA
 
@@ -223,7 +231,7 @@ Vive en [docs/modelo-y-ia.md](docs/modelo-y-ia.md): esquema Postgres, copia en I
 
 ## Los tres modos
 
-1. **Tarjetas** — post-it con palabra, fonética, pegatina y audio. Se arrastra a la izquierda
+1. **Tarjetas** — tarjeta con palabra, fonética, pegatina y audio. Se arrastra a la izquierda
    para "otra vez" y a la derecha para "lo sabía"; también hay botones.
 2. **Adivinar** — cuatro traducciones. Interruptor "Solo audio" que oculta la palabra escrita.
    La ilustración aparece **después** de responder, para no regalar la respuesta.

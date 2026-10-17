@@ -22,7 +22,7 @@ const MODELOS = {
 
 const SISTEMA = `You draw tiny flat illustrations for vocabulary flashcards. Reply with ONLY one <svg> element, nothing else.
 Rules: viewBox="0 0 64 64", no width/height, no text or letters, no <script>, no external references, no images, no gradients/filters. Only these elements: svg, g, path, circle, ellipse, rect, line, polyline, polygon.
-Style: bold flat shapes, rounded line caps, 2.5px strokes in #1C1B19, fills from this palette only: #FFE066 #FFB4A2 #B8E1FF #C8F0A8 #F3EFE6. One clear central subject that suggests the meaning at a glance; at most 8 shapes; under 1200 characters.
+Style: bold flat shapes, rounded line caps, 2.5px strokes in #1C1B19, fills from this palette only: #B6FF5C #FF8FC5 #6FD3FF #C9B5FF #F3EFE6. One clear central subject that suggests the meaning at a glance; at most 8 shapes; under 1200 characters.
 When the word is abstract, draw a metaphor or a small scene that shows the idea (not a literal box or symbol).`;
 
 const mala = (mensaje: string, status = 400) => Response.json({ error: mensaje }, { status });

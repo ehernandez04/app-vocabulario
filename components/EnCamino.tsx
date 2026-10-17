@@ -24,7 +24,7 @@ export function EnCamino({
         <h1 className="h1">{titulo}</h1>
       </div>
 
-      <div className="note" style={{ '--note': '#FFE066' } as React.CSSProperties}>
+      <div className="note" style={{ '--note': '#B6FF5C' } as React.CSSProperties}>
         <p style={{ margin: 0, color: 'var(--on-note)' }}>{descripcion}</p>
         <p style={{ marginBottom: 0, color: 'var(--note-soft)', fontSize: '.9rem' }}>
           Se está portando a la versión nueva (issue #{issue}). Hasta entonces esta pantalla

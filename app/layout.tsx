@@ -1,28 +1,28 @@
 import type { Metadata, Viewport } from 'next';
-import { Bricolage_Grotesque, Caveat, DM_Sans } from 'next/font/google';
+import { JetBrains_Mono, Manrope } from 'next/font/google';
 import { RegistrarSW } from '@/components/RegistrarSW';
 import './globals.css';
 import './app.css';
 
-// Display: la palabra en inglés, con letter-spacing negativo.
-const display = Bricolage_Grotesque({
+// Display: la palabra en inglés, compacta y con letter-spacing negativo.
+const display = Manrope({
   subsets: ['latin'],
   weight: ['800'],
   variable: '--fuente-display',
 });
 
-// Cuerpo: toda la interfaz.
-const ui = DM_Sans({
+// Cuerpo: toda la interfaz, y el español en negrita.
+const ui = Manrope({
   subsets: ['latin'],
-  weight: ['400', '500', '700'],
+  weight: ['400', '500', '700', '800'],
   variable: '--fuente-ui',
 });
 
-// Manuscrita: solo para el español.
-const hand = Caveat({
+// Monoespaciada: la fonética.
+const mono = JetBrains_Mono({
   subsets: ['latin'],
-  weight: ['700'],
-  variable: '--fuente-hand',
+  weight: ['500'],
+  variable: '--fuente-mono',
 });
 
 export const metadata: Metadata = {
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#F3EFE6',
+  themeColor: '#0E0B1F',
   viewportFit: 'cover',
 };
 
@@ -46,11 +46,11 @@ export const viewport: Viewport = {
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // data-skin, no prefers-color-scheme: la app arranca en claro y el botón manda.
+    // data-skin, no prefers-color-scheme: la app arranca en oscuro (Aurora) y el botón manda.
     <html
       lang="es"
-      data-skin="light"
-      className={`${display.variable} ${ui.variable} ${hand.variable}`}
+      data-skin="dark"
+      className={`${display.variable} ${ui.variable} ${mono.variable}`}
     >
       <body>
         <RegistrarSW />

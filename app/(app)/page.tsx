@@ -73,7 +73,7 @@ export default function Inicio() {
       </div>
 
       <div className="block">
-        <div className="note" style={{ '--note': nuevo ? '#FFE066' : '#B8E1FF' } as React.CSSProperties}>
+        <div className="note" style={{ '--note': nuevo ? '#B6FF5C' : '#6FD3FF' } as React.CSSProperties}>
           <span className="n-tag">
             {nuevo ? 'Empieza aquí · tu primer tema' : `Tu tema · nivel ${nivel} de ${tema.niveles.length}`}
           </span>

@@ -51,7 +51,7 @@ export const DEFAULTS: Settings = {
   voiceEs: null,
   voiceMp3: null,
   modeloDibujo: 'haiku',
-  theme: 'light',
+  theme: 'dark',
   lista: null,
 };
 

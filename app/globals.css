@@ -1,17 +1,16 @@
 @import 'tailwindcss';
 
 /* ===========================================================================
-   Paso a Paso — tokens
+   Paso a Paso — tokens (identidad Aurora, #97)
 
-   Portados tal cual desde legacy/src/styles.css. La app se compromete con el
-   papel claro: es su identidad. El tema oscuro vive en `data-skin="dark"`, un
-   atributo propio — a propósito NO se usa `prefers-color-scheme` ni
-   `data-theme`, para que ni el sistema ni el visor de artifacts decidan por la
-   app. El botón de la pantalla de Inicio es quien manda.
+   Oscura de origen: violeta noche, superficies de cristal y un único acento
+   lima. La app usa `data-skin`, un atributo propio, y NO `prefers-color-scheme`
+   ni `data-theme`: ni el sistema ni el visor de artifacts deciden por la app.
+   El botón de Inicio es quien manda. El tema claro es provisional hasta que
+   tenga su propio mockup.
 
-   Regla que mantiene la coherencia entre los dos temas: el post-it es un objeto
-   físico, así que siempre es papel de color con tinta oscura (`--on-note`).
-   Solo cambia el entorno alrededor.
+   Las notas (antes post-its) son tarjetas de color vivo con tinta oscura
+   (`--on-note`, fijo): en los dos temas el color no cambia, solo el entorno.
    =========================================================================== */
 
 :root {
@@ -24,41 +23,43 @@
   --ink-faint: #8a8579;
   --rule: #e2dccf;
   --edge: #1c1b19;
-  --on-note: #1c1b19;
-  --note-soft: #4a463f;
+  --on-note: #14102b;
+  --note-soft: #3d3860;
   --ok: #1f6f43;
   --no: #b4380b;
   --no-bg: #fbe8e0;
   --aviso: #8a5a00;
+  --acento: #b6ff5c;
+  --on-acento: #13230a;
   --drop: 0 12px 24px rgba(60, 50, 20, 0.2);
   --lift: 0 2px 0 var(--edge);
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
 
-  /* Los cuatro papeles de post-it. No se guardan por palabra: salen de la
-     posición en el mazo (noteColor). */
-  --note-1: #ffe066;
-  --note-2: #ffb4a2;
-  --note-3: #b8e1ff;
-  --note-4: #c8f0a8;
+  /* Los cuatro colores de nota: lima, rosa, cielo y lila. No se guardan por
+     palabra: salen de la posición en el mazo (noteColor). */
+  --note-1: #b6ff5c;
+  --note-2: #ff8fc5;
+  --note-3: #6fd3ff;
+  --note-4: #c9b5ff;
 }
 
 :root[data-skin='dark'] {
   color-scheme: dark;
-  --paper: #1a1916;
-  --paper-2: #24231f;
-  --card: #24231f;
-  --ink: #f3efe6;
-  --ink-soft: #cfc8b8;
-  --ink-faint: #8a8579;
-  --rule: #36342e;
-  --edge: #4f4c44;
-  --ok: #6fd39b;
-  --no: #ff9a6e;
-  --no-bg: #33201a;
+  --paper: #0e0b1f;
+  --paper-2: #181433;
+  --card: #1a1538;
+  --ink: #f4f2ff;
+  --ink-soft: #a69fcb;
+  --ink-faint: #7c75a8;
+  --rule: #2a2450;
+  --edge: #3a3266;
+  --ok: #7be08f;
+  --no: #ff7a6b;
+  --no-bg: #3a1e2e;
   --aviso: #f2c14e;
-  --drop: 0 12px 28px rgba(0, 0, 0, 0.55);
-  --lift: 0 2px 0 rgba(0, 0, 0, 0.6);
+  --drop: 0 14px 30px rgba(5, 3, 20, 0.6);
+  --lift: 0 6px 16px rgba(5, 3, 20, 0.45);
 }
 
 /* Los tokens, disponibles también como utilidades de Tailwind:
@@ -81,12 +82,14 @@
   --color-note-2: var(--note-2);
   --color-note-3: var(--note-3);
   --color-note-4: var(--note-4);
+  --color-acento: var(--acento);
+  --color-on-acento: var(--on-acento);
 
   /* Display: la palabra en inglés. Manuscrita: solo para el español —
      separa los dos idiomas sin necesidad de etiquetas. */
   --font-display: var(--fuente-display), system-ui, sans-serif;
   --font-ui: var(--fuente-ui), system-ui, -apple-system, sans-serif;
-  --font-hand: var(--fuente-hand), 'Segoe Script', cursive;
+  --font-mono: var(--fuente-mono), ui-monospace, monospace;
 
   --shadow-lift: var(--lift);
   --shadow-drop: var(--drop);
@@ -98,7 +101,9 @@
 :root {
   --display: var(--font-display);
   --ui: var(--font-ui);
-  --hand: var(--font-hand);
+  --mono: var(--font-mono);
+  /* El español ya no lleva letra manuscrita: se distingue por peso y por color. */
+  --hand: var(--font-ui);
 }
 
 * {

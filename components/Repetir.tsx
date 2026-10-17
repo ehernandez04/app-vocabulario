@@ -109,7 +109,7 @@ export function Repetir({
 
   return (
     <>
-      <div className="note rep" style={{ '--note': '#FFE066' } as React.CSSProperties}>
+      <div className="note rep" style={{ '--note': '#B6FF5C' } as React.CSSProperties}>
         {resultado && <span className={`sello ${resultado.estado}`}>{TITULO_ESTADO[resultado.estado]}</span>}
         <span className="n-tag">Escucha y repite</span>
         <span className="es">{ejercicio.es}</span>

@@ -2,7 +2,7 @@
 
 import type { Word } from './srs';
 
-export const NOTES = ['#FFE066', '#FFB4A2', '#B8E1FF', '#C8F0A8'];
+export const NOTES = ['#B6FF5C', '#FF8FC5', '#6FD3FF', '#C9B5FF'];
 
 /**
  * `plural(1,'palabra')` → "1 palabra"; `plural(3,'palabra')` → "3 palabras".
