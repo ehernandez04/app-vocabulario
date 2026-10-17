@@ -37,6 +37,8 @@ export type Settings = {
   /** Con qué modelo dibujar las palabras nuevas (#53). */
   modeloDibujo: 'haiku' | 'sonnet' | 'opus';
   theme: 'light' | 'dark';
+  /** Cuando una traducción no coincide con lo guardado: preguntar si revisarla con la IA, o hacerlo sola (#114). */
+  revisionIA: 'preguntar' | 'auto';
   /** La lista que se está repasando. null = todas. */
   lista: string | null;
 };
@@ -52,6 +54,7 @@ export const DEFAULTS: Settings = {
   voiceMp3: null,
   modeloDibujo: 'haiku',
   theme: 'dark',
+  revisionIA: 'preguntar',
   lista: null,
 };
 

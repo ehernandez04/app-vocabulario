@@ -64,7 +64,7 @@ const CONSIGNA = {
 
 /** Una tanda con los ejercicios del nivel en que vas, en orden mezclado. */
 export default function Practicar() {
-  const { listo, avisar } = useEstado();
+  const { listo, avisar, ajuste } = useEstado();
   const router = useRouter();
   const { tema: id } = useParams<{ tema: string }>();
   const tema = temaPorId(id);
@@ -90,6 +90,8 @@ export default function Practicar() {
   // Dictado (#116): qué tan lento suena «Lento» (se recuerda) y si se está viendo la frase.
   const [lentitud, setLentitud] = useState(leerLentitud);
   const [ayuda, setAyuda] = useState(false);
+  // Si la IA revisó esta respuesta, para decirlo en el resultado (#114).
+  const [conIA, setConIA] = useState(false);
 
 
   // Hasta que la app esté lista no se toca localStorage: el servidor no lo tiene
@@ -224,6 +226,7 @@ export default function Practicar() {
     setRevisando(false);
     setVerExplicacion(false);
     setAyuda(false);
+    setConIA(false);
     setOpciones(de?.tipo === 'elegir' ? opcionesDe(de) : []);
   };
 
@@ -237,7 +240,11 @@ export default function Practicar() {
     if (e.tipo === 'elegir' || respondida || !texto.trim()) return;
     const v = e.tipo === 'escuchar' ? calificarDictado(e, texto) : calificarEscrito(e, texto);
     setVeredicto(v);
-    if (v.estado === 'duda') return;
+    if (v.estado === 'duda') {
+      // En automático la IA la revisa sola; sin conexión se queda en duda, como siempre.
+      if (e.tipo !== 'escuchar' && ajuste('revisionIA') === 'auto' && enLinea) void revisarConIA();
+      return;
+    }
     // Con la frase a la vista no se puntúa: no suma ni resta, y vuelve a salir al final de la tanda.
     if (e.tipo === 'escuchar' && ayuda) setSesion({ ...sesion, ejercicios: [...ejercicios, e] });
     else contar(v.estado === 'acierto');
@@ -266,6 +273,7 @@ export default function Practicar() {
         return;
       }
       setVeredicto(d.acierto ? { estado: 'acierto', mensaje: d.mensaje ?? '' } : { estado: 'fallo', mensaje: d.mensaje ?? '' });
+      setConIA(true);
       contar(d.acierto);
     } catch {
       avisar('No se pudo conectar. Comprueba tu señal e inténtalo de nuevo.');
@@ -495,11 +503,13 @@ export default function Practicar() {
 
       {resultado ? (
         <div className="fb">
+          {conIA && <span className="chip-ia">Revisado con IA</span>}
           {resultado.acierto ? (
             <div>
               <p className="ttl good">¡Bien!</p>
               <p className="sub">{resultado.mensaje}</p>
               {resultado.alternativa && <p className="sub">También vale: «{resultado.alternativa}».</p>}
+              {conIA && e.id && <p className="sub ia-guardada">Ya la guardé como válida: la próxima vez no hará falta revisarla.</p>}
             </div>
           ) : verExplicacion ? (
             <div className="expl">
@@ -537,7 +547,7 @@ export default function Practicar() {
       ) : revisando ? (
         <div className="fb" role="status">
           <p className="ttl">
-            <span className="spin" aria-hidden="true" /> Revisando tu respuesta…
+            <span className="spin" aria-hidden="true" /> Revisando con IA…
           </p>
           <p className="hint">Cuesta 1 punto de IA de tus 30 de hoy.</p>
         </div>
