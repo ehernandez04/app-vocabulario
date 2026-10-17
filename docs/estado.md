@@ -16,7 +16,7 @@ funciona así: cada cambio queda marcado como sucio en IndexedDB y sube sola a l
 abrir, al volver la señal y al volver a primer plano.
 
 **Aprender por tema (#39) y la app como «inglés desde cero» (#76).** El nombre decidido es
-**Paso a Paso** (hoy el código sigue diciendo «Vocabulario en Ruta»; el cambio es #81). La app pasó de repasar
+**Paso a Paso** (antes «Vocabulario en Ruta»; renombrada en #81). La app pasó de repasar
 vocabulario a una ruta de temas con niveles. La barra tiene **Inicio · Temas · Palabras**
 («Hablar» se suma cuando exista la práctica con IA, #78). Inicio muestra el tema y nivel en que
 vas con un botón «Continuar»; el mazo, las listas y los tres modos de repaso (Tarjetas, Adivinar,

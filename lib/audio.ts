@@ -228,7 +228,7 @@ export function setNowPlaying(word: Word, handlers: Manejadores = {}) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: word.en,
       artist: word.es,
-      album: 'Vocabulario en Ruta',
+      album: 'Paso a Paso',
     });
     for (const [accion, fn] of Object.entries(handlers)) {
       try {
